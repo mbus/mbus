@@ -46,6 +46,7 @@ begin
 	@ (posedge CLK_OUT)
 	@ (posedge CLK_OUT)
 	@ (posedge CLK_OUT)
+		$stop;
 end
 
 always #5 CLK_IN = ~CLK_IN;

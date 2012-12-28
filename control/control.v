@@ -7,6 +7,7 @@ output 	OUT, CLK_OUT;
 parameter CLK_DIVIDOR = 10;
 
 reg		[2:0] state, next_state;
+reg		OUT;
 reg		CLK_OUT, next_CLK_OUT;
 reg		[log2(CLK_DIVIDOR-1):0] clk_cnt, next_clk_cnt;
 reg		clk_edge, next_clk_edge;
@@ -68,7 +69,7 @@ begin
 		clk_edge <= next_clk_edge;
 		input_buffer <= next_input_buffer;
 		drive_state_cnt <= next_drive_state_cnt;
-		bus_reset_state_cnt <= next_bus_reset_cnt;
+		bus_reset_state_cnt <= next_bus_reset_state_cnt;
 	end
 end
 

@@ -46,6 +46,7 @@ begin
 	@ (posedge CLK_OUT)
 	@ (posedge CLK_OUT)
 	@ (posedge CLK_OUT)
+	#2000
 		$stop;
 end
 

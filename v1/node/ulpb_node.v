@@ -12,12 +12,24 @@ output	OUT;
 
 parameter IDLE = 0;
 parameter ARBITRATION_RESOLVED = 1;
-parameter ADDR_LATCH = 2;
-parameter ADDR_DRIVE = 3;
+parameter ADDR_DRIVE = 2;
+parameter ADDR_LATCH = 3;
+parameter DATA_DRIVE = 4;
+parameter DATA_LATCH = 5;
+parameter END_OF_TX = 6;
+parameter WAIT_ACK = 7;
+parameter WAIT_ACK_FWD = 8;
+parameter BUS_RESET = 9;
+
+parameter NUM_OF_STATE = 10;
 
 //assign OUT = (state==IDLE)? ~REQ_FROM_LC : ((state==RX)||(state==FWD))? in : etc...
 
-reg		state, next_state;
+reg		[log2(NUM_OF_STATE-1):0] state, next_state;
+reg		[log2(DATA_WIDTH-1):0] bit_position, next_bit_position;
+reg		bit_out, next_bit_out;
+reg		DATA_INDICATOR, next_data_indicator;
+
 wire	data1_bit_extract = (DATA1 & (1<<bit_position))? 1 : 0;
 wire	data2_bit_extract = (DATA2 & (1<<bit_position))? 1 : 0;
 wire	addr_bit_extract  = (ADDR  & (1<<bit_position))? 1 : 0;
@@ -25,6 +37,8 @@ wire	addr_bit_extract  = (ADDR  & (1<<bit_position))? 1 : 0;
 // Output Combinational Logics
 always @ *
 begin
+	OUT = bit_out;
+
 	case (state)
 		IDLE:
 		begin
@@ -64,19 +78,25 @@ begin
 	if (~RESET)
 	begin
 		state <= IDLE;
+		bit_position <= (ADDR_WIDTH-1);
 		bit_out <= 1;
+		DATA_INDICATOR <= 0;
 	end
 	else
 	begin
 		state <= next_state;
+		bit_position <= next_bit_position;
 		bit_out <= next_bit_out;
+		DATA_INDICATOR <= next_data_indicator;
 	end
 end
 
 always @ *
 begin
 	next_state = state;
+	next_bit_position = bit_position;
 	next_bit_out = bit_out;
+	next_data_indicator = DATA_INDICATOR;
 	case (state)
 		IDLE:
 		begin
@@ -112,7 +132,7 @@ begin
 
 		DATA_DRIVE:
 		begin
-			if (~data_indicator)
+			if (~DATA_INDICATOR)
 				next_bit_out = data1_bit_extract;
 			else
 				next_bit_out = data2_bit_extract;
@@ -130,7 +150,7 @@ begin
 			begin
 				if (DATA_PENDING)
 				begin
-					next_data_indicator = ~data_indicator;
+					next_data_indicator = ~DATA_INDICATOR;
 					next_state = DATA_DRIVE;
 				end
 				else
@@ -164,5 +184,18 @@ begin
 	endcase
 end
 
+always @ (posedge CLK or negedge RESET)
+begin
+	if (~RESET)
+		input_buffer <= 0;
+	else
+		input_buffer <= {input_buffer[0], IN};
+end
+
+function integer log2;
+	input [31:0] value;
+	for (log2=0; value>0; log2=log2+1)
+	value = value>>1;
+endfunction
 
 endmodule

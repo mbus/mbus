@@ -1,12 +1,13 @@
 
-module control(
-	input 	CLK_IN, 
-	output	CLK_OUT, 
-	input	RESET, 
-	input	IN, 
-	output	OUT);
+module control(IN, OUT, RESET, CLK_OUT, CLK_IN);
 
-reg			CLK_OUT;
+input 	CLK_IN;
+output	CLK_OUT;
+input	RESET;
+input	IN;
+output	OUT;
+
+reg		CLK_OUT, OUT;
 
 parameter CLK_DIVIDOR = 10;
 parameter RESET_CYCLES = 7;
@@ -18,23 +19,25 @@ reg		[1:0]	input_buffer, next_input_buffer;
 reg		clk_cnt_start, next_clk_cnt_start;
 
 parameter BUS_IDLE = 0;
-parameter WAIT_FOR_START = 1;
-parameter DRIVE1_POS = 2;
-parameter LATCH1_POS = 3;
-parameter DRIVE1_NEG = 4;
-parameter LATCH1_NEG = 5;
-parameter DRIVE2_POS = 6;
-parameter LATCH2_POS = 7;
-parameter DRIVE2_NEG = 8;
-parameter LATCH2_NEG = 9;
-parameter BUS_RESET_POS = 10;
-parameter BUS_RESET_NEG = 11;
+parameter WAIT_FOR_START_POS = 1;
+parameter WAIT_FOR_START_NEG = 2;
+parameter ARBI_RES_POS = 3;
+parameter ARBI_RES_NEG = 4;
+parameter DRIVE1_POS = 5;
+parameter LATCH1_POS = 6;
+parameter DRIVE1_NEG = 7;
+parameter LATCH1_NEG = 8;
+parameter DRIVE2_POS = 9;
+parameter LATCH2_POS = 10;
+parameter DRIVE2_NEG = 11;
+parameter LATCH2_NEG = 12;
+parameter BUS_RESET_POS = 13;
+parameter BUS_RESET_NEG = 14;
 
-parameter NUM_OF_STATES = 12;
+parameter NUM_OF_STATES = 15;
 
 reg		[log2(NUM_OF_STATES-1):0] state, next_state;
 wire input_buffer_xor = input_buffer[0] ^ input_buffer[1];
-wire OUT = (state==BUS_IDLE)? 1 : IN;
 
 always @ (posedge CLK_IN or negedge RESET)
 begin
@@ -59,9 +62,13 @@ end
 always @ *
 begin
 	CLK_OUT = 1;
+	OUT = IN;
 	case (state)
-		BUS_IDLE: begin CLK_OUT = 1; end
-		WAIT_FOR_START: begin CLK_OUT = 1; end
+		BUS_IDLE: begin CLK_OUT = 1; OUT = 1; end
+		WAIT_FOR_START_POS: begin CLK_OUT = 1; OUT = 1; end
+		WAIT_FOR_START_NEG: begin CLK_OUT = 0; OUT = 1; end
+		ARBI_RES_POS: begin CLK_OUT = 1; OUT = 1; end
+		ARBI_RES_NEG: begin CLK_OUT = 0; OUT = 1; end
 		DRIVE1_POS: begin CLK_OUT = 1; end
 		LATCH1_POS: begin CLK_OUT = 1; end
 		DRIVE1_NEG: begin CLK_OUT = 0; end
@@ -96,21 +103,39 @@ begin
 		begin
 			if (~IN)
 			begin
-				next_state = WAIT_FOR_START;
+				next_state = WAIT_FOR_START_POS;
 				next_clk_cnt_start = 1;
 			end
 			next_reset_cycle_cnt = START_HALF_CYCLES - 1;
 		end
 
-		WAIT_FOR_START:
+		WAIT_FOR_START_POS:
 		begin
 			if (clk_cnt==0)
 			begin
 				if (reset_cycle_cnt)
 					next_reset_cycle_cnt = reset_cycle_cnt - 1;
 				else
-					next_state = DRIVE2_NEG;
+					next_state = WAIT_FOR_START_NEG;
 			end
+		end
+
+		WAIT_FOR_START_NEG:
+		begin
+			if (clk_cnt==0)
+				next_state = ARBI_RES_POS;
+		end
+
+		ARBI_RES_POS:
+		begin
+			if (clk_cnt==0)
+				next_state = ARBI_RES_NEG;
+		end
+
+		ARBI_RES_NEG:
+		begin
+			if (clk_cnt==0)
+				next_state = DRIVE1_POS;
 		end
 
 		DRIVE2_NEG:
@@ -181,7 +206,10 @@ begin
 			if (clk_cnt==0)
 			begin
 				if (reset_cycle_cnt)
+				begin
 					next_reset_cycle_cnt = reset_cycle_cnt - 1;
+					next_state = BUS_RESET_POS;
+				end
 				else
 				begin
 					next_state = BUS_IDLE;

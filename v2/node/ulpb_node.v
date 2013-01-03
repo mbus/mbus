@@ -10,13 +10,7 @@ input	REQ_TX;
 output	DATA_INDICATOR;
 output	OUT;
 
-
-wire	data1_bit_extract = (DATA1 & (1<<bit_position))? 1 : 0;
-wire	data2_bit_extract = (DATA2 & (1<<bit_position))? 1 : 0;
-wire	addr_bit_extract  = (ADDR  & (1<<bit_position))? 1 : 0;
-
-reg		[1:0] input_buffer;
-wire	input_buffer_xor = input_buffer[0] ^ input_buffer[1];
+reg		OUT;
 
 parameter RESET_CNT = 3;
 
@@ -37,9 +31,14 @@ reg		out_reg, next_out_reg;
 reg		addr_done, next_addr_done;
 reg		TX_grant, next_TX_grant;
 reg		tx_done, next_tx_done;
-reg		DATA_INDICATOR, next_data_indicator;
 reg		wait_for_ack, next_wait_for_ack;
 reg		[log2(RESET_CNT-1):0] reset_cnt, next_reset_cnt;
+reg		[1:0] input_buffer;
+
+wire	data1_bit_extract = (DATA1 & (1<<bit_position))? 1 : 0;
+wire	data2_bit_extract = (DATA2 & (1<<bit_position))? 1 : 0;
+wire	addr_bit_extract  = (ADDR  & (1<<bit_position))? 1 : 0;
+wire	input_buffer_xor = input_buffer[0] ^ input_buffer[1];
 
 always @ (posedge CLK or negedge RESET)
 begin

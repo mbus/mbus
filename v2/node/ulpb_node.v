@@ -1,4 +1,4 @@
-module ulpb_node(CLK, RESET, IN, OUT, ADDR_IN, DATA_IN, REQ_TX, ACK_TX, ADDR_OUT, DATA_OUT, REQ_RX, ACK_RX);
+module ulpb_node(CLK, RESET, IN, OUT, ADDR_IN, DATA_IN, REQ_TX, ACK_TX, ADDR_OUT, DATA_OUT, REQ_RX, ACK_RX, ACK_RECEIVED);
 
 parameter ADDR_WIDTH=8;
 parameter DATA_WIDTH=32;
@@ -12,6 +12,7 @@ output	[DATA_WIDTH-1:0] DATA_OUT;
 output	REQ_RX;
 input	ACK_RX;
 output	OUT;
+output	ACK_RECEIVED;
 
 reg		OUT;
 
@@ -48,6 +49,7 @@ reg		[DATA_WIDTH-1:0] DATA, next_data, DATA_OUT, next_data_out;
 reg		addr_received, next_addr_received, rx_done, next_rx_done;
 reg		[1:0] mode, next_mode;
 reg		ACK_TX, next_ack_tx, REQ_RX, next_req_rx;
+reg		ACK_RECEIVED, next_ack_received;
 
 wire	addr_bit_extract = (ADDR  & (1<<bit_position))? 1 : 0;
 wire	data_bit_extract = (DATA & (1<<bit_position))? 1 : 0;
@@ -76,6 +78,7 @@ begin
 		rx_done <= 0;
 		ACK_TX <= 0;
 		REQ_RX <= 0;
+		ACK_RECEIVED <= 0;
 	end
 	else
 	begin
@@ -97,6 +100,7 @@ begin
 		rx_done <= next_rx_done;
 		ACK_TX <= next_ack_tx;
 		REQ_RX <= next_req_rx;
+		ACK_RECEIVED <= next_ack_received;
 	end
 end
 
@@ -144,6 +148,7 @@ begin
 	next_rx_done = rx_done;
 	next_ack_tx = ACK_TX;
 	next_req_rx = REQ_RX;
+	next_ack_received = ACK_RECEIVED;
 
 	if (ACK_TX & (~REQ_TX))
 		next_ack_tx = 0;
@@ -167,6 +172,7 @@ begin
 			next_state = ARBI_RESOLVED;
 			next_bit_position = ADDR_WIDTH-1;
 			next_rx_bit_counter = ADDR_WIDTH-1;
+			next_ack_received = 0;
 		end
 
 		ARBI_RESOLVED:
@@ -269,9 +275,10 @@ begin
 					end
 					else
 					begin
+						next_state = BUS_RESET;
 						// ACK/RESET received
 						if (input_buffer_xor)
-							next_state = BUS_RESET;
+							next_ack_received = 1;
 					end
 				end
 

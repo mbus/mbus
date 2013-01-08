@@ -55,7 +55,7 @@ begin
 	begin
 		if (ack_rx)
 		begin
-			if (~req_rx)
+			if (~rx_int)
 				ack_rx <= 0;
 		end
 

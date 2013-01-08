@@ -2,7 +2,7 @@
 module ahb_int(	HSEL, HADDR, HWRITE, HSIZE, HBURST, HPROT, HTRANS, 
 				HMASTLOCK, HREADY, HWDATA, HRESETn, HCLK,
 				HREADYOUT, HRESP, HRDATA,
-				IN, OUT, SCLK,
+				DIN, DOUT, SCLK,
 				rx_int, ack_rx_int);
 
 // IOs for AHB bus
@@ -17,8 +17,8 @@ output 	[1:0] 	HRESP;
 output 	[31:0] 	HRDATA;
 
 // IOS for M3 interface
-input			IN, SCLK;
-output			OUT;
+input			DIN, SCLK;
+output			DOUT;
 
 // Interrups
 output			rx_int, ack_rx_int;
@@ -67,7 +67,7 @@ begin
 					hwrite_reg	<= HWRITE;
 					fsm			<= 1;
 					HREADYOUT <= 0;
-					haddr_reg <= HADDR[7:0];
+					haddr_reg <= HADDR[11:4];
 				end
 			end
 
@@ -111,7 +111,7 @@ begin
 end
 
 
-ulpb_node #(.ADDRESS(ADDRESS)) n0 (.CLK(SCLK), .RESET(HRESETn), .IN(IN), .OUT(OUT), 
+ulpb_node #(.ADDRESS(ADDRESS)) n0 (.CLK(SCLK), .RESET(HRESETn), .DIN(DIN), .DOUT(DOUT), 
 			.ADDR_IN(haddr_reg), .DATA_IN(HWDATA), .REQ_TX(req_tx), .ACK_TX(ack_tx), 
 			.ADDR_OUT(), .DATA_OUT(data_out), .REQ_RX(rx_int), .ACK_RX(ack_rx), .ACK_RECEIVED(ack_rx_int));
 endmodule

@@ -1,8 +1,8 @@
-module ulpb_node(CLK, RESET, IN, OUT, ADDR_IN, DATA_IN, REQ_TX, ACK_TX, ADDR_OUT, DATA_OUT, REQ_RX, ACK_RX, ACK_RECEIVED);
+module ulpb_node(CLK, RESET, DIN, DOUT, ADDR_IN, DATA_IN, REQ_TX, ACK_TX, ADDR_OUT, DATA_OUT, REQ_RX, ACK_RX, ACK_RECEIVED);
 
 parameter ADDR_WIDTH=8;
 parameter DATA_WIDTH=32;
-input 	CLK, RESET, IN;
+input 	CLK, RESET, DIN;
 input	[ADDR_WIDTH-1:0] ADDR_IN;
 input	[DATA_WIDTH-1:0] DATA_IN;
 input	REQ_TX;
@@ -11,13 +11,13 @@ output	[ADDR_WIDTH-1:0] ADDR_OUT;
 output	[DATA_WIDTH-1:0] DATA_OUT;
 output	REQ_RX;
 input	ACK_RX;
-output	OUT;
+output	DOUT;
 output	ACK_RECEIVED;
 
-reg		OUT;
+reg		DOUT;
 
 parameter ADDRESS = 8'hab;
-parameter RESET_CNT = 6;
+parameter RESET_CNT = 2;
 
 parameter MODE_IDLE = 0;
 parameter MODE_TX = 1;
@@ -50,6 +50,7 @@ reg		addr_received, next_addr_received, rx_done, next_rx_done;
 reg		[1:0] mode, next_mode;
 reg		ACK_TX, next_ack_tx, REQ_RX, next_req_rx;
 reg		ACK_RECEIVED, next_ack_received;
+reg		fwd_done, next_fwd_done;
 
 wire	addr_bit_extract = (ADDR  & (1<<bit_position))? 1 : 0;
 wire	data_bit_extract = (DATA & (1<<bit_position))? 1 : 0;
@@ -79,6 +80,7 @@ begin
 		ACK_TX <= 0;
 		REQ_RX <= 0;
 		ACK_RECEIVED <= 0;
+		fwd_done <= 0;
 	end
 	else
 	begin
@@ -101,6 +103,7 @@ begin
 		ACK_TX <= next_ack_tx;
 		REQ_RX <= next_req_rx;
 		ACK_RECEIVED <= next_ack_received;
+		fwd_done <= next_fwd_done;
 	end
 end
 
@@ -109,20 +112,29 @@ begin
 	case (state)
 		BUS_IDLE:
 		begin
-			OUT = ((~REQ_TX) & IN);
+			DOUT = ((~REQ_TX) & DIN);
 		end
 
 		ARBI_RESOLVED:
 		begin
-			OUT = ((~REQ_TX) & IN);
+			if (mode==MODE_TX)
+				DOUT = 0;
+			else
+				DOUT = DIN;
+			//DOUT = ((~REQ_TX) & DIN);
+		end
+
+		BUS_RESET:
+		begin
+			DOUT = 1;
 		end
 
 		default:
 		begin
 			if ((tx_grant)||(rx_done))
-				OUT = out_reg;
+				DOUT = out_reg;
 			else
-				OUT = IN;
+				DOUT = DIN;
 		end
 	endcase
 end
@@ -149,6 +161,7 @@ begin
 	next_ack_tx = ACK_TX;
 	next_req_rx = REQ_RX;
 	next_ack_received = ACK_RECEIVED;
+	next_fwd_done = fwd_done;
 
 	if (ACK_TX & (~REQ_TX))
 		next_ack_tx = 0;
@@ -159,7 +172,7 @@ begin
 	case (state)
 		BUS_IDLE:
 		begin
-			if (IN^OUT)
+			if (DIN^DOUT)
 			begin
 				next_tx_grant = 1;
 				next_addr = ADDR_IN;
@@ -303,7 +316,15 @@ begin
 
 							MODE_FWD:
 							begin
-								next_state = BUS_RESET;
+								if (~fwd_done)
+								begin
+									next_fwd_done = 1;
+									next_state = DRIVE1;
+								end
+								else
+								begin
+									next_state = BUS_RESET;
+								end
 							end
 						endcase
 					end
@@ -331,10 +352,7 @@ begin
 				end
 			endcase
 
-			if (mode==MODE_FWD)
-				next_reset_cnt = RESET_CNT - 1;
-			else
-				next_reset_cnt = RESET_CNT - 5;
+			next_reset_cnt = RESET_CNT - 1;
 			
 		end
 
@@ -352,6 +370,7 @@ begin
 				next_addr_received = 0;
 				next_mode = MODE_IDLE;
 				next_rx_done = 0;
+				next_fwd_done = 0;
 			end
 		end
 
@@ -367,7 +386,7 @@ begin
 	else
 	begin
 		if ((state==DRIVE1)||(state==DRIVE2))
-			input_buffer <= {input_buffer[0], IN};
+			input_buffer <= {input_buffer[0], DIN};
 	end
 end
 

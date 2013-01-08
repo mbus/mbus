@@ -1,13 +1,13 @@
 
-module control(IN, OUT, RESET, CLK_OUT, CLK_IN);
+module control(DIN, DOUT, RESET, CLK_OUT, CLK_IN);
 
 input 	CLK_IN;
 output	CLK_OUT;
 input	RESET;
-input	IN;
-output	OUT;
+input	DIN;
+output	DOUT;
 
-reg		CLK_OUT, OUT;
+reg		CLK_OUT, DOUT, din_reg;
 
 parameter CLK_DIVIDOR = 10;
 parameter RESET_CYCLES = 7;
@@ -33,11 +33,20 @@ parameter LATCH2_POS = 11;
 parameter LATCH2_NEG = 12;
 parameter BUS_RESET_POS = 13;
 parameter BUS_RESET_NEG = 14;
+parameter BUS_DISABLE = 15;
 
-parameter NUM_OF_STATES = 15;
+parameter NUM_OF_STATES = 16;
 
 reg		[log2(NUM_OF_STATES-1):0] state, next_state;
 wire input_buffer_xor = input_buffer[0] ^ input_buffer[1];
+
+always @ (posedge CLK_IN or negedge RESET)
+begin
+	if (~RESET)
+		din_reg <= 1;
+	else
+		din_reg <= DIN;
+end
 
 always @ (posedge CLK_IN or negedge RESET)
 begin
@@ -62,13 +71,13 @@ end
 always @ *
 begin
 	CLK_OUT = 1;
-	OUT = IN;
+	DOUT = din_reg;
 	case (state)
-		BUS_IDLE: begin CLK_OUT = 1; OUT = 1; end
-		WAIT_FOR_START_POS: begin CLK_OUT = 1; OUT = 1; end
-		WAIT_FOR_START_NEG: begin CLK_OUT = 0; OUT = 1; end
-		ARBI_RES_POS: begin CLK_OUT = 1; OUT = 1; end
-		ARBI_RES_NEG: begin CLK_OUT = 0; OUT = 1; end
+		BUS_IDLE: begin CLK_OUT = 1; DOUT = 1; end
+		WAIT_FOR_START_POS: begin CLK_OUT = 1; DOUT = 1; end
+		WAIT_FOR_START_NEG: begin CLK_OUT = 0; DOUT = 1; end
+		ARBI_RES_POS: begin CLK_OUT = 1; DOUT = 1; end
+		ARBI_RES_NEG: begin CLK_OUT = 0; DOUT = 1; end
 		DRIVE1_POS: begin CLK_OUT = 1; end
 		LATCH1_POS: begin CLK_OUT = 1; end
 		DRIVE1_NEG: begin CLK_OUT = 0; end
@@ -79,6 +88,7 @@ begin
 		LATCH2_NEG: begin CLK_OUT = 0; end
 		BUS_RESET_POS: begin CLK_OUT = 1; end
 		BUS_RESET_NEG: begin CLK_OUT = 0; end
+		BUS_DISABLE: begin CLK_OUT = 1; end
 	endcase
 end
 
@@ -101,7 +111,7 @@ begin
 	case (state)
 		BUS_IDLE:
 		begin
-			if (~IN)
+			if (~din_reg)
 			begin
 				next_state = WAIT_FOR_START_POS;
 				next_clk_cnt_start = 1;
@@ -143,7 +153,7 @@ begin
 			if (clk_cnt==0)
 			begin
 				next_state = LATCH2_POS;
-				next_input_buffer = {input_buffer[0], IN};
+				next_input_buffer = {input_buffer[0], din_reg};
 			end
 		end
 
@@ -173,7 +183,7 @@ begin
 			if (clk_cnt==0)
 			begin
 				next_state = LATCH1_POS;
-				next_input_buffer = {input_buffer[0], IN};
+				next_input_buffer = {input_buffer[0], din_reg};
 			end
 		end
 
@@ -210,6 +220,21 @@ begin
 					next_reset_cycle_cnt = reset_cycle_cnt - 1;
 					next_state = BUS_RESET_POS;
 				end
+				else
+				begin
+					next_state = BUS_DISABLE;
+					next_reset_cycle_cnt = START_HALF_CYCLES - 1;
+				end	
+			end
+		end
+
+		// disable 3 cycles;
+		BUS_DISABLE:
+		begin
+			if (clk_cnt==0)
+			begin
+				if (reset_cycle_cnt)
+					next_reset_cycle_cnt = reset_cycle_cnt - 1;
 				else
 				begin
 					next_state = BUS_IDLE;

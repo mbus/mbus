@@ -321,16 +321,16 @@ begin
 									next_fwd_done = 1;
 									next_state = DRIVE1;
 								end
-								else
-								begin
-									next_state = BUS_RESET;
-								end
 							end
 						endcase
 					end
 					else
 					begin
-						next_state = DRIVE1;
+						if (fwd_done)
+							next_state = BUS_RESET;
+						else
+							next_state = DRIVE1;
+
 						if ((mode==MODE_RX)&&(rx_done==0))
 						begin
 							if (rx_bit_counter)

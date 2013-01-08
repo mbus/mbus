@@ -321,6 +321,8 @@ begin
 									next_fwd_done = 1;
 									next_state = DRIVE1;
 								end
+								else
+									next_state = BUS_RESET;
 							end
 						endcase
 					end

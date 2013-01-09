@@ -67,10 +67,14 @@ begin
 	#10000
 	addr_in0 = 8'hef;
 	req_tx0 = 1;
-	#70000
+	#50000
 	addr_in0 = 8'hab;
 	req_tx0 = 1;
 	@ (posedge ack_rx1)
+	#10000
+	addr_in0 = 8'hcd;
+	req_tx0 = 1;
+	@ (posedge ack_rx2)
 	#10000
 		$stop;
 end
@@ -90,6 +94,14 @@ begin
 		ack_rx1 = 0;
 end
 
+always @ *
+begin
+	if ((req_rx2==1)&&(ack_rx2==0))
+		ack_rx2 = 1;
+	
+	if ((req_rx2==0)&&(ack_rx2==1))
+		ack_rx2 = 0;
+end
 
 
 

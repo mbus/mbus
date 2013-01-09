@@ -337,14 +337,14 @@ begin
 
 				MODE_FWD:
 				begin
-					if ((~fwd_done) & (input_buffer_xor))
-					begin
-						next_fwd_done = 1;
-						next_state = DRIVE1;
-					end
-					else if (fwd_done)
+					if (fwd_done)
 						next_state = BUS_RESET;
-					
+					else
+					begin
+						next_state = DRIVE1;
+						if (input_buffer_xor)
+							next_fwd_done = 1;
+					end
 				end
 			endcase
 			next_reset_cnt = RESET_CNT - 1;

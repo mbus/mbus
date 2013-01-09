@@ -36,10 +36,12 @@ parameter NUM_OF_STATE = 7;
 
 
 reg		[log2(NUM_OF_STATE-1):0] state, next_state;
-reg		[log2(DATA_WIDTH-1):0] bit_position, next_bit_position, rx_bit_counter, next_rx_bit_counter;
+reg		[log2(DATA_WIDTH-1):0] bit_position, next_bit_position; 
+reg		[log2(ADDR_WIDTH-1):0] rx_bit_counter, next_rx_bit_counter;
 reg		out_reg, next_out_reg;
 reg		addr_done, next_addr_done;
 reg		end_of_tx, next_end_of_tx;
+reg		tx_released, next_tx_released;
 reg		tx_done, next_tx_done;
 reg		wait_for_ack, next_wait_for_ack;
 reg		[log2(RESET_CNT-1):0] reset_cnt, next_reset_cnt;
@@ -81,6 +83,7 @@ begin
 		REQ_RX <= 0;
 		ACK_RECEIVED <= 0;
 		fwd_done <= 0;
+		tx_released <= 0;
 	end
 	else
 	begin
@@ -104,6 +107,7 @@ begin
 		REQ_RX <= next_req_rx;
 		ACK_RECEIVED <= next_ack_received;
 		fwd_done <= next_fwd_done;
+		tx_released <= next_tx_released;
 	end
 end
 
@@ -134,7 +138,7 @@ begin
 			case (mode)
 				MODE_TX:
 				begin
-					if (end_of_tx)
+					if (tx_released)
 						DOUT = DIN;
 					else
 						DOUT = out_reg;
@@ -180,6 +184,7 @@ begin
 	next_req_rx = REQ_RX;
 	next_ack_received = ACK_RECEIVED;
 	next_fwd_done = fwd_done;
+	next_tx_released = tx_released;
 
 	if (ACK_TX & (~REQ_TX))
 		next_ack_tx = 0;
@@ -209,7 +214,10 @@ begin
 		begin
 			next_state = DRIVE1;
 			if (mode==MODE_TX)
+			begin
 				next_out_reg = addr_bit_extract;
+				next_tx_released = 0;
+			end
 		end
 
 		DRIVE1:
@@ -274,6 +282,7 @@ begin
 
 						2'b11:
 						begin
+							next_tx_released = 1;
 							if (~wait_for_ack)
 							begin
 								next_wait_for_ack = 1;
@@ -367,6 +376,7 @@ begin
 				next_mode = MODE_IDLE;
 				next_rx_done = 0;
 				next_fwd_done = 0;
+				next_tx_released = 0;
 			end
 		end
 

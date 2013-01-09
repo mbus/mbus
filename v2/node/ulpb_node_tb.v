@@ -44,7 +44,7 @@ begin
 	ack_rx0 = 0;
 
 	addr_in1 = 8'h0;
-	data_in1 = 32'h0;
+	data_in1 = 32'h12345678;
 	req_tx1 = 0;
 	ack_rx1 = 0;
 
@@ -73,7 +73,10 @@ begin
 	@ (posedge ack_rx1)
 	#10000
 	addr_in0 = 8'hcd;
+	addr_in1 = 8'hcd;
 	req_tx0 = 1;
+	req_tx1 = 1;
+	@ (posedge ack_rx2)
 	@ (posedge ack_rx2)
 	#10000
 		$stop;
@@ -83,6 +86,18 @@ always @ *
 begin
 	if (ack_tx0)
 		req_tx0 = 0;
+end
+
+always @ *
+begin
+	if (ack_tx1)
+		req_tx1 = 0;
+end
+
+always @ *
+begin
+	if (ack_tx2)
+		req_tx2 = 0;
 end
 
 always @ *

@@ -3,7 +3,7 @@ module ahb_int(	HSEL, HADDR, HWRITE, HSIZE, HBURST, HPROT, HTRANS,
 				HMASTLOCK, HREADY, HWDATA, HRESETn, HCLK,
 				HREADYOUT, HRESP, HRDATA,
 				DIN, DOUT, SCLK,
-				rx_int, ack_rx_int);
+				rx_int, ack_rx_int, req_tx);
 
 // IOs for AHB bus
 input 			HSEL, HWRITE, HMASTLOCK, HREADY, HRESETn, HCLK;
@@ -23,18 +23,19 @@ output			DOUT;
 // Interrups
 output			rx_int, ack_rx_int;
 
+output			req_tx;
+
 reg				hwrite_reg;
 reg		[7:0]	haddr_reg;
 reg		[2:0]	fsm;
 reg		[31:0]	HRDATA;
 reg				HREADYOUT;
+reg		[31:0]	HWDATA_REG;
 
 assign HRESP		= 2'b00;
 
 wire	[31:0]	data_out;
-wire			rx_int;
 wire			ack_tx;
-wire			ack_rx_int;
 reg				ack_rx, req_tx;
 
 parameter ADDRESS = 8'hab;
@@ -50,6 +51,7 @@ begin
 		haddr_reg <= 0;
 		ack_rx <= 0;
 		req_tx <= 0;
+		HWDATA_REG <= 0;
 	end
 	else
 	begin
@@ -57,6 +59,11 @@ begin
 		begin
 			if (~rx_int)
 				ack_rx <= 0;
+		end
+
+		if (ack_tx)
+		begin
+			req_tx <= 0;
 		end
 
 		case (fsm)
@@ -76,6 +83,7 @@ begin
 				if (hwrite_reg)
 				begin
 					req_tx <= 1;
+					HWDATA_REG <= HWDATA;
 				end
 				else
 				begin
@@ -87,6 +95,7 @@ begin
 
 			2:
 			begin
+				/*
 				if (req_tx)
 				begin
 					if (ack_tx)
@@ -97,6 +106,8 @@ begin
 				end
 				else
 					fsm <= 3;
+				*/
+			   fsm <= 3;
 			end
 
 			3:
@@ -112,6 +123,6 @@ end
 
 
 ulpb_node #(.ADDRESS(ADDRESS)) n0 (.CLK(SCLK), .RESET(HRESETn), .DIN(DIN), .DOUT(DOUT), 
-			.ADDR_IN(haddr_reg), .DATA_IN(HWDATA), .REQ_TX(req_tx), .ACK_TX(ack_tx), 
+			.ADDR_IN(haddr_reg), .DATA_IN(HWDATA_REG), .REQ_TX(req_tx), .ACK_TX(ack_tx), 
 			.ADDR_OUT(), .DATA_OUT(data_out), .REQ_RX(rx_int), .ACK_RX(ack_rx), .ACK_RECEIVED(ack_rx_int));
 endmodule

@@ -39,7 +39,7 @@ reg		[log2(NUM_OF_STATE-1):0] state, next_state;
 reg		[log2(DATA_WIDTH-1):0] bit_position, next_bit_position, rx_bit_counter, next_rx_bit_counter;
 reg		out_reg, next_out_reg;
 reg		addr_done, next_addr_done;
-reg		tx_grant, next_tx_grant;
+reg		end_of_tx, next_end_of_tx;
 reg		tx_done, next_tx_done;
 reg		wait_for_ack, next_wait_for_ack;
 reg		[log2(RESET_CNT-1):0] reset_cnt, next_reset_cnt;
@@ -65,7 +65,7 @@ begin
 		out_reg <= 1;
 		bit_position <= ADDR_WIDTH-1;
 		addr_done <= 0;
-		tx_grant <= 0;
+		end_of_tx <= 0;
 		tx_done <= 0;
 		wait_for_ack <= 0;
 		reset_cnt <= RESET_CNT - 1;
@@ -88,7 +88,7 @@ begin
 		out_reg <= next_out_reg;
 		bit_position <= next_bit_position;
 		addr_done <= next_addr_done;
-		tx_grant <= next_tx_grant;
+		end_of_tx <= next_end_of_tx;
 		tx_done <= next_tx_done;
 		wait_for_ack <= next_wait_for_ack;
 		reset_cnt <= next_reset_cnt;
@@ -121,7 +121,6 @@ begin
 				DOUT = 0;
 			else
 				DOUT = DIN;
-			//DOUT = ((~REQ_TX) & DIN);
 		end
 
 		BUS_RESET:
@@ -131,10 +130,28 @@ begin
 
 		default:
 		begin
-			if ((tx_grant)||(rx_done))
-				DOUT = out_reg;
-			else
-				DOUT = DIN;
+			case (mode)
+				MODE_TX:
+				begin
+					if (end_of_tx)
+						DOUT = DIN;
+					else
+						DOUT = out_reg;
+				end
+
+				MODE_RX:
+				begin
+					if (rx_done)
+						DOUT = out_reg;
+					else
+						DOUT = DIN;
+				end
+
+				MODE_FWD:
+				begin
+					DOUT = DIN;
+				end
+			endcase
 		end
 	endcase
 end
@@ -146,7 +163,7 @@ begin
 	next_out_reg = out_reg;
 	next_bit_position = bit_position;
 	next_addr_done = addr_done;
-	next_tx_grant = tx_grant;
+	next_end_of_tx = end_of_tx;
 	next_tx_done = tx_done;
 	next_wait_for_ack = wait_for_ack;
 	next_reset_cnt = reset_cnt;
@@ -174,7 +191,6 @@ begin
 		begin
 			if (DIN^DOUT)
 			begin
-				next_tx_grant = 1;
 				next_addr = ADDR_IN;
 				next_data = DATA_IN;
 				next_mode = MODE_TX;
@@ -191,20 +207,15 @@ begin
 		ARBI_RESOLVED:
 		begin
 			next_state = DRIVE1;
-			if (tx_grant)
+			if (mode==MODE_TX)
 				next_out_reg = addr_bit_extract;
 		end
 
 		DRIVE1:
 		begin
 			next_state = LATCH1;
-			if ((addr_received==1)&&(mode==MODE_RX))
-			begin
-				if (address_match)
-					next_mode = MODE_RX;
-				else
-					next_mode = MODE_FWD;
-			end
+			if ((addr_received)&(~address_match))
+				next_mode = MODE_FWD;
 		end
 
 		LATCH1:
@@ -212,7 +223,7 @@ begin
 			case (mode)
 				MODE_TX:
 				begin
-					if (tx_grant & tx_done)
+					if ((~end_of_tx) & tx_done)
 						next_out_reg = 1;
 				end
 
@@ -222,9 +233,6 @@ begin
 						next_out_reg = 0;
 				end
 
-				default:
-				begin
-				end
 			endcase
 			next_state = DRIVE2;
 		end
@@ -232,8 +240,11 @@ begin
 		DRIVE2:
 		begin
 			next_state = LATCH2;
-			case ({tx_grant, tx_done})
-				2'b10:
+			if (mode==MODE_TX)
+			begin
+				if (tx_done)
+					next_end_of_tx = 1;
+				else
 				begin
 					if (bit_position)
 						next_bit_position = bit_position - 1;
@@ -245,95 +256,66 @@ begin
 							next_tx_done = 1;
 					end
 				end
-
-				2'b11:
-				begin
-					next_tx_grant = 0;
-				end
-
-				default:
-				begin
-				end
-
-			endcase
+			end
 		end
 
 		LATCH2:
 		begin
-			case ({tx_grant, tx_done})
-				// Drive End of Bit
-				2'b11:
+			case (mode)
+				MODE_TX:
 				begin
-					next_out_reg = 0;
-					next_state = DRIVE1;
+					case ({tx_done, end_of_tx})
+						2'b10:
+						begin
+							next_out_reg = 0;
+							next_state = DRIVE1;
+						end
+
+						2'b11:
+						begin
+							if (~wait_for_ack)
+							begin
+								next_wait_for_ack = 1;
+								next_state = DRIVE1;
+							end
+							else
+							begin
+								next_state = BUS_RESET;
+								// ACK/RESET received
+								if (input_buffer_xor)
+									next_ack_received = 1;
+							end
+						end
+
+						default:
+						begin
+							next_state = DRIVE1;
+							if (addr_done)
+								next_out_reg = data_bit_extract;
+							else
+								next_out_reg = addr_bit_extract;
+						end
+					endcase
 				end
 
-				// Drive Data
-				2'b10:
-				begin
-					if (addr_done)
-						next_out_reg = data_bit_extract;
-					else
-						next_out_reg = addr_bit_extract;
-					next_state = DRIVE1;
-				end
-
-				// Wait for ACK
-				2'b01:
-				begin
-					if (~wait_for_ack)
-					begin
-						next_wait_for_ack = 1;
-						next_state = DRIVE1;
-					end
-					else
-					begin
-						next_state = BUS_RESET;
-						// ACK/RESET received
-						if (input_buffer_xor)
-							next_ack_received = 1;
-					end
-				end
-
-				// Wait for RESET
-				2'b00:
+				MODE_RX:
 				begin
 					if (input_buffer_xor)
 					begin
-						case (mode)
-							MODE_RX:
-							begin
-								if (~rx_done)
-								begin
-									next_rx_done = 1;
-									next_out_reg = 1;
-									next_req_rx = 1;
-									next_state = DRIVE1;
-								end
-								else
-									next_state = BUS_RESET;
-							end
-
-							MODE_FWD:
-							begin
-								if (~fwd_done)
-								begin
-									next_fwd_done = 1;
-									next_state = DRIVE1;
-								end
-								else
-									next_state = BUS_RESET;
-							end
-						endcase
+						if (~rx_done)
+						begin
+							next_rx_done = 1;
+							next_out_reg = 1;
+							next_req_rx = 1;
+							next_state = DRIVE1;
+						end
+						else
+							next_state = BUS_RESET;
 					end
 					else
 					begin
-						if (fwd_done)
-							next_state = BUS_RESET;
-						else
-							next_state = DRIVE1;
-
-						if ((mode==MODE_RX)&&(rx_done==0))
+						next_state = DRIVE1;
+						if (~rx_done)
 						begin
 							if (rx_bit_counter)
 							begin
@@ -352,8 +334,19 @@ begin
 						end
 					end
 				end
-			endcase
 
+				MODE_FWD:
+				begin
+					if ((~fwd_done) & (input_buffer_xor))
+					begin
+						next_fwd_done = 1;
+						next_state = DRIVE1;
+					end
+					else if (fwd_done)
+						next_state = BUS_RESET;
+					
+				end
+			endcase
 			next_reset_cnt = RESET_CNT - 1;
 			
 		end
@@ -366,7 +359,7 @@ begin
 			begin
 				next_state = BUS_IDLE;
 				next_addr_done = 0;
-				next_tx_grant = 0;
+				next_end_of_tx = 0;
 				next_tx_done = 0;
 				next_wait_for_ack = 0;
 				next_addr_received = 0;

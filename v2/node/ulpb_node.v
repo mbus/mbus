@@ -109,6 +109,7 @@ end
 
 always @ *
 begin
+	DOUT = DIN;
 	case (state)
 		BUS_IDLE:
 		begin

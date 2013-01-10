@@ -7,16 +7,18 @@ input	RESET;
 input	DIN;
 output	DOUT;
 
-reg		CLK_OUT, DOUT, din_reg;
+reg		CLK_OUT, din_reg;
+wire	DOUT;
 
 parameter CLK_DIVIDOR = 10;
-parameter RESET_CYCLES = 7;
+parameter RESET_CYCLES = 9;
 parameter START_HALF_CYCLES = 6;
 
 reg		[log2(CLK_DIVIDOR-1):0] clk_cnt, next_clk_cnt;
 reg		[log2(RESET_CYCLES-1):0] reset_cycle_cnt, next_reset_cycle_cnt;
 reg		[1:0]	input_buffer, next_input_buffer;
 reg		clk_cnt_start, next_clk_cnt_start;
+reg		ctrl_hold, next_ctrl_hold;
 
 parameter BUS_IDLE = 0;
 parameter WAIT_FOR_START_POS = 1;
@@ -57,6 +59,7 @@ begin
 		clk_cnt_start <= 0;
 		input_buffer <= 0;
 		reset_cycle_cnt <= RESET_CYCLES - 1;
+		ctrl_hold <= 1;
 	end
 	else
 	begin
@@ -65,19 +68,21 @@ begin
 		clk_cnt_start <= next_clk_cnt_start;
 		input_buffer <= next_input_buffer; 
 		reset_cycle_cnt <= next_reset_cycle_cnt;
+		ctrl_hold <= next_ctrl_hold;
 	end
 end
+
+assign DOUT = (ctrl_hold)? 1 : din_reg;
 
 always @ *
 begin
 	CLK_OUT = 1;
-	DOUT = din_reg;
 	case (state)
-		BUS_IDLE: begin CLK_OUT = 1; DOUT = 1; end
-		WAIT_FOR_START_POS: begin CLK_OUT = 1; DOUT = 1; end
-		WAIT_FOR_START_NEG: begin CLK_OUT = 0; DOUT = 1; end
-		ARBI_RES_POS: begin CLK_OUT = 1; DOUT = 1; end
-		ARBI_RES_NEG: begin CLK_OUT = 0; DOUT = 1; end
+		BUS_IDLE: begin CLK_OUT = 1; end
+		WAIT_FOR_START_POS: begin CLK_OUT = 1; end
+		WAIT_FOR_START_NEG: begin CLK_OUT = 0; end
+		ARBI_RES_POS: begin CLK_OUT = 1; end
+		ARBI_RES_NEG: begin CLK_OUT = 0; end
 		DRIVE1_POS: begin CLK_OUT = 1; end
 		LATCH1_POS: begin CLK_OUT = 1; end
 		DRIVE1_NEG: begin CLK_OUT = 0; end
@@ -99,6 +104,7 @@ begin
 	next_clk_cnt_start = clk_cnt_start;
 	next_input_buffer = input_buffer;
 	next_reset_cycle_cnt = reset_cycle_cnt;
+	next_ctrl_hold = ctrl_hold;
 
 	if (clk_cnt_start)
 	begin
@@ -145,7 +151,10 @@ begin
 		ARBI_RES_NEG:
 		begin
 			if (clk_cnt==0)
+			begin
 				next_state = DRIVE1_POS;
+				next_ctrl_hold = 0;
+			end
 		end
 
 		DRIVE2_NEG:
@@ -219,6 +228,8 @@ begin
 				begin
 					next_reset_cycle_cnt = reset_cycle_cnt - 1;
 					next_state = BUS_RESET_POS;
+					if (reset_cycle_cnt==4)
+						next_ctrl_hold = 1;
 				end
 				else
 				begin

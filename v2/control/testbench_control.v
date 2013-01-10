@@ -56,9 +56,13 @@ begin
 		`SD IN = 1;
 	@ (posedge CLK_OUT)
 	@ (posedge CLK_OUT)
+		`SD IN = 0;
 	@ (posedge CLK_OUT)
 	@ (posedge CLK_OUT)
 	@ (posedge CLK_OUT)
+	@ (posedge CLK_OUT)
+	@ (posedge CLK_OUT)
+		`SD IN = 1;
 	#2000
 		$stop;
 end

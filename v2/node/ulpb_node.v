@@ -18,7 +18,7 @@ output	ACK_RECEIVED;
 reg		DOUT;
 
 parameter ADDRESS = 8'hab;
-parameter RESET_CNT = 2;
+parameter RESET_CNT = 4;
 
 parameter MODE_IDLE = 0;
 parameter MODE_TX = 1;
@@ -129,7 +129,7 @@ begin
 
 		BUS_RESET:
 		begin
-			DOUT = 1;
+			DOUT = DIN;
 		end
 
 		default:

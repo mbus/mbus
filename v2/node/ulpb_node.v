@@ -1,10 +1,11 @@
-module ulpb_node(CLK, RESET, DIN, DOUT, ADDR_IN, DATA_IN, REQ_TX, ACK_TX, ADDR_OUT, DATA_OUT, REQ_RX, ACK_RX, ACK_RECEIVED);
+module ulpb_node(CLK, RESET, DIN, DOUT, ADDR_IN, DATA_IN, LEN_IN, REQ_TX, ACK_TX, ADDR_OUT, DATA_OUT, REQ_RX, ACK_RX, ACK_RECEIVED);
 
 parameter ADDR_WIDTH=8;
 parameter DATA_WIDTH=32;
 input 	CLK, RESET, DIN;
 input	[ADDR_WIDTH-1:0] ADDR_IN;
 input	[DATA_WIDTH-1:0] DATA_IN;
+input	[1:0] LEN_IN;
 input	REQ_TX;
 output	ACK_TX;
 output	[ADDR_WIDTH-1:0] ADDR_OUT;
@@ -259,7 +260,27 @@ begin
 						next_bit_position = bit_position - 1;
 					else
 					begin
-						next_bit_position = DATA_WIDTH-1;
+						case (LEN_IN)
+							2'b00:
+							begin
+								next_bit_position = DATA_WIDTH-1;
+							end
+
+							2'b01:
+							begin
+								next_bit_position = (DATA_WIDTH>>2)-1;
+							end
+
+							2'b10:
+							begin
+								next_bit_position = (DATA_WIDTH>>1)-1;
+							end
+							
+							2'b11:
+							begin
+								next_bit_position = (DATA_WIDTH>>1)+(DATA_WIDTH>>2)-1;
+							end
+						endcase
 						next_addr_done = 1;
 						if (addr_done)
 							next_tx_done = 1;

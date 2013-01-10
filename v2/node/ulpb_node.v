@@ -44,11 +44,10 @@ reg		addr_done, next_addr_done;
 reg		end_of_tx, next_end_of_tx;
 reg		tx_released, next_tx_released;
 reg		tx_done, next_tx_done;
-reg		wait_for_ack, next_wait_for_ack;
 reg		[log2(RESET_CNT-1):0] reset_cnt, next_reset_cnt;
 reg		[1:0] input_buffer;
 reg		[ADDR_WIDTH-1:0] ADDR, next_addr, ADDR_OUT, next_addr_out;
-reg		[DATA_WIDTH-1:0] DATA, next_data, DATA_OUT, next_data_out;
+reg		[DATA_WIDTH-1:0] DATA, next_data, DATA_OUT, next_data_out, DATA_IN_REORDER;
 reg		addr_received, next_addr_received, rx_done, next_rx_done;
 reg		[1:0] mode, next_mode;
 reg		ACK_TX, next_ack_tx, REQ_RX, next_req_rx;
@@ -60,6 +59,7 @@ wire	data_bit_extract = (DATA & (1<<bit_position))? 1 : 0;
 wire	input_buffer_xor = input_buffer[0] ^ input_buffer[1];
 wire	address_match = (ADDR_OUT==ADDRESS)? 1 : 0;
 
+
 always @ (posedge CLK or negedge RESET)
 begin
 	if (~RESET)
@@ -70,7 +70,6 @@ begin
 		addr_done <= 0;
 		end_of_tx <= 0;
 		tx_done <= 0;
-		wait_for_ack <= 0;
 		reset_cnt <= RESET_CNT - 1;
 		ADDR <= 0;
 		DATA <= 0;
@@ -94,7 +93,6 @@ begin
 		addr_done <= next_addr_done;
 		end_of_tx <= next_end_of_tx;
 		tx_done <= next_tx_done;
-		wait_for_ack <= next_wait_for_ack;
 		reset_cnt <= next_reset_cnt;
 		ADDR <= next_addr;
 		DATA <= next_data;
@@ -171,7 +169,6 @@ begin
 	next_addr_done = addr_done;
 	next_end_of_tx = end_of_tx;
 	next_tx_done = tx_done;
-	next_wait_for_ack = wait_for_ack;
 	next_reset_cnt = reset_cnt;
 	next_addr = ADDR;
 	next_data = DATA;
@@ -199,7 +196,7 @@ begin
 			if (DIN^DOUT)
 			begin
 				next_addr = ADDR_IN;
-				next_data = DATA_IN;
+				next_data = DATA_IN_REORDER;
 				next_mode = MODE_TX;
 				next_ack_tx = 1;
 			end
@@ -262,24 +259,16 @@ begin
 					begin
 						case (LEN_IN)
 							2'b00:
-							begin
-								next_bit_position = DATA_WIDTH-1;
-							end
+							begin next_bit_position = DATA_WIDTH-1; end
 
 							2'b01:
-							begin
-								next_bit_position = (DATA_WIDTH>>2)-1;
-							end
+							begin next_bit_position = (DATA_WIDTH>>2)-1; end
 
 							2'b10:
-							begin
-								next_bit_position = (DATA_WIDTH>>1)-1;
-							end
+							begin next_bit_position = (DATA_WIDTH>>1)-1; end
 							
 							2'b11:
-							begin
-								next_bit_position = (DATA_WIDTH>>1)+(DATA_WIDTH>>2)-1;
-							end
+							begin next_bit_position = (DATA_WIDTH>>1)+(DATA_WIDTH>>2)-1; end
 						endcase
 						next_addr_done = 1;
 						if (addr_done)
@@ -304,15 +293,11 @@ begin
 						2'b11:
 						begin
 							next_tx_released = 1;
-							if (~wait_for_ack)
-							begin
-								next_wait_for_ack = 1;
+							if (~tx_released)
 								next_state = DRIVE1;
-							end
 							else
 							begin
 								next_state = BUS_RESET;
-								// ACK/RESET received
 								if (input_buffer_xor)
 									next_ack_received = 1;
 							end
@@ -392,7 +377,6 @@ begin
 				next_addr_done = 0;
 				next_end_of_tx = 0;
 				next_tx_done = 0;
-				next_wait_for_ack = 0;
 				next_addr_received = 0;
 				next_mode = MODE_IDLE;
 				next_rx_done = 0;
@@ -415,6 +399,17 @@ begin
 		if ((state==DRIVE1)||(state==DRIVE2))
 			input_buffer <= {input_buffer[0], DIN};
 	end
+end
+
+always @ *
+begin
+	DATA_IN_REORDER = DATA_IN;
+	case (LEN_IN)
+		2'b00: begin DATA_IN_REORDER = {DATA_IN[7:0], DATA_IN[15:8], DATA_IN[23:16], DATA_IN[31:24]}; end
+		2'b01: begin DATA_IN_REORDER = {24'b0, DATA_IN[7:0]}; end
+		2'b10: begin DATA_IN_REORDER = {16'b0, DATA_IN[7:0], DATA_IN[15:8]}; end
+		2'b11: begin DATA_IN_REORDER = {8'b0, DATA_IN[7:0], DATA_IN[15:8], DATA_IN[23:16]}; end
+	endcase
 end
 
 function integer log2;

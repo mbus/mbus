@@ -183,7 +183,6 @@ begin
 				// tx registers
 				next_addr = ADDR_IN;
 				next_data0 = DATA_IN0;
-				next_data1 = DATA_IN1;
 				next_mode = MODE_TX;
 				next_ack_tx = 1;
 				// interface registers
@@ -262,7 +261,16 @@ begin
 						if (addr_done)
 						begin
 							if (PENDING)
+							begin
 								next_word_indicator = ~WORD_INDICATOR;
+								// update data1 register
+								if (~WORD_INDICATOR)
+									next_data1 = DATA_IN1;
+								// update data0 register
+								else
+									next_data0 = DATA_IN0;
+
+							end
 							else
 								next_tx_done = 1;
 						end
@@ -301,6 +309,8 @@ begin
 									next_state = BUS_RESET;
 									if (input_buffer_xor)
 										next_ack_received = 1;
+									else
+										next_tx_fail = 1;
 								end
 							end
 
@@ -323,7 +333,6 @@ begin
 											next_out_reg = data1_bit_extract;
 									end
 									else
-									begin
 										next_out_reg = addr_bit_extract;
 								end
 							end
@@ -371,7 +380,7 @@ begin
 								if (addr_done)
 								begin
 									// OVERFLOW, PREPARE RESET BUS
-									if (req_rx)
+									if (REQ_RX)
 										next_rx_overflow = 1;
 									else
 									begin
@@ -462,7 +471,7 @@ begin
 			case (mode)
 				MODE_TX:
 				begin
-					if (~wait_for_ack)
+					if ((~wait_for_ack)&(~self_reset))
 						DOUT = out_reg;
 					else
 						DOUT = DIN;
@@ -470,7 +479,7 @@ begin
 
 				MODE_RX:
 				begin
-					if (rx_done)
+					if ((rx_done)&(~self_reset))
 						DOUT = out_reg;
 					else
 						DOUT = DIN;
@@ -483,7 +492,7 @@ begin
 			case (mode)
 				MODE_TX:
 				begin
-					if ((~end_of_tx) & tx_done)
+					if (((~end_of_tx)&tx_done)&(~self_reset))
 						DOUT = out_reg;
 					else
 						DOUT = DIN;
@@ -491,7 +500,7 @@ begin
 
 				MODE_RX:
 				begin
-					if ((rx_done)||(rx_overflow))
+					if (((rx_done)|(rx_overflow))&(~self_reset))
 						DOUT = out_reg;
 					else
 						DOUT = DIN;

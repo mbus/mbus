@@ -1,10 +1,13 @@
-module ulpb_node32(CLK, RESET, DIN, DOUT, ADDR_IN, DATA_IN0, DATA_IN1, PENDING, WORD_INDICATOR, REQ_TX, ACK_TX, ADDR_OUT, DATA_OUT, REQ_RX, ACK_RX, ACK_RECEIVED, TX_FAIL);
+module ulpb_node32(CLK, RESET, DIN, DOUT, ADDR_IN, DATA_IN, PENDING, DATA_LATCHED, REQ_TX, ACK_TX, ADDR_OUT, DATA_OUT, REQ_RX, ACK_RX, TX_FAIL, TX_SUCCESS, TX_ACK, BUSIDLE);
 
 parameter ADDR_WIDTH=8;
 parameter DATA_WIDTH=32;
+parameter ADDRESS = 8'hab;
+parameter ADDRESS_MASK=8'hff;
+
 input 	CLK, RESET, DIN;
 input	[ADDR_WIDTH-1:0] ADDR_IN;
-input	[DATA_WIDTH-1:0] DATA_IN0, DATA_IN1;
+input	[DATA_WIDTH-1:0] DATA_IN;
 input	PENDING;
 input	REQ_TX;
 output	ACK_TX;
@@ -13,13 +16,14 @@ output	[DATA_WIDTH-1:0] DATA_OUT;
 output	REQ_RX;
 input	ACK_RX;
 output	DOUT;
-output	ACK_RECEIVED;
+output	TX_SUCCESS;
 output	TX_FAIL;
-output	WORD_INDICATOR;
+input	TX_ACK;
+output	DATA_LATCHED;
+output	BUSIDLE;
 
 reg		DOUT;
 
-parameter ADDRESS = 8'hab;
 parameter RESET_CNT = 4;
 
 parameter MODE_IDLE = 0;
@@ -50,8 +54,9 @@ reg		self_reset, next_self_reset;
 // interface registers
 reg		ACK_TX, next_ack_tx;
 reg		REQ_RX, next_req_rx;
-reg		ACK_RECEIVED, next_ack_received;
 reg		TX_FAIL, next_tx_fail;
+reg		TX_SUCCESS, next_tx_success;
+reg		DATA_LATCHED, next_data_latched;
 reg		WORD_INDICATOR, next_word_indicator;
 
 // tx registers
@@ -72,7 +77,8 @@ wire	addr_bit_extract = (ADDR  & (1<<bit_position))? 1 : 0;
 wire	data0_bit_extract = (DATA0 & (1<<bit_position))? 1 : 0;
 wire	data1_bit_extract = (DATA1 & (1<<bit_position))? 1 : 0;
 wire	input_buffer_xor = input_buffer[0] ^ input_buffer[1];
-wire	address_match = (ADDR_OUT==ADDRESS)? 1 : 0;
+wire	address_match = ((ADDR_OUT^ADDRESS)&ADDRESS_MASK)? 0 : 1;
+wire	BUSIDLE = (state==BUS_IDLE)? 1 : 0;
 
 
 always @ (posedge CLK or negedge RESET)
@@ -90,8 +96,9 @@ begin
 		// interface registers
 		ACK_TX <= 0;
 		REQ_RX <= 0;
-		ACK_RECEIVED <= 0;
 		TX_FAIL <= 0;
+		TX_SUCCESS <= 0;
+		DATA_LATCHED <= 0;
 		WORD_INDICATOR <= 0;
 		// tx registers
 		ADDR <= 0;
@@ -120,9 +127,10 @@ begin
 		// interface registers
 		ACK_TX <= next_ack_tx;
 		REQ_RX <= next_req_rx;
-		ACK_RECEIVED <= next_ack_received;
 		TX_FAIL <= next_tx_fail;
+		TX_SUCCESS <= next_tx_success;
 		WORD_INDICATOR <= next_word_indicator;
+		DATA_LATCHED <= next_data_latched;
 		// tx registers
 		ADDR <= next_addr;
 		DATA0 <= next_data0;
@@ -152,9 +160,10 @@ begin
 	// interface registers
 	next_ack_tx = ACK_TX;
 	next_req_rx = REQ_RX;
-	next_ack_received = ACK_RECEIVED;
 	next_tx_fail = TX_FAIL;
+	next_tx_success = TX_SUCCESS;
 	next_word_indicator = WORD_INDICATOR;
+	next_data_latched = 0;
 	// tx registers
 	next_addr = ADDR;
 	next_data0 = DATA0;
@@ -175,6 +184,12 @@ begin
 	if (REQ_RX & ACK_RX)
 		next_req_rx = 0;
 
+	if (TX_ACK)
+	begin
+		next_tx_fail = 0;
+		next_tx_success = 0;
+	end
+
 	case (state)
 		BUS_IDLE:
 		begin
@@ -182,11 +197,11 @@ begin
 			begin
 				// tx registers
 				next_addr = ADDR_IN;
-				next_data0 = DATA_IN0;
+				next_data0 = DATA_IN;
 				next_mode = MODE_TX;
 				next_ack_tx = 1;
+				next_data_latched = 1;
 				// interface registers
-				next_tx_fail = 0;
 			end
 			else
 				next_mode = MODE_RX;
@@ -197,7 +212,6 @@ begin
 			next_addr_done = 0;
 			next_self_reset = 0;
 			// interface registers
-			next_ack_received = 0;
 			next_word_indicator = 0;
 			// tx registers
 			next_end_of_tx = 0;
@@ -263,12 +277,13 @@ begin
 							if (PENDING)
 							begin
 								next_word_indicator = ~WORD_INDICATOR;
+								next_data_latched = 1;
 								// update data1 register
 								if (~WORD_INDICATOR)
-									next_data1 = DATA_IN1;
+									next_data1 = DATA_IN;
 								// update data0 register
 								else
-									next_data0 = DATA_IN0;
+									next_data0 = DATA_IN;
 
 							end
 							else
@@ -308,7 +323,7 @@ begin
 								begin
 									next_state = BUS_RESET;
 									if (input_buffer_xor)
-										next_ack_received = 1;
+										next_tx_success = 1;
 									else
 										next_tx_fail = 1;
 								end

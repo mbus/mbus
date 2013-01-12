@@ -20,7 +20,7 @@ output	ACK_OUT_TO_LC;
 output	[ADDR_WIDTH-1:0] ADDR_OUT;
 output	[DATA_WIDTH-1:0] DATA_OUT;
 output	REQ_OUT_TO_LC;
-output	ACK_IN_FROM_LC;
+input	ACK_IN_FROM_LC;
 
 output	TX_FAIL;
 output	TX_SUCCESS;
@@ -32,22 +32,21 @@ reg		[ADDR_WIDTH+DATA_WIDTH-1:0] NODE_FIFO [DEPTH-1:0];
 reg		[log2(DEPTH-1):0] head, tail;
 wire	empty = (head==tail)? 1 : 0;
 wire	full = ((tail==0)&&(head==DEPTH-1))? 1 : (tail==head+1)? 1 : 0;
-wire	only_one_element = ((tail==DEPTH-1)&&(head==0))? 1 : (head==tail+1)? 1 : 0;
 wire	[log2(DEPTH-1):0] next_tail = (tail==DEPTH-1)? 0 : (tail+1);
+
+// state from ulpb
+wire	BUSIDLE;
 
 // ulpb control registers
 reg		PENDING;
-wire	[ADDR_WIDTH-1:0] ulpb_addr_in = NODE_FIFO[tail][ADDR_WIDTH+DATA_WIDTH-1:DATA_WIDTH];
-wire	[DATA_WIDTH-1:0] ulpb_data_in = NODE_FIFO[tail][DATA_WIDTH-1:0];
+wire	[ADDR_WIDTH-1:0] ulpb_addr_in = (BUSIDLE & empty)? ADDR_IN : NODE_FIFO[tail][ADDR_WIDTH+DATA_WIDTH-1:DATA_WIDTH];
+wire	[DATA_WIDTH-1:0] ulpb_data_in = (BUSIDLE & empty)? DATA_IN : NODE_FIFO[tail][DATA_WIDTH-1:0];
 wire	DATA_LATCHED;
 wire	ACK_TX;
 
 // interface registers
 reg		ACK_OUT_TO_LC;
 reg		REQ_TX, req_tx_reg;
-
-// state from ulpb
-wire	BUSIDLE;
 
 always @ (posedge CLK or negedge RESET)
 begin
@@ -91,7 +90,7 @@ begin
 	if (BUSIDLE)
 		REQ_TX = (~empty) | REQ_IN_FROM_LC;
 	else
-		if ((~req_tx_reg)&(ACK_TX))
+		if (req_tx_reg & ACK_TX)
 			REQ_TX = 0;
 end
 

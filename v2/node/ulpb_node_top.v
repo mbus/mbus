@@ -3,7 +3,7 @@ module ulpb_node_top(CLK, RESET, DIN, DOUT,
 					ADDR_OUT, DATA_OUT, REQ_OUT_TO_LC, ACK_IN_FROM_LC,
 					TX_FAIL, TX_SUCCESS, TX_ACK);
 
-`include "../include/ulpb_func.v"
+`include "include/ulpb_func.v"
 
 parameter ADDR_WIDTH=8;
 parameter DATA_WIDTH=32;

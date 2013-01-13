@@ -1,6 +1,6 @@
 module ulpb_node32(CLK, RESET, DIN, DOUT, ADDR_IN, DATA_IN, PENDING, DATA_LATCHED, REQ_TX, ACK_TX, ADDR_OUT, DATA_OUT, REQ_RX, ACK_RX, TX_FAIL, TX_SUCCESS, TX_ACK, BUSIDLE);
 
-`include "../include/ulpb_func.v"
+`include "include/ulpb_func.v"
 
 parameter ADDR_WIDTH=8;
 parameter DATA_WIDTH=32;

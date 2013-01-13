@@ -32,21 +32,29 @@ reg		[ADDR_WIDTH+DATA_WIDTH-1:0] NODE_FIFO [DEPTH-1:0];
 reg		[log2(DEPTH-1):0] head, tail;
 wire	empty = (head==tail)? 1 : 0;
 wire	full = ((tail==0)&&(head==DEPTH-1))? 1 : (tail==head+1)? 1 : 0;
-wire	[log2(DEPTH-1):0] next_tail = (tail==DEPTH-1)? 0 : (tail+1);
+wire	[log2(DEPTH-1):0] previous_tail = (tail==0)? DEPTH-1 : (tail-1);
 
 // state from ulpb
 wire	BUSIDLE;
 
 // ulpb control registers
 reg		PENDING;
-wire	[ADDR_WIDTH-1:0] ulpb_addr_in = (BUSIDLE & empty)? ADDR_IN : NODE_FIFO[tail][ADDR_WIDTH+DATA_WIDTH-1:DATA_WIDTH];
-wire	[DATA_WIDTH-1:0] ulpb_data_in = (BUSIDLE & empty)? DATA_IN : NODE_FIFO[tail][DATA_WIDTH-1:0];
+wire	[ADDR_WIDTH-1:0] ulpb_addr_in = (empty)? ADDR_IN : NODE_FIFO[tail][ADDR_WIDTH+DATA_WIDTH-1:DATA_WIDTH];
+wire	[DATA_WIDTH-1:0] ulpb_data_in = (empty)? DATA_IN : NODE_FIFO[tail][DATA_WIDTH-1:0];
 wire	DATA_LATCHED;
 wire	ACK_TX;
 
 // interface registers
 reg		ACK_OUT_TO_LC;
 reg		REQ_TX, req_tx_reg;
+
+// Simulation only, remove for synthesis
+integer k;
+initial
+begin
+	for (k=0; k<DEPTH; k=k+1)
+		NODE_FIFO[k] <= 0;
+end
 
 always @ (posedge CLK or negedge RESET)
 begin
@@ -97,7 +105,7 @@ end
 always @ *
 begin
 	PENDING = 0;
-	if ((NODE_FIFO[next_tail][ADDR_WIDTH+DATA_WIDTH-1:DATA_WIDTH]==ulpb_addr_in)&&(~empty))
+	if ((NODE_FIFO[previous_tail][ADDR_WIDTH+DATA_WIDTH-1:DATA_WIDTH]==ulpb_addr_in)&&(~empty))
 		PENDING = 1;
 end
 

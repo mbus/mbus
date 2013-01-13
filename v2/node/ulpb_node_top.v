@@ -3,6 +3,8 @@ module ulpb_node_top(CLK, RESET, DIN, DOUT,
 					ADDR_OUT, DATA_OUT, REQ_OUT_TO_LC, ACK_IN_FROM_LC,
 					TX_FAIL, TX_SUCCESS, TX_ACK);
 
+`include "../include/ulpb_func.v"
+
 parameter ADDR_WIDTH=8;
 parameter DATA_WIDTH=32;
 parameter ADDRESS=8'hab;
@@ -29,10 +31,10 @@ input	TX_ACK;
 parameter DEPTH = 8;
 // fifo registers
 reg		[ADDR_WIDTH+DATA_WIDTH-1:0] NODE_FIFO [DEPTH-1:0];
-reg		[log2(DEPTH-1):0] head, tail;
+reg		[log2(DEPTH-1)-1:0] head, tail;
 wire	empty = (head==tail)? 1 : 0;
 wire	full = ((tail==0)&&(head==DEPTH-1))? 1 : (tail==head+1)? 1 : 0;
-wire	[log2(DEPTH-1):0] previous_tail = (tail==0)? DEPTH-1 : (tail-1);
+wire	[log2(DEPTH-1)-1:0] previous_tail = (tail==0)? DEPTH-1 : (tail-1);
 
 // state from ulpb
 wire	BUSIDLE;
@@ -113,11 +115,5 @@ ulpb_node32 #(.ADDR_WIDTH(ADDR_WIDTH), .DATA_WIDTH(DATA_WIDTH), .ADDRESS(ADDRESS
 			(.CLK(CLK), .RESET(RESET), .DIN(DIN), .DOUT(DOUT), .BUSIDLE(BUSIDLE),
 			.ADDR_IN(ulpb_addr_in), .DATA_IN(ulpb_data_in), .PENDING(PENDING), .DATA_LATCHED(DATA_LATCHED), .REQ_TX(REQ_TX), .ACK_TX(ACK_TX), 
 			.ADDR_OUT(ADDR_OUT), .DATA_OUT(DATA_OUT), .REQ_RX(REQ_OUT_TO_LC), .ACK_RX(ACK_IN_FROM_LC), .TX_FAIL(TX_FAIL), .TX_SUCCESS(TX_SUCCESS), .TX_ACK(TX_ACK));
-
-function integer log2;
-	input [31:0] value;
-	for (log2=0; value>0; log2=log2+1)
-	value = value>>1;
-endfunction
 
 endmodule

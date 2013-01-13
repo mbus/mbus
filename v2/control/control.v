@@ -1,6 +1,8 @@
 
 module control(DIN, DOUT, RESET, CLK_OUT, CLK_IN);
 
+`include "../include/ulpb_func.v"
+
 input 	CLK_IN;
 output	CLK_OUT;
 input	RESET;
@@ -11,11 +13,11 @@ reg		CLK_OUT, din_reg;
 wire	DOUT;
 
 parameter CLK_DIVIDOR = 10;
-parameter RESET_CYCLES = 9;
+parameter RESET_CYCLES = 4;
 parameter START_HALF_CYCLES = 6;
 
-reg		[log2(CLK_DIVIDOR-1):0] clk_cnt, next_clk_cnt;
-reg		[log2(RESET_CYCLES-1):0] reset_cycle_cnt, next_reset_cycle_cnt;
+reg		[log2(CLK_DIVIDOR-1)-1:0] clk_cnt, next_clk_cnt;
+reg		[log2(RESET_CYCLES-1)-1:0] reset_cycle_cnt, next_reset_cycle_cnt;
 reg		[1:0]	input_buffer, next_input_buffer;
 reg		clk_cnt_start, next_clk_cnt_start;
 reg		ctrl_hold, next_ctrl_hold;
@@ -40,6 +42,7 @@ parameter BUS_DISABLE = 15;
 parameter NUM_OF_STATES = 16;
 
 reg		[log2(NUM_OF_STATES-1):0] state, next_state;
+reg		[1:0] bus_reset, next_bus_reset;
 wire input_buffer_xor = input_buffer[0] ^ input_buffer[1];
 
 always @ (posedge CLK_IN or negedge RESET)
@@ -60,6 +63,7 @@ begin
 		input_buffer <= 0;
 		reset_cycle_cnt <= RESET_CYCLES - 1;
 		ctrl_hold <= 1;
+		bus_reset <= 0;
 	end
 	else
 	begin
@@ -69,6 +73,7 @@ begin
 		input_buffer <= next_input_buffer; 
 		reset_cycle_cnt <= next_reset_cycle_cnt;
 		ctrl_hold <= next_ctrl_hold;
+		bus_reset <= next_bus_reset;
 	end
 end
 
@@ -105,6 +110,7 @@ begin
 	next_input_buffer = input_buffer;
 	next_reset_cycle_cnt = reset_cycle_cnt;
 	next_ctrl_hold = ctrl_hold;
+	next_bus_reset = bus_reset;
 
 	if (clk_cnt_start)
 	begin
@@ -123,6 +129,7 @@ begin
 				next_clk_cnt_start = 1;
 			end
 			next_reset_cycle_cnt = START_HALF_CYCLES - 1;
+			next_bus_reset = 0;
 		end
 
 		WAIT_FOR_START_POS:
@@ -155,30 +162,6 @@ begin
 				next_state = DRIVE1_POS;
 				next_ctrl_hold = 0;
 			end
-		end
-
-		DRIVE2_NEG:
-		begin
-			if (clk_cnt==0)
-			begin
-				next_state = LATCH2_POS;
-				next_input_buffer = {input_buffer[0], din_reg};
-			end
-		end
-
-		LATCH2_POS:
-		begin
-			next_reset_cycle_cnt = RESET_CYCLES - 1;
-			if (input_buffer_xor)
-				next_state = BUS_RESET_POS;
-			else if (clk_cnt==0)
-				next_state = LATCH2_NEG;
-		end
-
-		LATCH2_NEG:
-		begin
-			if (clk_cnt==0)
-				next_state = DRIVE1_POS;
 		end
 
 		DRIVE1_POS:
@@ -214,6 +197,43 @@ begin
 				next_state = DRIVE2_NEG;
 		end
 
+
+		DRIVE2_NEG:
+		begin
+			if (clk_cnt==0)
+			begin
+				next_state = LATCH2_POS;
+				next_input_buffer = {input_buffer[0], din_reg};
+			end
+
+			if (bus_reset==2'b01)
+				next_bus_reset = 2'b10;
+		end
+
+		LATCH2_POS:
+		begin
+			next_reset_cycle_cnt = RESET_CYCLES - 1;
+
+			if (bus_reset==0)
+				if (input_buffer_xor)
+					next_bus_reset = 2'b01;
+
+			if (clk_cnt==0)
+				next_state = LATCH2_NEG;
+		end
+
+		LATCH2_NEG:
+		begin
+			if (clk_cnt==0)
+				if (bus_reset==2'b10)
+				begin
+					next_state = BUS_RESET_POS;
+					next_ctrl_hold = 1;
+				end
+				else
+					next_state = DRIVE1_POS;
+		end
+
 		BUS_RESET_POS:
 		begin
 			if (clk_cnt==0)
@@ -228,8 +248,6 @@ begin
 				begin
 					next_reset_cycle_cnt = reset_cycle_cnt - 1;
 					next_state = BUS_RESET_POS;
-					if (reset_cycle_cnt==4)
-						next_ctrl_hold = 1;
 				end
 				else
 				begin
@@ -255,11 +273,5 @@ begin
 		end
 	endcase
 end
-
-function integer log2;
-	input [31:0] value;
-	for (log2=0; value>0; log2=log2+1)
-	value = value>>1;
-endfunction
 
 endmodule

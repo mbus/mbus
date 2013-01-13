@@ -1,5 +1,7 @@
 module ulpb_node32(CLK, RESET, DIN, DOUT, ADDR_IN, DATA_IN, PENDING, DATA_LATCHED, REQ_TX, ACK_TX, ADDR_OUT, DATA_OUT, REQ_RX, ACK_RX, TX_FAIL, TX_SUCCESS, TX_ACK, BUSIDLE);
 
+`include "../include/ulpb_func.v"
+
 parameter ADDR_WIDTH=8;
 parameter DATA_WIDTH=32;
 parameter ADDRESS = 8'hab;
@@ -42,9 +44,9 @@ parameter BUS_RESET = 6;
 parameter NUM_OF_STATE = 7;
 
 // general registers
-reg		[log2(NUM_OF_STATE-1):0] state, next_state;
-reg		[log2(RESET_CNT-1):0] reset_cnt, next_reset_cnt;
-reg		[log2(DATA_WIDTH-1):0] bit_position, next_bit_position; 
+reg		[log2(NUM_OF_STATE-1)-1:0] state, next_state;
+reg		[log2(RESET_CNT-1)-1:0] reset_cnt, next_reset_cnt;
+reg		[log2(DATA_WIDTH-1)-1:0] bit_position, next_bit_position; 
 reg		addr_done, next_addr_done;
 reg		[1:0] input_buffer;
 reg		out_reg, next_out_reg;
@@ -564,11 +566,5 @@ begin
 			input_buffer <= {input_buffer[0], DIN};
 	end
 end
-
-function integer log2;
-	input [31:0] value;
-	for (log2=0; value>0; log2=log2+1)
-	value = value>>1;
-endfunction
 
 endmodule

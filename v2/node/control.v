@@ -41,7 +41,7 @@ parameter BUS_DISABLE = 15;
 
 parameter NUM_OF_STATES = 16;
 
-reg		[log2(NUM_OF_STATES-1):0] state, next_state;
+reg		[log2(NUM_OF_STATES-1)-1:0] state, next_state;
 reg		[1:0] bus_reset, next_bus_reset;
 wire input_buffer_xor = input_buffer[0] ^ input_buffer[1];
 

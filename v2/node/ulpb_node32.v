@@ -70,7 +70,8 @@ reg		wait_for_ack, next_wait_for_ack;
 
 // rx registers
 reg		[ADDR_WIDTH-1:0] ADDR_OUT, next_addr_out;
-reg		[DATA_WIDTH-1:0] DATA_OUT, next_data_out, data_out_buf, next_data_out_buf;
+reg		[DATA_WIDTH-1:0] DATA_OUT, next_data_out; 
+reg		[DATA_WIDTH-2:0] data_out_buf, next_data_out_buf;
 reg		rx_done, next_rx_done; 
 reg		rx_overflow, next_rx_overflow;
 

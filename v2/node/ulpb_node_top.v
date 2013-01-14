@@ -65,10 +65,12 @@ begin
 		head <= 0;
 		tail <= 0;
 		ACK_OUT_TO_LC <= 0;
+		for (k=0; k<DEPTH; k=k+1)
+			NODE_FIFO[k] <= 0;
 	end
 	else
 	begin
-		if (REQ_IN_FROM_LC)
+		if (REQ_IN_FROM_LC & (~ACK_OUT_TO_LC))
 		begin
 			if (~full)
 			begin
@@ -78,7 +80,7 @@ begin
 			end
 		end
 
-		if (ACK_OUT_TO_LC & (~REQ_IN_FROM_LC))
+		if ((~REQ_IN_FROM_LC) & ACK_OUT_TO_LC)
 			ACK_OUT_TO_LC <= 0;
 
 		if (DATA_LATCHED)

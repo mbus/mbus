@@ -70,21 +70,30 @@ begin
 	end
 	else
 	begin
-		if (REQ_IN_FROM_LC & (~ACK_OUT_TO_LC))
+		if (TX_FAIL)
 		begin
-			if (~full)
-			begin
-				NODE_FIFO[head] <= {ADDR_IN, DATA_IN};
-				head <= head + 1;
-				ACK_OUT_TO_LC <= 1;
-			end
-		end
-
-		if ((~REQ_IN_FROM_LC) & ACK_OUT_TO_LC)
+			head <= 0;
+			tail <= 0;
 			ACK_OUT_TO_LC <= 0;
+		end
+		else
+		begin
+			if (REQ_IN_FROM_LC & (~ACK_OUT_TO_LC))
+			begin
+				if (~full)
+				begin
+					NODE_FIFO[head] <= {ADDR_IN, DATA_IN};
+					head <= head + 1;
+					ACK_OUT_TO_LC <= 1;
+				end
+			end
 
-		if (DATA_LATCHED)
-			tail <= tail + 1;
+			if ((~REQ_IN_FROM_LC) & ACK_OUT_TO_LC)
+				ACK_OUT_TO_LC <= 0;
+
+			if (DATA_LATCHED)
+				tail <= tail + 1;
+		end
 	end
 end
 
@@ -93,7 +102,12 @@ begin
 	if (~RESET)
 		req_tx_reg <= 0;
 	else
-		req_tx_reg <= REQ_TX;
+	begin
+		if (TX_FAIL)
+			req_tx_reg <= 0;
+		else
+			req_tx_reg <= REQ_TX;
+	end
 end
 
 always @ *

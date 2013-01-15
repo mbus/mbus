@@ -398,7 +398,7 @@ begin
 								if (addr_done)
 								begin
 									// OVERFLOW, PREPARE RESET BUS
-									if (REQ_RX)
+									if (REQ_RX | ACK_RX)
 										next_rx_overflow = 1;
 									else
 									begin

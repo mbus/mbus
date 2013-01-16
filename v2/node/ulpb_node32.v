@@ -59,11 +59,10 @@ reg		REQ_RX, next_req_rx;
 reg		TX_FAIL, next_tx_fail;
 reg		TX_SUCCESS, next_tx_success;
 reg		DATA_LATCHED, next_data_latched;
-reg		WORD_INDICATOR, next_word_indicator;
 
 // tx registers
 reg		[ADDR_WIDTH-1:0] ADDR, next_addr;
-reg		[DATA_WIDTH-1:0] DATA0, next_data0, DATA1, next_data1;
+reg		[DATA_WIDTH-1:0] DATA0, next_data0;
 reg		end_of_tx, next_end_of_tx;
 reg		tx_done, next_tx_done;
 reg		wait_for_ack, next_wait_for_ack;
@@ -78,7 +77,6 @@ reg		rx_overflow, next_rx_overflow;
 
 wire	addr_bit_extract = (ADDR  & (1<<bit_position))? 1 : 0;
 wire	data0_bit_extract = (DATA0 & (1<<bit_position))? 1 : 0;
-wire	data1_bit_extract = (DATA1 & (1<<bit_position))? 1 : 0;
 wire	input_buffer_xor = input_buffer[0] ^ input_buffer[1];
 wire	address_match = ((ADDR_OUT^ADDRESS)&ADDRESS_MASK)? 0 : 1;
 wire	BUSIDLE = (state==BUS_IDLE)? 1 : 0;
@@ -102,11 +100,9 @@ begin
 		TX_FAIL <= 0;
 		TX_SUCCESS <= 0;
 		DATA_LATCHED <= 0;
-		WORD_INDICATOR <= 0;
 		// tx registers
 		ADDR <= 0;
 		DATA0 <= 0;
-		DATA1 <= 0;
 		end_of_tx <= 0;
 		tx_done <= 0;
 		wait_for_ack <= 0;
@@ -132,12 +128,10 @@ begin
 		REQ_RX <= next_req_rx;
 		TX_FAIL <= next_tx_fail;
 		TX_SUCCESS <= next_tx_success;
-		WORD_INDICATOR <= next_word_indicator;
 		DATA_LATCHED <= next_data_latched;
 		// tx registers
 		ADDR <= next_addr;
 		DATA0 <= next_data0;
-		DATA1 <= next_data1;
 		end_of_tx <= next_end_of_tx;
 		tx_done <= next_tx_done;
 		wait_for_ack <= next_wait_for_ack;
@@ -165,12 +159,10 @@ begin
 	next_req_rx = REQ_RX;
 	next_tx_fail = TX_FAIL;
 	next_tx_success = TX_SUCCESS;
-	next_word_indicator = WORD_INDICATOR;
 	next_data_latched = 0;
 	// tx registers
 	next_addr = ADDR;
 	next_data0 = DATA0;
-	next_data1 = DATA1;
 	next_end_of_tx = end_of_tx;
 	next_tx_done = tx_done;
 	next_wait_for_ack = wait_for_ack;
@@ -215,7 +207,6 @@ begin
 			next_addr_done = 0;
 			next_self_reset = 0;
 			// interface registers
-			next_word_indicator = 0;
 			// tx registers
 			next_end_of_tx = 0;
 			next_tx_done = 0;
@@ -279,15 +270,8 @@ begin
 						begin
 							if (PENDING)
 							begin
-								next_word_indicator = ~WORD_INDICATOR;
 								next_data_latched = 1;
-								// update data1 register
-								if (~WORD_INDICATOR)
-									next_data1 = DATA_IN;
-								// update data0 register
-								else
-									next_data0 = DATA_IN;
-
+								next_data0 = DATA_IN;
 							end
 							else
 								next_tx_done = 1;
@@ -345,10 +329,7 @@ begin
 								begin
 									if (addr_done)
 									begin
-										if (~WORD_INDICATOR)
-											next_out_reg = data0_bit_extract;
-										else
-											next_out_reg = data1_bit_extract;
+										next_out_reg = data0_bit_extract;
 									end
 									else
 										next_out_reg = addr_bit_extract;

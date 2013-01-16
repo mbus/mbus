@@ -49,6 +49,7 @@ parameter TASK1 = 3;
 parameter TASK2 = 4;
 parameter TASK3 = 5;
 parameter TASK4 = 6;
+parameter TASK5 = 7;
 
 initial
 begin
@@ -102,141 +103,16 @@ begin
 		n0_state = TASK4;
 	@(posedge n0_tx_success or n0_tx_fail)
 	@(posedge n0_tx_success or n0_tx_fail)
-	/*
-	// Stream test, fast data
+
 	#10000
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'haa11bb22;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(negedge n0_ack_out_to_lc)
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'h01234567;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(negedge n0_ack_out_to_lc)
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'ha0b1c2d3;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(negedge n0_ack_out_to_lc)
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'habcdef12;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(negedge n0_ack_out_to_lc)
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'habcdef34;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(negedge n0_ack_out_to_lc)
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'habcdef56;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(negedge n0_ack_out_to_lc)
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'habcdef78;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(negedge n0_ack_out_to_lc)
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'habcdef90;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(negedge n0_ack_out_to_lc)
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'habcdef12;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(negedge n0_ack_out_to_lc)
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'habcdef34;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(negedge n0_ack_out_to_lc)
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'habcdef56;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(negedge n0_ack_out_to_lc)
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'habcdef78;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(negedge n0_ack_out_to_lc)
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'habcdef90;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(negedge n0_ack_out_to_lc)
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'habcdef12;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(negedge n0_ack_out_to_lc)
-		n0_addr_in = 8'hef;
-		n0_data_in = 32'habcdef34;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(negedge n0_ack_out_to_lc)
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'habcdef56;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(posedge n0_tx_success)
-	@(posedge n0_tx_success)
-	@(posedge n0_tx_success)
-
-	// overflow test,
-	#10000
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'haa11bb22;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
-
-	@(negedge n0_ack_out_to_lc)
-		n0_addr_in = 8'hcd;
-		n0_data_in = 32'h01234567;
-		n0_req_in_from_lc = 1;
-	@(posedge n0_ack_out_to_lc)
-		n0_req_in_from_lc = 0;
 		n1_ack_en = 0;
-	@(posedge n0_tx_fail)
-*/
+		n0_state = TASK5;
+	@(posedge n0_tx_success or n0_tx_fail)
+		n1_ack_en = 1;
+
+	#10000
+		n0_state = TASK0;
+	@(posedge n0_tx_success or n0_tx_fail)
 
 	#10000
 		$stop;
@@ -354,6 +230,26 @@ begin
 						n0_addr_in <= 8'hef;
 				end
 			end
+
+			// fail test
+			TASK5:
+			begin
+				n0_addr_in <= 8'hcd;
+				if ((~n0_ack_out_to_lc) & (~n0_req_in_from_lc))
+				begin
+					n0_data_in <= random_input;
+					n0_req_in_from_lc <= 1;
+   					$fdisplay(handle, "N0 Data in =\t32'h%h", random_input);
+					if (words_counter<7)
+						words_counter <= words_counter + 1;
+					else
+					begin
+						n0_state <= TASK_WAIT;
+						words_counter <= 0;
+					end
+				end
+			end
+
 
 
 			TASK_WAIT:

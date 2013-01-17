@@ -1,4 +1,4 @@
-module ulpb_node32(CLK, RESET, DIN, DOUT, ADDR_IN, DATA_IN, PENDING, DATA_LATCHED, REQ_TX, ACK_TX, ADDR_OUT, DATA_OUT, REQ_RX, ACK_RX, TX_FAIL, TX_SUCCESS, TX_ACK, BUSIDLE);
+module ulpb_node32(CLK, RESET, DIN, DOUT, TX_ADDR, TX_DATA, TX_PEND, TX_REQ, TX_ACK, RX_ADDR, RX_DATA, RX_REQ, RX_ACK, TX_FAIL, TX_SUCC, TX_RESP_ACK, BUSIDLE);
 
 `include "include/ulpb_func.v"
 
@@ -8,20 +8,24 @@ parameter ADDRESS = 8'hab;
 parameter ADDRESS_MASK=8'hff;
 
 input 	CLK, RESET, DIN;
-input	[ADDR_WIDTH-1:0] ADDR_IN;
-input	[DATA_WIDTH-1:0] DATA_IN;
-input	PENDING;
-input	REQ_TX;
-output	ACK_TX;
-output	[ADDR_WIDTH-1:0] ADDR_OUT;
-output	[DATA_WIDTH-1:0] DATA_OUT;
-output	REQ_RX;
-input	ACK_RX;
 output	DOUT;
-output	TX_SUCCESS;
+
+input	[ADDR_WIDTH-1:0] TX_ADDR;
+input	[DATA_WIDTH-1:0] TX_DATA;
+input	TX_REQ;
+output	TX_ACK;
+input	TX_PEND;
+
+output	TX_SUCC;
 output	TX_FAIL;
-input	TX_ACK;
-output	DATA_LATCHED;
+input	TX_RESP_ACK;
+
+output	[ADDR_WIDTH-1:0] RX_ADDR;
+output	[DATA_WIDTH-1:0] RX_DATA;
+output	RX_REQ;
+input	RX_ACK;
+output	RX_PEND;
+
 output	BUSIDLE;
 
 reg		DOUT;
@@ -54,23 +58,23 @@ reg		[1:0] mode, next_mode;
 reg		self_reset, next_self_reset;
 
 // interface registers
-reg		ACK_TX, next_ack_tx;
-reg		REQ_RX, next_req_rx;
+reg		TX_ACK, next_tx_ack;
+reg		RX_REQ, next_rx_req;
 reg		TX_FAIL, next_tx_fail;
-reg		TX_SUCCESS, next_tx_success;
-reg		DATA_LATCHED, next_data_latched;
+reg		TX_SUCC, next_tx_success;
 
 // tx registers
 reg		[ADDR_WIDTH-1:0] ADDR, next_addr;
 reg		[DATA_WIDTH-1:0] DATA0, next_data0;
-reg		end_of_tx, next_end_of_tx;
+reg		tx_end_of_trans, next_tx_end_of_trans;
 reg		tx_done, next_tx_done;
-reg		wait_for_ack, next_wait_for_ack;
+reg		tx_wait_for_ack, next_tx_wait_for_ack;
+reg		tx_underflow, next_tx_underflow;
 
 // rx registers
-reg		[ADDR_WIDTH-1:0] ADDR_OUT, next_addr_out;
-reg		[DATA_WIDTH-1:0] DATA_OUT, next_data_out; 
-reg		[DATA_WIDTH-2:0] data_out_buf, next_data_out_buf;
+reg		[ADDR_WIDTH-1:0] RX_ADDR, next_rx_addr;
+reg		[DATA_WIDTH-1:0] RX_DATA, next_rx_data; 
+reg		[DATA_WIDTH-2:0] rx_data_out_buf, next_rx_data_buf;
 reg		rx_done, next_rx_done; 
 reg		rx_overflow, next_rx_overflow;
 
@@ -78,9 +82,8 @@ reg		rx_overflow, next_rx_overflow;
 wire	addr_bit_extract = (ADDR  & (1<<bit_position))? 1 : 0;
 wire	data0_bit_extract = (DATA0 & (1<<bit_position))? 1 : 0;
 wire	input_buffer_xor = input_buffer[0] ^ input_buffer[1];
-wire	address_match = ((ADDR_OUT^ADDRESS)&ADDRESS_MASK)? 0 : 1;
+wire	address_match = ((RX_ADDR^ADDRESS)&ADDRESS_MASK)? 0 : 1;
 wire	BUSIDLE = (state==BUS_IDLE)? 1 : 0;
-
 
 always @ (posedge CLK or negedge RESET)
 begin
@@ -95,21 +98,21 @@ begin
 		mode <= MODE_IDLE;
 		self_reset <= 0;
 		// interface registers
-		ACK_TX <= 0;
-		REQ_RX <= 0;
+		TX_ACK <= 0;
+		RX_REQ <= 0;
 		TX_FAIL <= 0;
-		TX_SUCCESS <= 0;
-		DATA_LATCHED <= 0;
+		TX_SUCC <= 0;
 		// tx registers
 		ADDR <= 0;
 		DATA0 <= 0;
-		end_of_tx <= 0;
+		tx_end_of_trans <= 0;
 		tx_done <= 0;
-		wait_for_ack <= 0;
+		tx_wait_for_ack <= 0;
+		tx_underflow <= 0;
 		// rx registers
-		ADDR_OUT <= 0;
-		DATA_OUT <= 0;
-		data_out_buf <= 0;
+		RX_ADDR <= 0;
+		RX_DATA <= 0;
+		rx_data_out_buf <= 0;
 		rx_done <= 0;
 		rx_overflow <= 0;
 	end
@@ -124,21 +127,21 @@ begin
 		mode <= next_mode;
 		self_reset <= next_self_reset;
 		// interface registers
-		ACK_TX <= next_ack_tx;
-		REQ_RX <= next_req_rx;
+		TX_ACK <= next_tx_ack;
+		RX_REQ <= next_rx_req;
 		TX_FAIL <= next_tx_fail;
-		TX_SUCCESS <= next_tx_success;
-		DATA_LATCHED <= next_data_latched;
+		TX_SUCC <= next_tx_success;
 		// tx registers
 		ADDR <= next_addr;
 		DATA0 <= next_data0;
-		end_of_tx <= next_end_of_tx;
+		tx_end_of_trans <= next_tx_end_of_trans;
 		tx_done <= next_tx_done;
-		wait_for_ack <= next_wait_for_ack;
+		tx_wait_for_ack <= next_tx_wait_for_ack;
+		tx_underflow <= next_tx_underflow;
 		// rx registers
-		ADDR_OUT <= next_addr_out;
-		DATA_OUT <= next_data_out;
-		data_out_buf <= next_data_out_buf;
+		RX_ADDR <= next_rx_addr;
+		RX_DATA <= next_rx_data;
+		rx_data_out_buf <= next_rx_data_buf;
 		rx_done <= next_rx_done;
 		rx_overflow <= next_rx_overflow;
 	end
@@ -155,31 +158,31 @@ begin
 	next_mode = mode;
 	next_self_reset = self_reset;
 	// interface registers
-	next_ack_tx = ACK_TX;
-	next_req_rx = REQ_RX;
+	next_tx_ack = TX_ACK;
+	next_rx_req = RX_REQ;
 	next_tx_fail = TX_FAIL;
-	next_tx_success = TX_SUCCESS;
-	next_data_latched = 0;
+	next_tx_success = TX_SUCC;
 	// tx registers
 	next_addr = ADDR;
 	next_data0 = DATA0;
-	next_end_of_tx = end_of_tx;
+	next_tx_end_of_trans = tx_end_of_trans;
 	next_tx_done = tx_done;
-	next_wait_for_ack = wait_for_ack;
+	next_tx_wait_for_ack = tx_wait_for_ack;
+	next_tx_underflow = tx_underflow;
 	// rx registers
-	next_addr_out = ADDR_OUT;
-	next_data_out = DATA_OUT;
-	next_data_out_buf = data_out_buf;
+	next_rx_addr = RX_ADDR;
+	next_rx_data = RX_DATA;
+	next_rx_data_buf = rx_data_out_buf;
 	next_rx_done = rx_done;
 	next_rx_overflow = rx_overflow;
 
-	if (ACK_TX & (~REQ_TX))
-		next_ack_tx = 0;
+	if (TX_ACK & (~TX_REQ))
+		next_tx_ack = 0;
 	
-	if (REQ_RX & ACK_RX)
-		next_req_rx = 0;
+	if (RX_REQ & RX_ACK)
+		next_rx_req = 0;
 
-	if (TX_ACK)
+	if (TX_RESP_ACK)
 	begin
 		next_tx_fail = 0;
 		next_tx_success = 0;
@@ -191,11 +194,10 @@ begin
 			if (DIN^DOUT)
 			begin
 				// tx registers
-				next_addr = ADDR_IN;
-				next_data0 = DATA_IN;
+				next_addr = TX_ADDR;
+				next_data0 = TX_DATA;
 				next_mode = MODE_TX;
-				next_ack_tx = 1;
-				next_data_latched = 1;
+				next_tx_ack = 1;
 				// interface registers
 			end
 			else
@@ -208,9 +210,10 @@ begin
 			next_self_reset = 0;
 			// interface registers
 			// tx registers
-			next_end_of_tx = 0;
+			next_tx_end_of_trans = 0;
 			next_tx_done = 0;
-			next_wait_for_ack = 0;
+			next_tx_wait_for_ack = 0;
+			next_tx_underflow = 0;
 			// rx registers
 			next_rx_done = 0;
 			next_rx_overflow = 0;
@@ -235,7 +238,7 @@ begin
 			case (mode)
 				MODE_TX:
 				begin
-					if ((~end_of_tx) & tx_done)
+					if ((~tx_end_of_trans) & tx_done)
 						next_out_reg = 1;
 				end
 
@@ -257,7 +260,7 @@ begin
 			if (mode==MODE_TX)
 			begin
 				if (tx_done)
-					next_end_of_tx = 1;
+					next_tx_end_of_trans = 1;
 				else
 				begin
 					if (bit_position)
@@ -268,10 +271,18 @@ begin
 						next_addr_done = 1;
 						if (addr_done)
 						begin
-							if (PENDING)
+							if (TX_PEND)
 							begin
-								next_data_latched = 1;
-								next_data0 = DATA_IN;
+								if (TX_REQ)
+								begin
+									next_data0 = TX_DATA;
+									next_tx_ack = 1;
+								end
+								else
+								begin
+									next_tx_underflow = 1;
+									next_tx_done = 1;
+								end
 							end
 							else
 								next_tx_done = 1;
@@ -290,7 +301,7 @@ begin
 						next_state = BUS_RESET;
 					else
 					begin
-						case ({tx_done, end_of_tx})
+						case ({tx_done, tx_end_of_trans})
 							// DRIVE End of Bit
 							2'b10:
 							begin
@@ -303,13 +314,13 @@ begin
 
 							2'b11:
 							begin
-								next_wait_for_ack = 1;
-								if (~wait_for_ack)
+								next_tx_wait_for_ack = 1;
+								if (~tx_wait_for_ack)
 									next_state = DRIVE1;
 								else
 								begin
 									next_state = BUS_RESET;
-									if (input_buffer_xor)
+									if (input_buffer_xor & (~tx_underflow))
 										next_tx_success = 1;
 									else
 										next_tx_fail = 1;
@@ -379,20 +390,20 @@ begin
 								if (addr_done)
 								begin
 									// OVERFLOW, PREPARE RESET BUS
-									if (REQ_RX | ACK_RX)
+									if (RX_REQ | RX_ACK)
 										next_rx_overflow = 1;
 									else
 									begin
-										next_data_out = {data_out_buf[DATA_WIDTH-2:0], input_buffer[0]};
-										next_req_rx = 1;
+										next_rx_data = {rx_data_out_buf[DATA_WIDTH-2:0], input_buffer[0]};
+										next_rx_req = 1;
 									end
 								end
 							end
 
 							if (~addr_done)
-								next_addr_out = {ADDR_OUT[ADDR_WIDTH-2:0], input_buffer[0]};
+								next_rx_addr = {RX_ADDR[ADDR_WIDTH-2:0], input_buffer[0]};
 							else
-								next_data_out_buf = {data_out_buf[DATA_WIDTH-2:0], input_buffer[0]};
+								next_rx_data_buf = {rx_data_out_buf[DATA_WIDTH-2:0], input_buffer[0]};
 						end
 					end
 				end
@@ -433,7 +444,7 @@ begin
 	case (state)
 		BUS_IDLE:
 		begin
-			DOUT = ((~REQ_TX) & DIN);
+			DOUT = ((~TX_REQ) & DIN);
 		end
 
 		ARBI_RESOLVED:
@@ -449,7 +460,7 @@ begin
 			case (mode)
 				MODE_TX:
 				begin
-					if (~wait_for_ack)
+					if (~tx_wait_for_ack)
 						DOUT = out_reg;
 					else
 						DOUT = DIN;
@@ -470,7 +481,7 @@ begin
 			case (mode)
 				MODE_TX:
 				begin
-					if ((~wait_for_ack)&(~self_reset))
+					if ((~tx_wait_for_ack)&(~self_reset))
 						DOUT = out_reg;
 					else
 						DOUT = DIN;
@@ -491,7 +502,7 @@ begin
 			case (mode)
 				MODE_TX:
 				begin
-					if (((~end_of_tx)&tx_done)&(~self_reset))
+					if (((~tx_end_of_trans)&tx_done)&(~self_reset))
 						DOUT = out_reg;
 					else
 						DOUT = DIN;
@@ -512,7 +523,7 @@ begin
 			case (mode)
 				MODE_TX:
 				begin
-					if ((~end_of_tx) & tx_done)
+					if ((~tx_end_of_trans) & tx_done)
 						DOUT = out_reg;
 					else
 						DOUT = DIN;

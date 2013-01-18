@@ -41,17 +41,20 @@ parameter TASK6=7;
 
 control c0(.DIN(w_n2c0), .DOUT(w_c0n0), .RESET(resetn), .CLK_OUT(SCLK), .CLK_IN(clk));
 
-ulpb_node32 #(.ADDRESS(8'hab)) n0(.CLK(SCLK), .RESET(resetn), .DIN(w_c0n0), .DOUT(w_n0n1), 
+ulpb_node32 #(.ADDRESS(8'hab)) n0
+			(.CLK(SCLK), .RESET(resetn), .DIN(w_c0n0), .DOUT(w_n0n1), 
 			.TX_ADDR(n0_tx_addr), .TX_DATA(n0_tx_data),	.TX_REQ(n0_tx_req), .TX_ACK(n0_tx_ack), .TX_PEND(n0_tx_pend),
 			.RX_ADDR(n0_rx_addr), .RX_DATA(n0_rx_data), .RX_REQ(n0_rx_req), .RX_ACK(n0_rx_ack), .RX_PEND(n0_rx_pend),
 			.TX_SUCC(n0_tx_succ), .TX_FAIL(n0_tx_fail), .TX_RESP_ACK(n0_tx_resp_ack), .BUSIDLE(n0_idle));
 
-ulpb_node32 #(.ADDRESS(8'hcd)) n1(.CLK(SCLK), .RESET(resetn), .DIN(w_n0n1), .DOUT(w_n1n2), 
+ulpb_node32 #(.ADDRESS(8'hcd)) n1
+			(.CLK(SCLK), .RESET(resetn), .DIN(w_n0n1), .DOUT(w_n1n2), 
 			.TX_ADDR(n1_tx_addr), .TX_DATA(n1_tx_data), .TX_REQ(n1_tx_req), .TX_ACK(n1_tx_ack), .TX_PEND(n1_tx_pend), 
 			.RX_ADDR(n1_rx_addr), .RX_DATA(n1_rx_data), .RX_REQ(n1_rx_req), .RX_ACK(n1_rx_ack), .RX_PEND(n1_rx_pend),
 			.TX_SUCC(n1_tx_succ), .TX_FAIL(n1_tx_fail), .TX_RESP_ACK(n1_tx_resp_ack), .BUSIDLE(n1_idle));
 
-ulpb_node32 #(.ADDRESS(8'hef)) n2(.CLK(SCLK), .RESET(resetn), .DIN(w_n1n2), .DOUT(w_n2c0), 
+ulpb_node32 #(.ADDRESS(8'hef)) n2
+			(.CLK(SCLK), .RESET(resetn), .DIN(w_n1n2), .DOUT(w_n2c0), 
 			.TX_ADDR(n2_tx_addr), .TX_DATA(n2_tx_data), .TX_REQ(n2_tx_req), .TX_ACK(n2_tx_ack), .TX_PEND(n2_tx_pend), 
 			.RX_ADDR(n2_rx_addr), .RX_DATA(n2_rx_data), .RX_REQ(n2_rx_req), .RX_ACK(n2_rx_ack), .RX_PEND(n2_rx_pend),
 			.TX_SUCC(n2_tx_succ), .TX_FAIL(n2_tx_fail), .TX_RESP_ACK(n2_tx_resp_ack), .BUSIDLE(n2_idle));
@@ -373,7 +376,7 @@ begin
 		
 		if ((n1_tx_succ | n1_tx_fail)&(~n1_tx_resp_ack))
 		begin
-			n1_tx_resp_ack <= 0;
+			n1_tx_resp_ack <= 1;
 			if (n1_tx_succ)
    				$fdisplay(handle, "N1 TX SUCCESS\n");
 			else

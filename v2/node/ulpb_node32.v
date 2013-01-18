@@ -54,7 +54,7 @@ reg		[log2(DATA_WIDTH-1)-1:0] bit_position, next_bit_position;
 reg		addr_done, next_addr_done;
 reg		[1:0] input_buffer;
 reg		out_reg, next_out_reg;
-reg		[1:0] mode, next_ode;
+reg		[1:0] mode, next_mode;
 reg		self_reset, next_self_reset;
 
 // interface registers

@@ -1,4 +1,4 @@
-module ulpb_node32(CLK, RESET, DIN, DOUT, TX_ADDR, TX_DATA, TX_PEND, TX_REQ, TX_ACK, RX_ADDR, RX_DATA, RX_REQ, RX_ACK, TX_FAIL, TX_SUCC, TX_RESP_ACK, BUSIDLE);
+module ulpb_node32(CLK, RESET, DIN, DOUT, TX_ADDR, TX_DATA, TX_PEND, TX_REQ, TX_ACK, RX_ADDR, RX_DATA, RX_REQ, RX_ACK, RX_PEND, TX_FAIL, TX_SUCC, TX_RESP_ACK, BUSIDLE);
 
 `include "include/ulpb_func.v"
 
@@ -54,7 +54,7 @@ reg		[log2(DATA_WIDTH-1)-1:0] bit_position, next_bit_position;
 reg		addr_done, next_addr_done;
 reg		[1:0] input_buffer;
 reg		out_reg, next_out_reg;
-reg		[1:0] mode, next_mode;
+reg		[1:0] mode, next_ode;
 reg		self_reset, next_self_reset;
 
 // interface registers
@@ -77,7 +77,8 @@ reg		[DATA_WIDTH-1:0] RX_DATA, next_rx_data;
 reg		[DATA_WIDTH-2:0] rx_data_out_buf, next_rx_data_buf;
 reg		rx_done, next_rx_done; 
 reg		rx_overflow, next_rx_overflow;
-
+reg		rx_word_completed, next_rx_word_completed;
+reg		RX_PEND, next_rx_pend;
 
 wire	addr_bit_extract = (ADDR  & (1<<bit_position))? 1 : 0;
 wire	data0_bit_extract = (DATA0 & (1<<bit_position))? 1 : 0;
@@ -115,6 +116,8 @@ begin
 		rx_data_out_buf <= 0;
 		rx_done <= 0;
 		rx_overflow <= 0;
+		rx_word_completed <= 0;
+		RX_PEND <= 0;
 	end
 	else
 	begin
@@ -144,6 +147,8 @@ begin
 		rx_data_out_buf <= next_rx_data_buf;
 		rx_done <= next_rx_done;
 		rx_overflow <= next_rx_overflow;
+		rx_word_completed <= next_rx_word_completed;
+		RX_PEND <= next_rx_pend;
 	end
 end
 
@@ -175,12 +180,17 @@ begin
 	next_rx_data_buf = rx_data_out_buf;
 	next_rx_done = rx_done;
 	next_rx_overflow = rx_overflow;
+	next_rx_word_completed = rx_word_completed;
+	next_rx_pend = RX_PEND;
 
 	if (TX_ACK & (~TX_REQ))
 		next_tx_ack = 0;
 	
 	if (RX_REQ & RX_ACK)
+	begin
 		next_rx_req = 0;
+		next_rx_pend = 0;
+	end
 
 	if (TX_RESP_ACK)
 	begin
@@ -217,6 +227,7 @@ begin
 			// rx registers
 			next_rx_done = 0;
 			next_rx_overflow = 0;
+			next_rx_word_completed = 0;
 		end
 
 		ARBI_RESOLVED:
@@ -374,6 +385,13 @@ begin
 								end
 								else
 									next_state = BUS_RESET;
+
+								if (rx_word_completed)
+								begin
+									next_rx_req = 1;
+									next_rx_pend = 0;
+									next_rx_word_completed = 0;
+								end
 							end
 						end
 						else
@@ -382,6 +400,12 @@ begin
 							if (bit_position)
 							begin
 								next_bit_position = bit_position - 1;
+								if (rx_word_completed)
+								begin
+									next_rx_req = 1;
+									next_rx_pend = 1;
+									next_rx_word_completed = 0;
+								end
 							end
 							else
 							begin
@@ -395,7 +419,7 @@ begin
 									else
 									begin
 										next_rx_data = {rx_data_out_buf[DATA_WIDTH-2:0], input_buffer[0]};
-										next_rx_req = 1;
+										next_rx_word_completed = 1;
 									end
 								end
 							end

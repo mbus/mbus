@@ -44,7 +44,7 @@ parameter NUM_OF_STATES = 16;
 reg		[log2(NUM_OF_STATES-1)-1:0] state, next_state;
 reg		[1:0] bus_reset, next_bus_reset;
 wire input_buffer_xor = input_buffer[0] ^ input_buffer[1];
-reg		[4:0] din_glitch_free;
+reg		[CLK_DIVIDOR-1:0] din_glitch_free;
 wire din_low = (din_glitch_free==0)? 1 : 0;
 
 always @ (posedge CLK_IN or negedge RESET)
@@ -58,12 +58,12 @@ end
 always @ (posedge CLK_IN or negedge RESET)
 begin
 	if (~RESET)
-		din_glitch_free <= 5'b11111;
+		din_glitch_free <= (1<<CLK_DIVIDOR)-1;
 	else
 		if (state==BUS_IDLE)
-			din_glitch_free <= {din_glitch_free[4:2], DIN};
+			din_glitch_free <= {din_glitch_free[CLK_DIVIDOR-1:2], DIN};
 		else
-			din_glitch_free <= 5'b11111;
+			din_glitch_free <= (1<<CLK_DIVIDOR)-1;
 end
 
 always @ (posedge CLK_IN or negedge RESET)

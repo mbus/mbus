@@ -70,6 +70,7 @@ reg		tx_end_of_trans, next_tx_end_of_trans;
 reg		tx_done, next_tx_done;
 reg		tx_wait_for_ack, next_tx_wait_for_ack;
 reg		tx_underflow, next_tx_underflow;
+reg		tx_pend, next_tx_pend;
 
 // rx registers
 reg		[ADDR_WIDTH-1:0] RX_ADDR, next_rx_addr;
@@ -110,6 +111,7 @@ begin
 		tx_done <= 0;
 		tx_wait_for_ack <= 0;
 		tx_underflow <= 0;
+		tx_pend <= 0;
 		// rx registers
 		RX_ADDR <= 0;
 		RX_DATA <= 0;
@@ -141,6 +143,7 @@ begin
 		tx_done <= next_tx_done;
 		tx_wait_for_ack <= next_tx_wait_for_ack;
 		tx_underflow <= next_tx_underflow;
+		tx_pend <= next_tx_pend;
 		// rx registers
 		RX_ADDR <= next_rx_addr;
 		RX_DATA <= next_rx_data;
@@ -174,6 +177,7 @@ begin
 	next_tx_done = tx_done;
 	next_tx_wait_for_ack = tx_wait_for_ack;
 	next_tx_underflow = tx_underflow;
+	next_tx_pend = tx_pend;
 	// rx registers
 	next_rx_addr = RX_ADDR;
 	next_rx_data = RX_DATA;
@@ -208,6 +212,7 @@ begin
 				next_data0 = TX_DATA;
 				next_mode = MODE_TX;
 				next_tx_ack = 1;
+				next_tx_pend = TX_PEND;
 				// interface registers
 			end
 			else
@@ -282,10 +287,11 @@ begin
 						next_addr_done = 1;
 						if (addr_done)
 						begin
-							if (TX_PEND)
+							if (tx_pend)
 							begin
 								if (TX_REQ)
 								begin
+									next_tx_pend = TX_PEND;
 									next_data0 = TX_DATA;
 									next_tx_ack = 1;
 								end

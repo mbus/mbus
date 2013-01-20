@@ -4,7 +4,7 @@ module simple_layer_controller(
 				HREADYOUT, HRESP, HRDATA,
 				DIN, DOUT, SCLK,
 				TX_FAIL, TX_SUCC, 
-				frame_complete, rx_fifo_empty );
+				rx_frame_complete, rx_fifo_empty );
 
 parameter ADDRESS = 8'hab;
 
@@ -26,12 +26,12 @@ output 	[31:0] 	HRDATA;
 
 // IOs for LC
 output			TX_FAIL, TX_SUCC;
-output			frame_complete, rx_fifo_empty;
+output			rx_frame_complete, rx_fifo_empty;
 
 // IOs for ulpb
 input			SCLK;
 input			DIN;
-input			DOUT;
+output			DOUT;
 
 // AHB registers
 reg				hwrite_reg;
@@ -50,6 +50,7 @@ reg				tx_state, rx_state, next_tx_state, next_rx_state;
 reg				rx_frame_complete, next_rx_frame_complete;
 
 wire			TX_ACK;
+reg				TX_ACK_REG;
 wire			RX_REQ, RX_PEND;
 wire	[DATA_WIDTH-1:0] RX_DATA; 
 wire	[ADDR_WIDTH-1:0] RX_ADDR;
@@ -57,7 +58,7 @@ wire	[ADDR_WIDTH-1:0] TX_ADDR;
 wire	[DATA_WIDTH-1:0] TX_DATA;
 
 // rx fifo registers
-reg				rx_fifo_we, rx_fifo_re, next_rx_fifo_we, next_rx_fifo_re;
+reg				rx_fifo_we, rx_fifo_re, next_rx_fifo_we;
 wire			rx_fifo_full;
 wire	[DATA_WIDTH-1:0] rx_data_out; 
 
@@ -88,9 +89,11 @@ begin
 		fsm <= 0;
 		HREADYOUT <= 1;
 		HRDATA <= 0;
+		HWDATA_REG <= 0;
 		hwrite_reg <= 0;
 		haddr_reg <= 0;
 		tx_fifo_we <= 0;
+		rx_fifo_re <= 0;
 	end
 	else
 	begin
@@ -161,17 +164,31 @@ begin
 	begin
 		TX_REQ <= next_tx_req;
 		tx_state <= next_tx_state;
-		tail <= next_tail;
 		TX_RESP_ACK <= next_tx_resp_ack;
+		if (TX_FAIL)
+			tail <= 0;
+		else
+			tail <= next_tail;
 	end
 end
 
+always @ (posedge HCLK or negedge HRESETn)
+begin
+	if (~HRESETn)
+	begin
+		TX_ACK_REG <= 0;
+	end
+	else
+	begin
+		TX_ACK_REG <= TX_ACK;
+	end
+end
 always @ *
 begin
 	next_tx_req = TX_REQ;
 	next_tx_state = tx_state;
-	next_tail = tail;
 	next_tx_resp_ack = TX_RESP_ACK;
+	next_tail = tail;
 
 	if ((TX_FAIL | TX_SUCC) & (~TX_RESP_ACK))
 		next_tx_resp_ack = 1;
@@ -182,7 +199,7 @@ begin
 	case (tx_state)
 		TX_IDLE:
 		begin
-			if ((~tx_fifo_empty)&(~TX_ACK))
+			if ((~tx_fifo_empty)&(~TX_ACK_REG))
 			begin
 				next_tx_req = 1;
 				next_tx_state = TX_WAIT;
@@ -191,7 +208,7 @@ begin
 
 		TX_WAIT:
 		begin
-			if (TX_ACK)
+			if (TX_ACK_REG)
 			begin
 				next_tx_req = 0;
 				next_tail = tail + 1;
@@ -247,9 +264,7 @@ begin
 			begin
 				next_rx_ack = 0;
 				next_rx_state = RX_IDLE;
-				if (rx_pending)
-					next_rx_frame_complete = 0;
-				else
+				if (~rx_pending)
 					next_rx_frame_complete = 1;
 			end
 		end

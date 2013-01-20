@@ -1,4 +1,4 @@
-module ulpb_node32(CLK, RESET, DIN, DOUT, TX_ADDR, TX_DATA, TX_PEND, TX_REQ, TX_ACK, RX_ADDR, RX_DATA, RX_REQ, RX_ACK, RX_PEND, TX_FAIL, TX_SUCC, TX_RESP_ACK, BUSIDLE);
+module ulpb_node32(CLK, RESET, DIN, DOUT, TX_ADDR, TX_DATA, TX_PEND, TX_REQ, TX_ACK, RX_ADDR, RX_DATA, RX_REQ, RX_ACK, RX_PEND, TX_FAIL, TX_SUCC, TX_RESP_ACK);
 
 `include "include/ulpb_func.v"
 
@@ -26,7 +26,6 @@ output	RX_REQ;
 input	RX_ACK;
 output	RX_PEND;
 
-output	BUSIDLE;
 
 reg		DOUT;
 
@@ -85,7 +84,6 @@ wire	addr_bit_extract = (ADDR  & (1<<bit_position))? 1 : 0;
 wire	data0_bit_extract = (DATA0 & (1<<bit_position))? 1 : 0;
 wire	input_buffer_xor = input_buffer[0] ^ input_buffer[1];
 wire	address_match = ((RX_ADDR^ADDRESS)&ADDRESS_MASK)? 0 : 1;
-wire	BUSIDLE = (state==BUS_IDLE)? 1 : 0;
 
 always @ (posedge CLK or negedge RESET)
 begin

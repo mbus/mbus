@@ -253,7 +253,12 @@ begin
 				MODE_TX:
 				begin
 					if ((~tx_end_of_trans) & tx_done)
-						next_out_reg = 1;
+					begin
+						if (tx_underflow)
+							next_out_reg = 0;
+						else
+							next_out_reg = 1;
+					end
 				end
 
 				MODE_RX:
@@ -320,7 +325,10 @@ begin
 							// DRIVE End of Bit
 							2'b10:
 							begin
-								next_out_reg = 0;
+								if (tx_underflow)
+									next_out_reg = 1;
+								else
+									next_out_reg = 0;
 								next_state = DRIVE1;
 								// should ALWAYS NOT happen, out of sync
 								if (input_buffer_xor)

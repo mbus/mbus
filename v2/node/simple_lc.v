@@ -162,13 +162,19 @@ begin
 	end
 	else
 	begin
-		TX_REQ <= next_tx_req;
-		tx_state <= next_tx_state;
 		TX_RESP_ACK <= next_tx_resp_ack;
 		if (TX_FAIL)
+		begin
 			tail <= 0;
+			TX_REQ <= 0;
+			tx_state <= TX_IDLE;
+		end
 		else
+		begin
 			tail <= next_tail;
+			TX_REQ <= next_tx_req;
+			tx_state <= next_tx_state;
+		end
 	end
 end
 

@@ -58,7 +58,6 @@ reg		self_reset, next_self_reset;
 
 // interface registers
 reg		TX_ACK, next_tx_ack;
-reg		RX_REQ, next_rx_req;
 reg		TX_FAIL, next_tx_fail;
 reg		TX_SUCC, next_tx_success;
 
@@ -75,15 +74,16 @@ reg		tx_pend, next_tx_pend;
 reg		[ADDR_WIDTH-1:0] RX_ADDR, next_rx_addr;
 reg		[DATA_WIDTH-1:0] RX_DATA, next_rx_data; 
 reg		[DATA_WIDTH-2:0] rx_data_out_buf, next_rx_data_buf;
+reg		RX_REQ, next_rx_req;
+reg		RX_PEND, next_rx_pend;
 reg		rx_done, next_rx_done; 
 reg		rx_overflow, next_rx_overflow;
 reg		rx_word_completed, next_rx_word_completed;
-reg		RX_PEND, next_rx_pend;
 
-wire	addr_bit_extract = (ADDR  & (1<<bit_position))? 1 : 0;
-wire	data0_bit_extract = (DATA0 & (1<<bit_position))? 1 : 0;
+wire	addr_bit_extract = ((ADDR  & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
+wire	data0_bit_extract = ((DATA0 & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	input_buffer_xor = input_buffer[0] ^ input_buffer[1];
-wire	address_match = ((RX_ADDR^ADDRESS)&ADDRESS_MASK)? 0 : 1;
+wire	address_match = (((RX_ADDR^ADDRESS)&ADDRESS_MASK)==0)? 1'b1 : 1'b0;
 
 always @ (posedge CLK or negedge RESET)
 begin
@@ -91,15 +91,14 @@ begin
 	begin
 		// general registers
 		state <= BUS_IDLE;
-		reset_cnt <= RESET_CNT - 1;
-		bit_position <= ADDR_WIDTH - 1;
+		reset_cnt <= RESET_CNT - 1'b1;
+		bit_position <= ADDR_WIDTH - 1'b1;
 		addr_done <= 0;
 		out_reg <= 1;
 		mode <= MODE_IDLE;
 		self_reset <= 0;
 		// interface registers
 		TX_ACK <= 0;
-		RX_REQ <= 0;
 		TX_FAIL <= 0;
 		TX_SUCC <= 0;
 		// tx registers
@@ -113,11 +112,12 @@ begin
 		// rx registers
 		RX_ADDR <= 0;
 		RX_DATA <= 0;
+		RX_REQ <= 0;
+		RX_PEND <= 0;
 		rx_data_out_buf <= 0;
 		rx_done <= 0;
 		rx_overflow <= 0;
 		rx_word_completed <= 0;
-		RX_PEND <= 0;
 	end
 	else
 	begin
@@ -131,7 +131,6 @@ begin
 		self_reset <= next_self_reset;
 		// interface registers
 		TX_ACK <= next_tx_ack;
-		RX_REQ <= next_rx_req;
 		TX_FAIL <= next_tx_fail;
 		TX_SUCC <= next_tx_success;
 		// tx registers
@@ -145,11 +144,12 @@ begin
 		// rx registers
 		RX_ADDR <= next_rx_addr;
 		RX_DATA <= next_rx_data;
+		RX_REQ <= next_rx_req;
+		RX_PEND <= next_rx_pend;
 		rx_data_out_buf <= next_rx_data_buf;
 		rx_done <= next_rx_done;
 		rx_overflow <= next_rx_overflow;
 		rx_word_completed <= next_rx_word_completed;
-		RX_PEND <= next_rx_pend;
 	end
 end
 
@@ -165,7 +165,6 @@ begin
 	next_self_reset = self_reset;
 	// interface registers
 	next_tx_ack = TX_ACK;
-	next_rx_req = RX_REQ;
 	next_tx_fail = TX_FAIL;
 	next_tx_success = TX_SUCC;
 	// tx registers
@@ -179,11 +178,12 @@ begin
 	// rx registers
 	next_rx_addr = RX_ADDR;
 	next_rx_data = RX_DATA;
+	next_rx_req = RX_REQ;
+	next_rx_pend = RX_PEND;
 	next_rx_data_buf = rx_data_out_buf;
 	next_rx_done = rx_done;
 	next_rx_overflow = rx_overflow;
 	next_rx_word_completed = rx_word_completed;
-	next_rx_pend = RX_PEND;
 
 	if (TX_ACK & (~TX_REQ))
 		next_tx_ack = 0;
@@ -218,7 +218,7 @@ begin
 
 			// general registers
 			next_state = ARBI_RESOLVED;
-			next_bit_position = ADDR_WIDTH - 1;
+			next_bit_position = ADDR_WIDTH - 1'b1;
 			next_addr_done = 0;
 			next_self_reset = 0;
 			// interface registers
@@ -283,10 +283,10 @@ begin
 				else
 				begin
 					if (bit_position)
-						next_bit_position = bit_position - 1;
+						next_bit_position = bit_position - 1'b1;
 					else
 					begin
-						next_bit_position = DATA_WIDTH - 1;
+						next_bit_position = DATA_WIDTH - 1'b1;
 						next_addr_done = 1;
 						if (addr_done)
 						begin
@@ -411,7 +411,7 @@ begin
 							next_state = DRIVE1;
 							if (bit_position)
 							begin
-								next_bit_position = bit_position - 1;
+								next_bit_position = bit_position - 1'b1;
 								if (rx_word_completed)
 								begin
 									next_rx_req = 1;
@@ -422,7 +422,7 @@ begin
 							else
 							begin
 								next_addr_done = 1;
-								next_bit_position = DATA_WIDTH - 1;
+								next_bit_position = DATA_WIDTH - 1'b1;
 								if (addr_done)
 								begin
 									// OVERFLOW, PREPARE RESET BUS
@@ -456,14 +456,14 @@ begin
 					end
 				end
 			endcase
-			next_reset_cnt = RESET_CNT - 1;
+			next_reset_cnt = RESET_CNT - 1'b1;
 			
 		end
 
 		BUS_RESET:
 		begin
 			if (reset_cnt)
-				next_reset_cnt = reset_cnt - 1;
+				next_reset_cnt = reset_cnt - 1'b1;
 			else
 			begin
 				next_state = BUS_IDLE;

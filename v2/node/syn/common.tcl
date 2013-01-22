@@ -9,4 +9,4 @@ set link_library "* typical.db dw_foundation.sldb"
 set target_library "typical.db"
 
 # set_dont_use any *XL* cell
-set_dont_use { typical/*XLTR }
+#set_dont_use { typical/*XLTR }

@@ -1,30 +1,31 @@
 STD_CELLS = /afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/verilog/tsmc18_neg.v
-#TESTBENCH = test_mult.v
-#SIM_FILES = mult.v
-#SIM_SYNTH_FILES = mult.nl.v
+ULPB = ulpb_node32
+TESTBENCH = ulpb_node32_tb.v
+ADDI_FILE = control.v
+SIM_FILES = ${ULPB}.v ${ADDI_FILE}
+SIM_SYNTH_FILES = ${ULPB}.nl.v ${ADDI_FILE}
 #GOLDEN_RESULT = goldenbrick/goldenresult
 #SIM_RESULT = testbench.txt
-TCL_NAME = ulpb_node32
 POST_SDF = /afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/primetime/pt_postprocessor.pl
 
 synth:
-	-cd syn; dc_shell -f ${TCL_NAME}.tcl |tee ${TCL_NAME}.dc.log
-	-perl ${POST_SDF} -s syn/${TCL_NAME}.dc.sdf -o ${TCL_NAME}.dc.sdf
-	-mv ${TCL_NAME}.dc.sdf syn/
+	-cd syn; dc_shell -f ${ULPB}.tcl |tee ${ULPB}.dc.log
+	-perl ${POST_SDF} -s syn/${ULPB}.dc.sdf -o ${ULPB}.dc.sdf
+	-mv ${ULPB}.dc.sdf syn/
 
-#sim_synth:
+sim_synth:
+	-cd syn; ncverilog ${TESTBENCH} ${SIM_SYNTH_FILES}
 #	-cd perl; ./testbench_gen.pl synth
-#	-cd syn; ncverilog ${TESTBENCH} ${SIM_SYNTH_FILES}
 #	-diff ${GOLDEN_RESULT} syn/${SIM_RESULT}
 
-#sim:
+sim:
+	-cd verilog; ncverilog ${TESTBENCH} ${SIM_FILES}
 #	-cd perl; ./testbench_gen.pl
-#	-cd verilog; ncverilog ${TESTBENCH} ${SIM_FILES}
 #	-diff ${GOLDEN_RESULT} verilog/${SIM_RESULT}
 
 clean:
 	-cd verilog; rm -f *.key; rm -rf INCA_libs; rm -rf *.log; rm -rf waves.shm; rm -rf .nclaunch*; rm -rf .simvision*
-	-cd syn; find . ! -name "*.tcl" -delete
+	-cd syn; rm -f *.log; rm -f *.rpt; rm -f *.nl.v; rm -f *.sdf; rm -f *.svf; rm -f *.key; rm -rf INCA_libs; rm -rf *.log; rm -rf waves.shm; rm -rf .nclaunch*; rm -rf .simvision*
 #	-cd goldenbrick; find . ! -name "*.c" -delete
 
 #c_compile:

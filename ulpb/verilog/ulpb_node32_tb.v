@@ -80,48 +80,49 @@ begin
 	@ (posedge clk)
 		`SD resetn = 0;
 	@ (posedge clk)
+	@ (posedge clk)
 		`SD resetn = 1;
 	@ (posedge clk)
 	@ (posedge clk)
 
-	#10000
+	#1000
 		state = TASK0;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 
-	#10000
+	#1000
 		word_counter = 7;
 		state = TASK1;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 
-	#10000
+	#1000
 		state = TASK2;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 
-	#10000
+	#1000
 		word_counter = 7;
 		state = TASK3;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 		
-	#10000
+	#1000
 		word_counter = 7;
 		state = TASK4;
 		n1_auto_rx_ack = 0;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 		n1_auto_rx_ack = 1;
 
-	#10000
+	#1000
 		word_counter = 1;
 		state = TASK5;
 		n1_auto_rx_ack = 0;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 		n1_auto_rx_ack = 1;
 		
-	#10000
+	#1000
 		state = TASK6;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 	@ (posedge n1_tx_succ | n1_tx_fail)
 
-	#10000
+	#1000
 		$stop;
 end
 

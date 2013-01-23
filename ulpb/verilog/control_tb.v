@@ -63,7 +63,7 @@ begin
 	@ (posedge CLK_OUT)
 	@ (posedge CLK_OUT)
 		`SD IN = 1;
-	#2000
+	#200
 		$stop;
 end
 

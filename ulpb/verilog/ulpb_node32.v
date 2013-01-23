@@ -4,7 +4,7 @@ module ulpb_node32(CLK, RESET, DIN, DOUT, TX_ADDR, TX_DATA, TX_PEND, TX_REQ, TX_
 
 parameter ADDR_WIDTH=8;
 parameter DATA_WIDTH=32;
-parameter ADDRESS = 8'hab;
+parameter ADDRESS = 8'hef;
 parameter ADDRESS_MASK=8'hff;
 
 input 	CLK, RESET, DIN;

@@ -1,9 +1,9 @@
 # Timing setup for synthesis
 
 # Clock period
-set clk_period 0.9
-set clk_uncertainty 0.1
-set clk_transition 0.1
+set clk_period 9
+set clk_uncertainty 1
+set clk_transition 1
 
 #Create real clock if clock port is found
 if {[sizeof_collection [get_ports CLK]] > 0} {

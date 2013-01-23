@@ -1,4 +1,6 @@
 
+`timescale 1ns/1ps
+
 module control(DIN, DOUT, RESET, CLK_OUT, CLK_IN);
 
 `include "include/ulpb_func.v"

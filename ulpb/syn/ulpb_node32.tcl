@@ -8,15 +8,18 @@ set top_level "ulpb_node32"
 
 # Read verilog files
 read_verilog "../verilog/ulpb_node32.v"
+analyze -format verilog "../verilog/ulpb_node32.v"
+elaborate $top_level -param "ADDRESS=8'hef"
+#current_design $top_level
+
 list_designs
-current_design $top_level
 
 # Read timing constrints
 # Set clock names, ports
 source -verbose "timing.tcl"
 
 # Register retiming
-set_balance_registers
+#set_balance_registers
 
 # Link the design
 link
@@ -53,14 +56,14 @@ compile -map_effort medium
 source -verbose "namingrules.tcl"
 
 # Generate structural verilog netlist
-write -hierarchy -format verilog -output "${top_level}.nl.v"
+write -hierarchy -format verilog -output "${current_design}.nl.v"
 
 # Generate Standard Delay Format (SDF) file
 write_sdf -context verilog "${top_level}.dc.sdf"
 
 # Generate report file
 set maxpaths 20
-set rpt_file "${top_level}.dc.rpt"
+set rpt_file "${current_design}.dc.rpt"
 
 check_design > $rpt_file
 report_area  >> ${rpt_file}

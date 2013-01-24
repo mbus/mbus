@@ -1,12 +1,17 @@
 
+`timescale 1ns/1ps
+
+`include "/afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/verilog/tsmc18_neg.v"
+
 module testbench();
 
 reg 	IN, RESET, CLK_IN;
 reg		output_release;
 
 wire	OUT, CLK_OUT;
+wire	[3:0]	state;
 
-control c0(IN, OUT, RESET, CLK_OUT, CLK_IN);
+control c0(IN, OUT, RESET, CLK_OUT, CLK_IN, state);
 
 `define SD #1
 
@@ -17,6 +22,9 @@ begin
 	RESET = 0;
 	output_release = 0;
 	@ (negedge CLK_IN)
+	@ (posedge CLK_IN)
+	@ (posedge CLK_IN)
+	@ (posedge CLK_IN)
 	@ (posedge CLK_IN)
 		`SD RESET = 1;
 		IN = 0;
@@ -80,7 +88,7 @@ begin
 	@ (posedge CLK_OUT)
 		output_release = 1;
 	@ (posedge CLK_OUT)
-	#200
+	#4000
 		$stop;
 end
 
@@ -88,6 +96,6 @@ always @ (*)
 	if (output_release)
 		IN <= OUT;
 
-always #5 CLK_IN = ~CLK_IN;
+always #100 CLK_IN = ~CLK_IN;
 
 endmodule

@@ -2,15 +2,16 @@
 `timescale 1ns/1ps
 
 
-module control(DIN, DOUT, RESET, CLK_OUT, CLK_IN);
+module control(DIN, DOUT, RESET, CLK_OUT, CLK, test_pt);
 
 `include "include/ulpb_func.v"
 
-input 	CLK_IN;
+input 	CLK;
 output	CLK_OUT;
 input	RESET;
 input	DIN;
 output	DOUT;
+output	[3:0]test_pt;
 
 parameter START_CYCLES = 6;
 
@@ -49,10 +50,11 @@ reg		HALF_SPEED;
 reg		ctrl_dout; 
 reg		ctrl_hold; 
 reg		out_of_phase;
-wire	CLK_OUT = (CLK_EN)? (HALF_SPEED)? CLK_HALF : CLK_IN : 1;
-wire	DOUT = (ctrl_hold)? ctrl_dout : DIN;
+assign CLK_OUT = (CLK_EN)? (HALF_SPEED)? CLK_HALF : CLK : 1;
+assign DOUT = (ctrl_hold)? ctrl_dout : DIN;
+assign test_pt = state;
 
-always @ (posedge CLK_IN or negedge RESET)
+always @ (posedge CLK or negedge RESET)
 begin
 	if (~RESET)
 	begin
@@ -62,7 +64,7 @@ begin
 		seq_state <= 0;
 		// General registers
 		state <= BUS_IDLE;
-		start_cycle_cnt <= START_CYCLES - 1;
+		start_cycle_cnt <= START_CYCLES - 1'b1;
 	end
 	else
 	begin
@@ -146,7 +148,7 @@ begin
 			begin
 				next_state = WAIT_FOR_START;
 			end
-			next_start_cycle_cnt = START_CYCLES - 1;
+			next_start_cycle_cnt = START_CYCLES - 1'b1;
 			next_seq_state = 0;
 			next_clk_half = 0;
 		end
@@ -154,7 +156,7 @@ begin
 		WAIT_FOR_START:
 		begin
 			if (start_cycle_cnt)
-				next_start_cycle_cnt = start_cycle_cnt - 1;
+				next_start_cycle_cnt = start_cycle_cnt - 1'b1;
 			else
 			begin
 				next_state = ENABLE_CLK;
@@ -251,22 +253,24 @@ begin
 			case (seq_state)
 				0:
 				begin
-					// 2nd bit of message end
-					if (input_buffer[2]^input_buffer[0])
-					begin
-						if ({input_buffer[2], input_buffer[0]}==2'b01)
+					case ({input_buffer[2], input_buffer[0]})
+						// 2nd bit of message end
+						2'b01:
 						begin
 							next_seq_state = seq_state + 1;
 							next_state = DRIVE1;
 						end
-						else
-						// not 01, goes to reset
+
+						2'b10:
 						begin
 							next_state = RESET_S0_D;
 						end
-					end
-					else
-						next_state = DRIVE1;
+
+						default:
+						begin
+							next_state = DRIVE1;
+						end
+					endcase
 				end
 
 				// 4th bit of end of message
@@ -388,7 +392,7 @@ begin
 	endcase
 end
 
-always @ (posedge CLK_IN or negedge RESET)
+always @ (posedge CLK or negedge RESET)
 begin
 	if (~RESET)
 		input_buffer <= 0;

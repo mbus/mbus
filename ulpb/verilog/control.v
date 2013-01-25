@@ -1,7 +1,4 @@
 
-`timescale 1ns/1ps
-
-
 module control(DIN, DOUT, RESET, CLK_OUT, CLK, test_pt);
 
 `include "include/ulpb_func.v"
@@ -382,11 +379,10 @@ begin
 
 		RESET_R_L:
 		begin
-			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
-			begin
 				next_state = BUS_IDLE;
-			end
+			else
+				next_clk_half = ~CLK_HALF;
 		end
 
 	endcase

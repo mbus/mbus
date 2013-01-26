@@ -7,8 +7,8 @@ source -verbose "common.tcl"
 set top_level "control"
 
 # Read verilog files
-read_verilog "../verilog/control.v"
-analyze -format verilog "../verilog/control.v"
+read_verilog "../verilog/control_double_speed.v"
+analyze -format verilog "../verilog/control_double_speed.v"
 elaborate $top_level 
 #current_design $top_level
 

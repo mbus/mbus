@@ -1,7 +1,7 @@
 
 `timescale 1ns/1ps
 
-//`define SYNTH
+`define SYNTH
 
 `ifdef SYNTH
 	`include "/afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/verilog/tsmc18_neg.v"

@@ -48,6 +48,9 @@ parameter NUM_OF_STATES = 31;
 
 // CLK registers
 reg		CLK_HALF, next_clk_half;
+reg		CLK_OUT, next_clk_out;;
+reg		ctrl_hold, next_ctrl_hold; 
+reg		ctrl_dout, next_ctrl_dout; 
 
 // Reset registers
 reg		[2:0] seq_state, next_seq_state;
@@ -58,10 +61,7 @@ reg		[log2(START_CYCLES-1)-1:0] start_cycle_cnt, next_start_cycle_cnt;
 reg		[3:0]	input_buffer;
 
 // Combinational logics
-reg		ctrl_dout; 
-reg		ctrl_hold; 
 reg		out_of_phase;
-reg		CLK_OUT;
 assign DOUT = (ctrl_hold)? ctrl_dout : DIN;
 assign test_pt = state;
 
@@ -71,6 +71,9 @@ begin
 	begin
 		// CLK registers
 		CLK_HALF <= 0;
+		CLK_OUT <= 1;
+		ctrl_hold <= 1;
+		ctrl_dout <= 1;
 		// Reset registers
 		seq_state <= 0;
 		// General registers
@@ -81,6 +84,9 @@ begin
 	begin
 		// CLK registers
 		CLK_HALF <= next_clk_half;
+		CLK_OUT <= next_clk_out;
+		ctrl_hold <= next_ctrl_hold;
+		ctrl_dout <= next_ctrl_dout;
 		// Reset registers
 		seq_state <= next_seq_state;
 		// General registers
@@ -88,70 +94,6 @@ begin
 		start_cycle_cnt <= next_start_cycle_cnt;
 	end
 end
-
-always @ *
-begin
-	case (state)
-		DRIVE1_NEG: begin ctrl_hold = 0; end
-		DRIVE1_POS: begin ctrl_hold = 0; end
-		LATCH1_NEG: begin ctrl_hold = 0; end
-		LATCH1_POS: begin ctrl_hold = 0; end
-		DRIVE2_NEG: begin ctrl_hold = 0; end
-		DRIVE2_POS: begin ctrl_hold = 0; end
-		LATCH2_NEG: begin ctrl_hold = 0; end
-		LATCH2_POS: begin ctrl_hold = 0; end
-		default: begin ctrl_hold = 1; end
-	endcase
-
-	case (state)
-		RESET_S0_D_NEG: begin ctrl_dout = 0; end
-		RESET_S0_D_POS: begin ctrl_dout = 0; end
-		RESET_S0_L_NEG: begin ctrl_dout = 0; end
-		RESET_S0_L_POS: begin ctrl_dout = 0; end
-		RESET_S0_D1_NEG:begin ctrl_dout = 0; end
-		RESET_S0_D1_POS:begin ctrl_dout = 0; end
-		RESET_S0_L1_NEG:begin ctrl_dout = 0; end
-		RESET_S0_L1_POS:begin ctrl_dout = 0; end
-		default: 		begin ctrl_dout = 1; end
-	endcase
-end
-
-always @ *
-begin
-	case (state)
-		BUS_IDLE: 		begin CLK_OUT = 1; end
-		WAIT_FOR_START: begin CLK_OUT = 1; end
-		ENABLE_CLK_NEG: begin CLK_OUT = 0; end
-		ARBI_RES_NEG: 	begin CLK_OUT = 0; end
-		ARBI_RES_POS: 	begin CLK_OUT = 1; end
-		DRIVE1_NEG: 	begin CLK_OUT = 0; end
-		DRIVE1_POS: 	begin CLK_OUT = 1; end
-		LATCH1_NEG: 	begin CLK_OUT = 0; end
-		LATCH1_POS: 	begin CLK_OUT = 1; end
-		DRIVE2_NEG: 	begin CLK_OUT = 0; end
-		DRIVE2_POS: 	begin CLK_OUT = 1; end
-		LATCH2_NEG: 	begin CLK_OUT = 0; end
-		LATCH2_POS: 	begin CLK_OUT = 1; end
-		RESET_S0_D_NEG: begin CLK_OUT = 0; end
-		RESET_S0_D_POS: begin CLK_OUT = 1; end
-		RESET_S0_L_NEG: begin CLK_OUT = 0; end
-		RESET_S0_L_POS: begin CLK_OUT = 1; end
-		RESET_S1_D_NEG: begin CLK_OUT = 0; end
-		RESET_S1_D_POS: begin CLK_OUT = 1; end
-		RESET_S1_L_NEG: begin CLK_OUT = 0; end
-		RESET_S1_L_POS: begin CLK_OUT = 1; end
-		RESET_S0_D1_NEG:begin CLK_OUT = 0; end
-		RESET_S0_D1_POS:begin CLK_OUT = 1; end
-		RESET_S0_L1_NEG:begin CLK_OUT = 0; end
-		RESET_S0_L1_POS:begin CLK_OUT = 1; end
-		RESET_R_D_NEG: 	begin CLK_OUT = 0; end
-		RESET_R_D_POS: 	begin CLK_OUT = 1; end
-		RESET_R_L_NEG: 	begin CLK_OUT = 0; end
-		RESET_R_L_POS: 	begin CLK_OUT = 1; end
-		default: 		begin CLK_OUT = 1; end
-	endcase
-end
-
 
 always @ *
 begin
@@ -165,6 +107,9 @@ always @ *
 begin
 	// CLK registers
 	next_clk_half = CLK_HALF;
+	next_clk_out = CLK_OUT;
+	next_ctrl_hold = ctrl_hold;
+	next_ctrl_dout = ctrl_dout;;
 	// Reset registers
 	next_seq_state = seq_state;
 	// General registers
@@ -190,27 +135,33 @@ begin
 			else
 			begin
 				next_state = ENABLE_CLK_NEG;
+				next_clk_out = 0;
 			end
 		end
 
 		ENABLE_CLK_NEG:
 		begin
 			next_state = ARBI_RES_POS;
+			next_clk_out = 1;
 		end
 
 		ARBI_RES_POS:
 		begin
 			next_state = ARBI_RES_NEG;
+			next_clk_out = 0;
 		end
 
 		ARBI_RES_NEG:
 		begin
 			next_state = DRIVE1_POS;
+			next_clk_out = 1;
+			next_ctrl_hold = 0;
 		end
 
 		DRIVE1_POS:
 		begin
 			next_state = DRIVE1_NEG;
+			next_clk_out = 0;
 		end
 
 		DRIVE1_NEG:
@@ -218,14 +169,21 @@ begin
 			if (out_of_phase)
 			begin
 				next_state = RESET_S0_D_NEG;
+				next_clk_out = 0;
+				next_ctrl_hold = 1;
+				next_ctrl_dout = 0;
 			end
 			else
+			begin
 				next_state = LATCH1_POS;
+				next_clk_out = 1;
+			end
 		end
 
 		LATCH1_POS:
 		begin
 			next_state = LATCH1_NEG;
+			next_clk_out = 0;
 		end
 
 		LATCH1_NEG:
@@ -234,6 +192,7 @@ begin
 				0:
 				begin
 					next_state = DRIVE2_POS;
+					next_clk_out = 1;
 				end
 
 				// 3rd of end of meesage
@@ -244,11 +203,15 @@ begin
 					begin
 						next_seq_state = seq_state + 1;
 						next_state = DRIVE2_POS;
+						next_clk_out = 1;
 					end
 					// 010, reset
 					else
 					begin
 						next_state = RESET_S0_D_NEG;
+						next_clk_out = 0;
+						next_ctrl_hold = 1;
+						next_ctrl_dout = 0;
 					end
 				end
 
@@ -258,11 +221,15 @@ begin
 					if (input_buffer[0])
 					begin
 						next_state = RESET_S0_D_NEG;
+						next_clk_out = 0;
+						next_ctrl_hold = 1;
+						next_ctrl_dout = 0;
 					end
 					else
 					begin
 						next_seq_state = seq_state + 1;
 						next_state = DRIVE2_POS;
+						next_clk_out = 1;
 					end
 				end
 
@@ -273,11 +240,15 @@ begin
 					begin
 						next_seq_state = seq_state + 1;
 						next_state = DRIVE2_POS;
+						next_clk_out = 1;
 					end
 					// 010, reset
 					else
 					begin
 						next_state = RESET_S0_D_NEG;
+						next_clk_out = 0;
+						next_ctrl_hold = 1;
+						next_ctrl_dout = 0;
 					end
 				end
 			endcase
@@ -286,19 +257,29 @@ begin
 		DRIVE2_POS:
 		begin
 			next_state = DRIVE2_NEG;
+			next_clk_out = 0;
 		end
 
 		DRIVE2_NEG:
 		begin
 			if (out_of_phase)
+			begin
 				next_state = RESET_S0_D_NEG;
+				next_clk_out = 0;
+				next_ctrl_hold = 1;
+				next_ctrl_dout = 0;
+			end
 			else
+			begin
 				next_state = LATCH2_POS;
+				next_clk_out = 1;
+			end
 		end
 
 		LATCH2_POS:
 		begin
 			next_state = LATCH2_NEG;
+			next_clk_out = 0;
 		end
 
 		LATCH2_NEG:
@@ -312,16 +293,21 @@ begin
 						begin
 							next_seq_state = seq_state + 1;
 							next_state = DRIVE1_POS;
+							next_clk_out = 1;
 						end
 
 						2'b10:
 						begin
 							next_state = RESET_S0_D_NEG;
+							next_clk_out = 0;
+							next_ctrl_hold = 1;
+							next_ctrl_dout = 0;
 						end
 
 						default:
 						begin
 							next_state = DRIVE1_POS;
+							next_clk_out = 1;
 						end
 					endcase
 				end
@@ -333,12 +319,16 @@ begin
 					if (input_buffer[0])
 					begin
 						next_state = RESET_S0_D_NEG;
+						next_clk_out = 0;
+						next_ctrl_hold = 1;
+						next_ctrl_dout = 0;
 					end
 					// 0110, end of sequence
 					else
 					begin
 						next_seq_state = seq_state + 1;
 						next_state = DRIVE1_POS;
+						next_clk_out = 1;
 					end
 				end
 
@@ -349,16 +339,23 @@ begin
 					begin
 						next_seq_state = seq_state + 1;
 						next_state = DRIVE1_POS;
+						next_clk_out = 1;
 					end
 					else
 					begin
 						next_state = RESET_S0_D_NEG;
+						next_clk_out = 0;
+						next_ctrl_hold = 1;
+						next_ctrl_dout = 0;
 					end
 				end
 
 				6:
 				begin
 					next_state = RESET_S0_D_NEG;
+					next_clk_out = 0;
+					next_ctrl_hold = 1;
+					next_ctrl_dout = 0;
 				end
 			endcase
 		end
@@ -367,21 +364,30 @@ begin
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
+			begin
 				next_state = RESET_S0_D_POS;
+				next_clk_out = 1;
+			end
 		end
 
 		RESET_S0_D_POS:
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
+			begin
 				next_state = RESET_S0_L_NEG;
+				next_clk_out = 0;
+			end
 		end
 
 		RESET_S0_L_NEG:
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
+			begin
 				next_state = RESET_S0_L_POS;
+				next_clk_out = 1;
+			end
 		end
 
 		RESET_S0_L_POS:
@@ -391,10 +397,14 @@ begin
 			begin
 				// 1st reset bit successed
 				if (input_buffer[2:0]==0)
+				begin
 					next_state = RESET_S1_D_NEG;
+					next_ctrl_dout = 1;
+				end
 				// 1st reset bit failed
 				else
 					next_state = RESET_S0_D_NEG;
+				next_clk_out = 0;
 			end
 		end
 
@@ -402,21 +412,30 @@ begin
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
+			begin
 				next_state = RESET_S1_D_POS;
+				next_clk_out = 1;
+			end
 		end
 
 		RESET_S1_D_POS:
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
+			begin
 				next_state = RESET_S1_L_NEG;
+				next_clk_out = 0;
+			end
 		end
 
 		RESET_S1_L_NEG:
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
+			begin
 				next_state = RESET_S1_L_POS;
+				next_clk_out = 1;
+			end
 		end
 
 		RESET_S1_L_POS:
@@ -430,6 +449,8 @@ begin
 				// 2nd reset bit failed
 				else
 					next_state = RESET_S0_D_NEG;
+				next_ctrl_dout = 0;
+				next_clk_out = 0;
 			end
 		end
 
@@ -437,21 +458,30 @@ begin
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
+			begin
 				next_state = RESET_S0_D1_POS;
+				next_clk_out = 1;
+			end
 		end
 
 		RESET_S0_D1_POS:
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
+			begin
 				next_state = RESET_S0_L1_NEG;
+				next_clk_out = 0;
+			end
 		end
 
 		RESET_S0_L1_NEG:
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
+			begin
 				next_state = RESET_S0_L1_POS;
+				next_clk_out = 1;
+			end
 		end
 
 		RESET_S0_L1_POS:
@@ -461,10 +491,17 @@ begin
 			begin
 				// 3rd reset bit successed
 				if (input_buffer==4'b0000)
+				begin
 					next_state = RESET_R_D_NEG;
+					next_ctrl_dout = 1;
+				end
 				// 3rd reset bit failed
 				else
+				begin
 					next_state = RESET_S0_D_NEG;
+					next_ctrl_dout = 0;
+				end
+				next_clk_out = 0;
 			end
 		end
 
@@ -472,28 +509,40 @@ begin
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
+			begin
 				next_state = RESET_R_D_POS;
+				next_clk_out = 1;
+			end
 		end
 
 		RESET_R_D_POS:
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
+			begin
 				next_state = RESET_R_L_NEG;
+				next_clk_out = 0;
+			end
 		end
 
 		RESET_R_L_NEG:
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
+			begin
 				next_state = RESET_R_L_POS;
+				next_clk_out = 1;
+			end
 		end
 
 		RESET_R_L_POS:
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
+			begin
 				next_state = BACK_TO_IDLE_NEG;
+				next_clk_out = 0;
+			end
 		end
 
 		// additional clock cycle for each node back to idle
@@ -501,7 +550,10 @@ begin
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
+			begin
 				next_state = BACK_TO_IDLE_POS;
+				next_clk_out = 1;
+			end
 		end
 
 		BACK_TO_IDLE_POS:

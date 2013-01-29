@@ -48,7 +48,7 @@ parameter NUM_OF_STATES = 31;
 
 // CLK registers
 reg		CLK_HALF, next_clk_half;
-reg		CLK_OUT, next_clk_out;;
+reg		CLK_OUT, next_clk_out;
 reg		ctrl_hold, next_ctrl_hold; 
 reg		ctrl_dout, next_ctrl_dout; 
 

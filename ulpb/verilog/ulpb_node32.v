@@ -47,7 +47,7 @@ parameter BUS_RESET = 6;
 parameter NUM_OF_STATE = 7;
 
 // general registers
-reg		[log2(NUM_OF_STATE-1)-1:0] state, next_state;
+reg		[log2(NUM_OF_STATE-1)-1:0] bus_state, next_bus_state;
 reg		[log2(RESET_CNT-1)-1:0] reset_cnt, next_reset_cnt;
 reg		[log2(DATA_WIDTH-1)-1:0] bit_position, next_bit_position; 
 reg		addr_done, next_addr_done;
@@ -90,7 +90,7 @@ begin
 	if (~RESET)
 	begin
 		// general registers
-		state <= BUS_IDLE;
+		bus_state <= BUS_IDLE;
 		reset_cnt <= RESET_CNT - 1'b1;
 		bit_position <= ADDR_WIDTH - 1'b1;
 		addr_done <= 0;
@@ -122,7 +122,7 @@ begin
 	else
 	begin
 		// general registers
-		state <= next_state;
+		bus_state <= next_bus_state;
 		reset_cnt <= next_reset_cnt;
 		bit_position <= next_bit_position;
 		addr_done <= next_addr_done;
@@ -156,7 +156,7 @@ end
 always @ *
 begin
 	// general registers
-	next_state = state;
+	next_bus_state = bus_state;
 	next_reset_cnt = reset_cnt;
 	next_bit_position = bit_position;
 	next_addr_done = addr_done;
@@ -200,7 +200,7 @@ begin
 		next_tx_success = 0;
 	end
 
-	case (state)
+	case (bus_state)
 		BUS_IDLE:
 		begin
 			if (DIN^DOUT)
@@ -217,7 +217,7 @@ begin
 				next_mode = MODE_RX;
 
 			// general registers
-			next_state = ARBI_RESOLVED;
+			next_bus_state = ARBI_RESOLVED;
 			next_bit_position = ADDR_WIDTH - 1'b1;
 			next_addr_done = 0;
 			next_self_reset = 0;
@@ -235,14 +235,14 @@ begin
 
 		ARBI_RESOLVED:
 		begin
-			next_state = DRIVE1;
+			next_bus_state = DRIVE1;
 			if (mode==MODE_TX)
 				next_out_reg = addr_bit_extract;
 		end
 
 		DRIVE1:
 		begin
-			next_state = LATCH1;
+			next_bus_state = LATCH1;
 			if ((mode==MODE_RX)&&(addr_done==1)&&(address_match==0))
 				next_mode = MODE_FWD;
 		end
@@ -270,12 +270,12 @@ begin
 				end
 
 			endcase
-			next_state = DRIVE2;
+			next_bus_state = DRIVE2;
 		end
 
 		DRIVE2:
 		begin
-			next_state = LATCH2;
+			next_bus_state = LATCH2;
 			if (mode==MODE_TX)
 			begin
 				if (tx_done)
@@ -318,7 +318,7 @@ begin
 				MODE_TX:
 				begin
 					if (self_reset)
-						next_state = BUS_RESET;
+						next_bus_state = BUS_RESET;
 					else
 					begin
 						case ({tx_done, tx_end_of_trans})
@@ -329,7 +329,7 @@ begin
 									next_out_reg = 1;
 								else
 									next_out_reg = 0;
-								next_state = DRIVE1;
+								next_bus_state = DRIVE1;
 								// should ALWAYS NOT happen, out of sync
 								if (input_buffer_xor)
 									next_self_reset = 1;
@@ -339,10 +339,10 @@ begin
 							begin
 								next_tx_wait_for_ack = 1;
 								if (~tx_wait_for_ack)
-									next_state = DRIVE1;
+									next_bus_state = DRIVE1;
 								else
 								begin
-									next_state = BUS_RESET;
+									next_bus_state = BUS_RESET;
 									if (input_buffer_xor & (~tx_underflow))
 										next_tx_success = 1;
 									else
@@ -352,7 +352,7 @@ begin
 
 							default:
 							begin
-								next_state = DRIVE1;
+								next_bus_state = DRIVE1;
 								// RESET by Receiver
 								if (input_buffer_xor)
 								begin
@@ -376,7 +376,7 @@ begin
 				MODE_RX:
 				begin
 					if (self_reset)
-						next_state = BUS_RESET;
+						next_bus_state = BUS_RESET;
 					else
 					begin
 						if (input_buffer_xor)
@@ -384,7 +384,7 @@ begin
 							if (rx_overflow)
 							begin
 								next_self_reset = 1;
-								next_state = DRIVE1;
+								next_bus_state = DRIVE1;
 							end
 							else
 							// send ACK
@@ -393,10 +393,10 @@ begin
 								if (~rx_done)
 								begin
 									next_out_reg = 1;
-									next_state = DRIVE1;
+									next_bus_state = DRIVE1;
 								end
 								else
-									next_state = BUS_RESET;
+									next_bus_state = BUS_RESET;
 
 								if (rx_word_completed)
 								begin
@@ -408,7 +408,7 @@ begin
 						end
 						else
 						begin
-							next_state = DRIVE1;
+							next_bus_state = DRIVE1;
 							if (bit_position)
 							begin
 								next_bit_position = bit_position - 1'b1;
@@ -447,10 +447,10 @@ begin
 				MODE_FWD:
 				begin
 					if (self_reset)
-						next_state = BUS_RESET;
+						next_bus_state = BUS_RESET;
 					else
 					begin
-						next_state = DRIVE1;
+						next_bus_state = DRIVE1;
 						if (input_buffer_xor)
 							next_self_reset = 1;
 					end
@@ -466,7 +466,7 @@ begin
 				next_reset_cnt = reset_cnt - 1'b1;
 			else
 			begin
-				next_state = BUS_IDLE;
+				next_bus_state = BUS_IDLE;
 				next_mode = MODE_IDLE;
 			end
 		end
@@ -477,7 +477,7 @@ end
 always @ *
 begin
 	DOUT = DIN;
-	case (state)
+	case (bus_state)
 		BUS_IDLE:
 		begin
 			DOUT = ((~TX_REQ) & DIN);
@@ -591,7 +591,7 @@ begin
 	end
 	else
 	begin
-		if ((state==DRIVE1)||(state==DRIVE2))
+		if ((bus_state==DRIVE1)||(bus_state==DRIVE2))
 			input_buffer <= {input_buffer[0], DIN};
 	end
 end

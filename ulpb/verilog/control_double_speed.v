@@ -46,6 +46,9 @@ parameter BACK_TO_IDLE_POS	= 6'b011110;
 
 parameter NUM_OF_STATES = 31;
 
+parameter MES = 2'b10;
+parameter ACK_SEQ = 4'b0110;
+
 // CLK registers
 reg		CLK_HALF, next_clk_half;
 reg		CLK_OUT, next_clk_out;
@@ -62,8 +65,20 @@ reg		[3:0]	input_buffer;
 
 // Combinational logics
 reg		out_of_phase;
+reg		ACK_SEQ_EXTRACT;
 assign DOUT = (ctrl_hold)? ctrl_dout : DIN;
 assign test_pt = state;
+
+always @ *
+begin
+	ACK_SEQ_EXTRACT = 0;
+	case (seq_state)
+		1: begin ACK_SEQ_EXTRACT = 0; end
+		2: begin ACK_SEQ_EXTRACT = 1; end
+		3: begin ACK_SEQ_EXTRACT = 1; end
+		4: begin ACK_SEQ_EXTRACT = 0; end
+	endcase
+end
 
 always @ (posedge CLK or negedge RESET)
 begin
@@ -195,54 +210,14 @@ begin
 					next_clk_out = 1;
 				end
 
-				// 3rd of end of meesage
-				1:
+				default:
 				begin
-					// 011
-					if (input_buffer[0])
+					if (input_buffer[0]==ACK_SEQ_EXTRACT)
 					begin
-						next_seq_state = seq_state + 1;
+						next_seq_state = seq_state + 1'b1;
 						next_state = DRIVE2_POS;
 						next_clk_out = 1;
 					end
-					// 010, reset
-					else
-					begin
-						next_state = RESET_S0_D_NEG;
-						next_clk_out = 0;
-						next_ctrl_hold = 1;
-						next_ctrl_dout = 0;
-					end
-				end
-
-				// 1st of ACK
-				3:
-				begin
-					if (input_buffer[0])
-					begin
-						next_state = RESET_S0_D_NEG;
-						next_clk_out = 0;
-						next_ctrl_hold = 1;
-						next_ctrl_dout = 0;
-					end
-					else
-					begin
-						next_seq_state = seq_state + 1;
-						next_state = DRIVE2_POS;
-						next_clk_out = 1;
-					end
-				end
-
-				// 3rd of ACK
-				5:
-				begin
-					if (input_buffer[0])
-					begin
-						next_seq_state = seq_state + 1;
-						next_state = DRIVE2_POS;
-						next_clk_out = 1;
-					end
-					// 010, reset
 					else
 					begin
 						next_state = RESET_S0_D_NEG;
@@ -287,75 +262,52 @@ begin
 			case (seq_state)
 				0:
 				begin
-					case ({input_buffer[2], input_buffer[0]})
-						// 2nd bit of message end
-						2'b01:
+					if (input_buffer[2] ^ input_buffer[0])
+					begin
+						if (({input_buffer[2], input_buffer[0])==MES)
 						begin
-							next_seq_state = seq_state + 1;
+							next_seq_state = seq_state + 1'b1;
 							next_state = DRIVE1_POS;
 							next_clk_out = 1;
 						end
-
-						2'b10:
+						else
 						begin
 							next_state = RESET_S0_D_NEG;
 							next_clk_out = 0;
 							next_ctrl_hold = 1;
 							next_ctrl_dout = 0;
 						end
-
-						default:
-						begin
-							next_state = DRIVE1_POS;
-							next_clk_out = 1;
-						end
-					endcase
-				end
-
-				// 4th bit of end of message
-				2:
-				begin
-					// 0111, reset
-					if (input_buffer[0])
-					begin
-						next_state = RESET_S0_D_NEG;
-						next_clk_out = 0;
-						next_ctrl_hold = 1;
-						next_ctrl_dout = 0;
 					end
-					// 0110, end of sequence
 					else
 					begin
-						next_seq_state = seq_state + 1;
 						next_state = DRIVE1_POS;
 						next_clk_out = 1;
 					end
 				end
 
-				// 2nd bit of ACK
 				4:
-				begin
-					if (input_buffer[0])
-					begin
-						next_seq_state = seq_state + 1;
-						next_state = DRIVE1_POS;
-						next_clk_out = 1;
-					end
-					else
-					begin
-						next_state = RESET_S0_D_NEG;
-						next_clk_out = 0;
-						next_ctrl_hold = 1;
-						next_ctrl_dout = 0;
-					end
-				end
-
-				6:
 				begin
 					next_state = RESET_S0_D_NEG;
 					next_clk_out = 0;
 					next_ctrl_hold = 1;
 					next_ctrl_dout = 0;
+				end
+
+				default:
+				begin
+					if (input_buffer[0]==ACK_SEQ_EXTRACT)
+					begin
+						next_seq_state = seq_state + 1'b1;
+						next_state = DRIVE1_POS;
+						next_clk_out = 1;
+					end
+					else
+					begin
+						next_state = RESET_S0_D_NEG;
+						next_clk_out = 0;
+						next_ctrl_hold = 1;
+						next_ctrl_dout = 0;
+					end
 				end
 			endcase
 		end

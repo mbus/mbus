@@ -1,35 +1,30 @@
-module ulpb_node32(CLK, RESET, DIN, DOUT, TX_ADDR, TX_DATA, TX_PEND, TX_REQ, TX_ACK, RX_ADDR, RX_DATA, RX_REQ, RX_ACK, RX_PEND, TX_FAIL, TX_SUCC, TX_RESP_ACK);
+
+`include "include/ulpb_def.v"
+
+module ulpb_node32(
+	input CLK, 
+	input RESET, 
+	input DIN, 
+	output reg DOUT, 
+	input [`ADDR_WIDTH-1:0] TX_ADDR, 
+	input [`DATA_WIDTH-1:0] TX_DATA, 
+	input TX_PEND, 
+	input TX_REQ, 
+	output reg TX_ACK, 
+	output reg [`ADDR_WIDTH-1:0] RX_ADDR, 
+	output reg [`DATA_WIDTH-1:0] RX_DATA, 
+	output reg RX_REQ, 
+	input RX_ACK, 
+	output reg RX_PEND, 
+	output reg TX_FAIL, 
+	output reg TX_SUCC, 
+	input TX_RESP_ACK
+);
 
 `include "include/ulpb_func.v"
 
-parameter ADDR_WIDTH=8;
-parameter DATA_WIDTH=32;
 parameter ADDRESS = 8'hef;
 parameter ADDRESS_MASK=8'hff;
-
-input 	CLK, RESET, DIN;
-output	DOUT;
-
-input	[ADDR_WIDTH-1:0] TX_ADDR;
-input	[DATA_WIDTH-1:0] TX_DATA;
-input	TX_REQ;
-output	TX_ACK;
-input	TX_PEND;
-
-output	TX_SUCC;
-output	TX_FAIL;
-input	TX_RESP_ACK;
-
-output	[ADDR_WIDTH-1:0] RX_ADDR;
-output	[DATA_WIDTH-1:0] RX_DATA;
-output	RX_REQ;
-input	RX_ACK;
-output	RX_PEND;
-
-
-reg		DOUT;
-
-parameter RESET_CNT = 4;
 
 parameter MODE_IDLE = 0;
 parameter MODE_TX = 1;
@@ -44,31 +39,53 @@ parameter DRIVE2 = 4;
 parameter LATCH2 = 5;
 parameter BUS_RESET = 6;
 
-parameter NUM_OF_STATE = 7;
+parameter NUM_OF_BUS_STATE = 7;
+
+parameter TRANSMIT_ADDR 		= 0;
+parameter TRANSMIT_DATA 		= 1;
+parameter TRANSMIT_EOT0 		= 2;
+parameter TRANSMIT_EOT1 		= 3;
+parameter TRANSMIT_WAIT_ACK0 	= 4;
+parameter TRANSMIT_WAIT_ACK1 	= 5;
+parameter TRANSMIT_WAIT_ACK2 	= 6;
+parameter TRANSMIT_FWD 			= 15;
+
+parameter RECEIVE_ADDR			= 0;
+parameter RECEIVE_DATA			= 1;
+parameter RECEIVE_CONT			= 2;
+parameter RECEIVE_DRIVE_ACK0	= 3;
+parameter RECEIVE_DRIVE_ACK1	= 4;
+parameter RECEIVE_DRIVE_ACK2	= 5;
+parameter RECEIVE_DRIVE_ACK3	= 6;
+parameter RECEIVE_OVERFLOW		= 7;
+parameter RECEIVE_FWD			= 15;
+
+parameter NUM_OF_NODE_STATE = 15;
 
 // general registers
-reg		[log2(NUM_OF_STATE-1)-1:0] bus_state, next_bus_state;
-reg		[log2(DATA_WIDTH-1)-1:0] bit_position, next_bit_position; 
-reg		[3:0] input_buffer;
+reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state;
+reg		[log2(NUM_OF_NODE_STATE-1)-1:0] node_state, next_node_state;
+reg		[log2(`DATA_WIDTH-1)-1:0] bit_position, next_bit_position; 
+reg		[5:0] input_buffer;
 reg		out_reg, next_out_reg;
 reg		[1:0] mode, next_mode;
 
 // interface registers
-reg		TX_ACK, next_tx_ack;
-reg		TX_FAIL, next_tx_fail;
-reg		TX_SUCC, next_tx_success;
+reg		next_tx_ack;
+reg		next_tx_fail;
+reg		next_tx_success;
 
 // tx registers
-reg		[ADDR_WIDTH-1:0] ADDR, next_addr;
-reg		[DATA_WIDTH-1:0] DATA0, next_data0;
+reg		[`ADDR_WIDTH-1:0] ADDR, next_addr;
+reg		[`DATA_WIDTH-1:0] DATA0, next_data0;
 reg		tx_pend, next_tx_pend;
 
 // rx registers
-reg		[ADDR_WIDTH-1:0] RX_ADDR, next_rx_addr;
-reg		[DATA_WIDTH-1:0] RX_DATA, next_rx_data; 
-reg		[DATA_WIDTH-1:0] rx_data_out_buf, next_rx_data_buf;
-reg		RX_REQ, next_rx_req;
-reg		RX_PEND, next_rx_pend;
+reg		[`ADDR_WIDTH-1:0] next_rx_addr;
+reg		[`DATA_WIDTH-1:0] next_rx_data; 
+reg		[`DATA_WIDTH-1:0] rx_data_out_buf, next_rx_data_buf;
+reg		next_rx_req;
+reg		next_rx_pend;
 
 wire	addr_bit_extract = ((ADDR  & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	data0_bit_extract = ((DATA0 & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
@@ -81,7 +98,8 @@ begin
 	begin
 		// general registers
 		bus_state <= BUS_IDLE;
-		bit_position <= ADDR_WIDTH - 1'b1;
+		node_state <= RECEIVE_ADDR;
+		bit_position <= `ADDR_WIDTH - 1'b1;
 		out_reg <= 1;
 		mode <= MODE_IDLE;
 		// interface registers
@@ -103,6 +121,7 @@ begin
 	begin
 		// general registers
 		bus_state <= next_bus_state;
+		node_state <= next_node_state;
 		bit_position <= next_bit_position;
 		out_reg <= next_out_reg;
 		mode <= next_mode;
@@ -180,7 +199,7 @@ begin
 
 			// general registers
 			next_bus_state = ARBI_RESOLVED;
-			next_bit_position = ADDR_WIDTH - 1'b1;
+			next_bit_position = `ADDR_WIDTH - 1'b1;
 			// interface registers
 			// tx registers
 			// rx registers
@@ -215,29 +234,14 @@ begin
 							TRANSMIT_EOT0:
 							begin
 								next_node_state = TRANSMIT_EOT1;
-								next_out_reg = 1;
-							end
-
-							TRANSMIT_EOT2:
-							begin
-								next_node_state = TRANSMIT_EOT3;
 								next_out_reg = 0;
 							end
-
 						endcase
 					end
 
 					MODE_RX:
 					begin
 						case (node_state)
-							RECEIVE_EOT0:
-							begin
-								if (input_buffer_xor[0])
-									next_node_state = RECEIVE_EOT1;
-								else
-									next_node_state = RECEIVE_FWD;
-							end
-
 							RECEIVE_DRIVE_ACK0:
 							begin
 								next_node_state = RECEIVE_DRIVE_ACK1;
@@ -262,13 +266,13 @@ begin
 			if (mode==MODE_TX)
 			begin
 				case (node_state)
-					TRASNMIT_ADDR:
+					TRANSMIT_ADDR:
 					begin
 						if (bit_position)
 							next_bit_position = bit_position - 1'b1;
 						else
 						begin
-							next_bit_position = DATA_WIDTH - 1'b1;
+							next_bit_position = `DATA_WIDTH - 1'b1;
 							next_node_state = TRANSMIT_DATA;
 						end
 					end
@@ -279,7 +283,7 @@ begin
 							next_bit_position = bit_position - 1'b1;
 						else
 						begin
-							next_bit_position = DATA_WIDTH - 1'b1;
+							next_bit_position = `DATA_WIDTH - 1'b1;
 							case ({tx_pend, TX_REQ})
 								2'b11:
 								begin
@@ -313,11 +317,11 @@ begin
 				next_bus_state = BUS_RESET;
 			else
 			begin
-				next_state = DRIVE1;
+				next_bus_state = DRIVE1;
 				case (mode)
 					MODE_TX:
 					begin
-						case (node_tate)
+						case (node_state)
 							TRANSMIT_ADDR:
 							begin
 								next_out_reg = addr_bit_extract;
@@ -340,16 +344,10 @@ begin
 
 							TRANSMIT_EOT0:
 							begin
-								next_out_reg = 0;
-							end
-
-							TRANSMIT_EOT1:
-							begin
-								next_node_state = TRANSMIT_EOT2;
 								next_out_reg = 1;
 							end
 
-							TRANSMIT_EOT3:
+							TRANSMIT_EOT1:
 							begin
 								next_node_state = TRANSMIT_WAIT_ACK0;
 							end
@@ -361,9 +359,14 @@ begin
 
 							TRANSMIT_WAIT_ACK1:
 							begin
+								next_node_state = TRANSMIT_WAIT_ACK2;
+							end
+
+							TRANSMIT_WAIT_ACK2:
+							begin
 								next_node_state = TRANSMIT_FWD;
 								// received ack
-								if (input_buffer==4'b0110)
+								if (input_buffer==6'b011001)
 									next_tx_success = 1;
 								else
 									next_tx_fail = 1;
@@ -387,10 +390,10 @@ begin
 									end
 									else
 									begin
-										next_bit_position = DATA_WIDTH - 1'b1;
+										next_bit_position = `DATA_WIDTH - 1'b1;
 										next_node_state = RECEIVE_DATA;
 									end
-									next_rx_addr = {RX_ADDR[ADDR_WIDTH-2:0], input_buffer[0]};
+									next_rx_addr = {RX_ADDR[`ADDR_WIDTH-2:0], input_buffer[0]};
 								end
 							end
 
@@ -400,14 +403,14 @@ begin
 									next_node_state = RECEIVE_FWD;
 								else
 								begin
-									next_rx_data_buf = {rx_data_out_buf[DATA_WIDTH-2:0], input_buffer[0]};
+									next_rx_data_buf = {rx_data_out_buf[`DATA_WIDTH-2:0], input_buffer[0]};
 									if (bit_position)
 									begin
 										next_bit_position = bit_position - 1'b1;
 									end
 									else
 									begin
-										next_bit_position = DATA_WIDTH - 1'b1;
+										next_bit_position = `DATA_WIDTH - 1'b1;
 										next_node_state = RECEIVE_CONT;
 									end
 								end
@@ -427,8 +430,11 @@ begin
 									// end of tx
 									if (input_buffer_xor)
 									begin
-										if (input_buffer[1:0]==2'b01)
-											next_node_state = RECEIVE_EOT0;
+										if (input_buffer[1:0]==2'b10)
+										begin
+											next_node_state = RECEIVE_DRIVE_ACK0;
+											next_out_reg = 0;
+										end
 										else
 											next_node_state = RECEIVE_FWD;
 										next_rx_pend = 0;
@@ -437,23 +443,11 @@ begin
 									else
 									begin
 										next_bit_position = bit_position - 1'b1;
-										next_rx_data_buf = {rx_data_out_buf[DATA_WIDTH-2:0], input_buffer[0]};
+										next_rx_data_buf = {rx_data_out_buf[`DATA_WIDTH-2:0], input_buffer[0]};
 										next_node_state = RECEIVE_DATA;
 										next_rx_pend = 1;
 									end
 								end
-							end
-
-							RECEIVE_EOT1:
-							begin
-								// received complete EOT, i.e. 0110
-								if (~input_buffer_xor[0])
-								begin
-									next_node_state = RECEIVE_DRIVE_ACK0;
-									next_out_reg = 0;
-								end
-								else
-									next_node_state = RECEIVE_FWD;
 							end
 
 							RECEIVE_DRIVE_ACK1:
@@ -485,7 +479,6 @@ begin
 			begin
 				next_bus_state = BUS_IDLE;
 				next_mode = MODE_IDLE;
-				next_node_state = NODE_IDLE;
 			end
 		end
 
@@ -514,9 +507,7 @@ begin
 			case (mode)
 				MODE_TX:
 				begin
-					if ((node_state==TRANSMIT_FWD)||(node_sate==TRANSMIT_WAIT_ACK0)||(node_sate==TRANSMIT_WAIT_ACK1))
-						DOUT = DIN;
-					else
+					if ((node_state==TRANSMIT_ADDR)||(node_state==TRANSMIT_DATA)||(node_state==TRANSMIT_EOT0))
 						DOUT = out_reg;
 				end
 
@@ -533,9 +524,7 @@ begin
 			case (mode)
 				MODE_TX:
 				begin
-					if ((node_state==TRANSMIT_FWD)||(node_sate==TRANSMIT_WAIT_ACK0)||(node_sate==TRANSMIT_WAIT_ACK1))
-						DOUT = DIN;
-					else
+					if ((node_state==TRANSMIT_ADDR)||(node_state==TRANSMIT_DATA)||(node_state==TRANSMIT_EOT1))
 						DOUT = out_reg;
 				end
 
@@ -559,7 +548,7 @@ begin
 	else
 	begin
 		if ((bus_state==DRIVE1)||(bus_state==DRIVE2)||(bus_state==BUS_RESET))
-			input_buffer <= {input_buffer[2:0], DIN};
+			input_buffer <= {input_buffer[4:0], DIN};
 	end
 end
 

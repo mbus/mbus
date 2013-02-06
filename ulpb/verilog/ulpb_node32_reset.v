@@ -92,6 +92,9 @@ wire	data0_bit_extract = ((DATA0 & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	input_buffer_xor = input_buffer[0] ^ input_buffer[1];
 wire	address_match = (((RX_ADDR^ADDRESS)&ADDRESS_MASK)==0)? 1'b1 : 1'b0;
 
+wire	[1:0] MES_SEQ_WIRE = `MES_SEQ;
+wire	[3:0] ACK_SEQ_WIRE = `ACK_SEQ;
+
 always @ (posedge CLK or negedge RESET)
 begin
 	if (~RESET)
@@ -222,7 +225,7 @@ begin
 
 		LATCH1:
 		begin
-			if (input_buffer[2:0]==3'b010)
+			if (input_buffer[2:0]==`RST_SEQ)
 				next_bus_state = BUS_RESET;
 			else
 			begin
@@ -234,7 +237,7 @@ begin
 							TRANSMIT_EOT0:
 							begin
 								next_node_state = TRANSMIT_EOT1;
-								next_out_reg = 0;
+								next_out_reg = MES_SEQ_WIRE[0];
 							end
 						endcase
 					end
@@ -245,13 +248,13 @@ begin
 							RECEIVE_DRIVE_ACK0:
 							begin
 								next_node_state = RECEIVE_DRIVE_ACK1;
-								next_out_reg = 1;
+								next_out_reg = ACK_SEQ_WIRE[2];
 							end
 
 							RECEIVE_DRIVE_ACK2:
 							begin
 								next_node_state = RECEIVE_DRIVE_ACK3;
-								next_out_reg = 0;
+								next_out_reg = ACK_SEQ_WIRE[0];
 							end
 						endcase
 					end
@@ -313,7 +316,7 @@ begin
 
 		LATCH2:
 		begin
-			if (input_buffer[2:0]==3'b010)
+			if (input_buffer[2:0]==`RST_SEQ)
 				next_bus_state = BUS_RESET;
 			else
 			begin
@@ -344,7 +347,7 @@ begin
 
 							TRANSMIT_EOT0:
 							begin
-								next_out_reg = 1;
+								next_out_reg = MES_SEQ_WIRE[1];
 							end
 
 							TRANSMIT_EOT1:
@@ -366,7 +369,8 @@ begin
 							begin
 								next_node_state = TRANSMIT_FWD;
 								// received ack
-								if (input_buffer==6'b011001)
+								//if (input_buffer==6'b011001)
+								if (input_buffer==`TX_ACK_SEQ)
 									next_tx_success = 1;
 								else
 									next_tx_fail = 1;
@@ -430,10 +434,10 @@ begin
 									// end of tx
 									if (input_buffer_xor)
 									begin
-										if (input_buffer[1:0]==2'b10)
+										if (input_buffer[1:0]==`MES_SEQ)
 										begin
 											next_node_state = RECEIVE_DRIVE_ACK0;
-											next_out_reg = 0;
+											next_out_reg = ACK_SEQ_WIRE[3];
 										end
 										else
 											next_node_state = RECEIVE_FWD;
@@ -453,7 +457,7 @@ begin
 							RECEIVE_DRIVE_ACK1:
 							begin
 								next_node_state = RECEIVE_DRIVE_ACK2;
-								next_out_reg = 1;
+								next_out_reg = ACK_SEQ_WIRE[1];
 							end
 
 							// ACK completed

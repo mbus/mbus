@@ -1,14 +1,16 @@
 
-module control(DIN, DOUT, RESET, CLK_OUT, CLK, test_pt);
+`include "include/ulpb_def.v"
+
+module control(
+	input DIN, 
+	input RESET, 
+	input CLK, 
+	output DOUT, 
+	output reg CLK_OUT, 
+	output [5:0] test_pt
+);
 
 `include "include/ulpb_func.v"
-
-input 	CLK;
-output	CLK_OUT;
-input	RESET;
-input	DIN;
-output	DOUT;
-output	[3:0]test_pt;
 
 parameter START_CYCLES = 12;
 
@@ -46,12 +48,9 @@ parameter BACK_TO_IDLE_POS	= 6'b011110;
 
 parameter NUM_OF_STATES = 31;
 
-parameter MES = 2'b10;
-parameter ACK_SEQ = 4'b0110;
-
 // CLK registers
 reg		CLK_HALF, next_clk_half;
-reg		CLK_OUT, next_clk_out;
+reg		next_clk_out;
 reg		ctrl_hold, next_ctrl_hold; 
 reg		ctrl_dout, next_ctrl_dout; 
 
@@ -69,14 +68,17 @@ reg		ACK_SEQ_EXTRACT;
 assign DOUT = (ctrl_hold)? ctrl_dout : DIN;
 assign test_pt = state;
 
+wire	[2:0] RST_SEQ_WIRE = `RST_SEQ;
+wire	[3:0] ACK_SEQ_WIRE = `ACK_SEQ;
+
 always @ *
 begin
 	ACK_SEQ_EXTRACT = 0;
 	case (seq_state)
-		1: begin ACK_SEQ_EXTRACT = 0; end
-		2: begin ACK_SEQ_EXTRACT = 1; end
-		3: begin ACK_SEQ_EXTRACT = 1; end
-		4: begin ACK_SEQ_EXTRACT = 0; end
+		1: begin ACK_SEQ_EXTRACT = ACK_SEQ_WIRE[3]; end
+		2: begin ACK_SEQ_EXTRACT = ACK_SEQ_WIRE[2]; end
+		3: begin ACK_SEQ_EXTRACT = ACK_SEQ_WIRE[1]; end
+		4: begin ACK_SEQ_EXTRACT = ACK_SEQ_WIRE[0]; end
 	endcase
 end
 
@@ -186,7 +188,7 @@ begin
 				next_state = RESET_S0_D_NEG;
 				next_clk_out = 0;
 				next_ctrl_hold = 1;
-				next_ctrl_dout = 0;
+				next_ctrl_dout = RST_SEQ_WIRE[2];
 			end
 			else
 			begin
@@ -223,7 +225,7 @@ begin
 						next_state = RESET_S0_D_NEG;
 						next_clk_out = 0;
 						next_ctrl_hold = 1;
-						next_ctrl_dout = 0;
+						next_ctrl_dout = RST_SEQ_WIRE[2];
 					end
 				end
 			endcase
@@ -242,7 +244,7 @@ begin
 				next_state = RESET_S0_D_NEG;
 				next_clk_out = 0;
 				next_ctrl_hold = 1;
-				next_ctrl_dout = 0;
+				next_ctrl_dout = RST_SEQ_WIRE[2];
 			end
 			else
 			begin
@@ -264,7 +266,7 @@ begin
 				begin
 					if (input_buffer[2] ^ input_buffer[0])
 					begin
-						if (({input_buffer[2], input_buffer[0]})==MES)
+						if (({input_buffer[2], input_buffer[0]})==`MES_SEQ)
 						begin
 							next_seq_state = seq_state + 1'b1;
 							next_state = DRIVE1_POS;
@@ -275,7 +277,7 @@ begin
 							next_state = RESET_S0_D_NEG;
 							next_clk_out = 0;
 							next_ctrl_hold = 1;
-							next_ctrl_dout = 0;
+							next_ctrl_dout = RST_SEQ_WIRE[2];
 						end
 					end
 					else
@@ -290,7 +292,7 @@ begin
 					next_state = RESET_S0_D_NEG;
 					next_clk_out = 0;
 					next_ctrl_hold = 1;
-					next_ctrl_dout = 0;
+					next_ctrl_dout = RST_SEQ_WIRE[2];
 				end
 
 				default:
@@ -306,7 +308,7 @@ begin
 						next_state = RESET_S0_D_NEG;
 						next_clk_out = 0;
 						next_ctrl_hold = 1;
-						next_ctrl_dout = 0;
+						next_ctrl_dout = RST_SEQ_WIRE[2];
 					end
 				end
 			endcase
@@ -351,11 +353,14 @@ begin
 				if (input_buffer[2:0]==0)
 				begin
 					next_state = RESET_S1_D_NEG;
-					next_ctrl_dout = 1;
+					next_ctrl_dout = RST_SEQ_WIRE[1];
 				end
 				// 1st reset bit failed
 				else
+				begin
 					next_state = RESET_S0_D_NEG;
+					next_ctrl_dout = RST_SEQ_WIRE[2];
+				end
 				next_clk_out = 0;
 			end
 		end
@@ -397,10 +402,16 @@ begin
 			begin
 				// 2nd reset bit successed
 				if (input_buffer==4'b1111)
+				begin
 					next_state = RESET_S0_D1_NEG;
+					next_ctrl_dout = RST_SEQ_WIRE[0];
+				end
 				// 2nd reset bit failed
 				else
+				begin
 					next_state = RESET_S0_D_NEG;
+					next_ctrl_dout = RST_SEQ_WIRE[2];
+				end
 				next_ctrl_dout = 0;
 				next_clk_out = 0;
 			end
@@ -451,7 +462,7 @@ begin
 				else
 				begin
 					next_state = RESET_S0_D_NEG;
-					next_ctrl_dout = 0;
+					next_ctrl_dout = RST_SEQ_WIRE[2];
 				end
 				next_clk_out = 0;
 			end

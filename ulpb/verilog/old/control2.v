@@ -1,14 +1,13 @@
 
-module control(DIN, DOUT, RESET, CLK_OUT, CLK, test_pt);
+module control(
+	input DIN, 
+	input CLK
+	input RESET, 
+	output reg DOUT, 
+	output reg CLK_OUT, 
+	);
 
 `include "include/ulpb_func.v"
-
-input 	CLK;
-output	CLK_OUT;
-input	RESET;
-input	DIN;
-output	DOUT;
-output	[3:0]test_pt;
 
 parameter START_CYCLES = 6;
 
@@ -49,7 +48,6 @@ reg		ctrl_hold;
 reg		out_of_phase;
 assign CLK_OUT = (CLK_EN)? (HALF_SPEED)? CLK_HALF : CLK : 1;
 assign DOUT = (ctrl_hold)? ctrl_dout : DIN;
-assign test_pt = state;
 
 always @ (posedge CLK or negedge RESET)
 begin

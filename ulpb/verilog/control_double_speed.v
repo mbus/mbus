@@ -124,7 +124,7 @@ begin
 	next_clk_half = CLK_HALF;
 	next_clk_out = CLK_OUT;
 	next_ctrl_hold = ctrl_hold;
-	next_ctrl_dout = ctrl_dout;;
+	next_ctrl_dout = ctrl_dout;
 	// Reset registers
 	next_seq_state = seq_state;
 	// General registers
@@ -264,7 +264,7 @@ begin
 				begin
 					if (input_buffer[2] ^ input_buffer[0])
 					begin
-						if (({input_buffer[2], input_buffer[0])==MES)
+						if (({input_buffer[2], input_buffer[0]})==MES)
 						begin
 							next_seq_state = seq_state + 1'b1;
 							next_state = DRIVE1_POS;

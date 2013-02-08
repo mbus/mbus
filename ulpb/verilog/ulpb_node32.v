@@ -1,35 +1,31 @@
-module ulpb_node32(CLK, RESET, DIN, DOUT, TX_ADDR, TX_DATA, TX_PEND, TX_REQ, TX_ACK, RX_ADDR, RX_DATA, RX_REQ, RX_ACK, RX_PEND, TX_FAIL, TX_SUCC, TX_RESP_ACK);
+
+`include "include/ulpb_def.v"
+
+module ulpb_node32(
+	input CLK, 
+	input RESET, 
+	input DIN, 
+	output reg DOUT, 
+	input [`ADDR_WIDTH-1:0] TX_ADDR, 
+	input [`DATA_WIDTH-1:0] TX_DATA, 
+	input TX_PEND, 
+	input TX_REQ, 
+	output reg TX_ACK, 
+	output reg [`ADDR_WIDTH-1:0] RX_ADDR, 
+	output reg [`DATA_WIDTH-1:0] RX_DATA, 
+	output reg RX_REQ, 
+	input RX_ACK, 
+	output reg RX_PEND, 
+	output reg TX_FAIL, 
+	output reg TX_SUCC, 
+	input TX_RESP_ACK
+);
 
 `include "include/ulpb_func.v"
 
-parameter ADDR_WIDTH=8;
-parameter DATA_WIDTH=32;
 parameter ADDRESS = 8'hef;
 parameter ADDRESS_MASK=8'hff;
-
-input 	CLK, RESET, DIN;
-output	DOUT;
-
-input	[ADDR_WIDTH-1:0] TX_ADDR;
-input	[DATA_WIDTH-1:0] TX_DATA;
-input	TX_REQ;
-output	TX_ACK;
-input	TX_PEND;
-
-output	TX_SUCC;
-output	TX_FAIL;
-input	TX_RESP_ACK;
-
-output	[ADDR_WIDTH-1:0] RX_ADDR;
-output	[DATA_WIDTH-1:0] RX_DATA;
-output	RX_REQ;
-input	RX_ACK;
-output	RX_PEND;
-
-
-reg		DOUT;
-
-parameter RESET_CNT = 4;
+parameter ERROR_RST_CYCLES = 5'd2;	// # bits cannot greater than log2(`DATA_WIDTH), i.e. 5
 
 parameter MODE_IDLE = 0;
 parameter MODE_TX = 1;
@@ -44,46 +40,62 @@ parameter DRIVE2 = 4;
 parameter LATCH2 = 5;
 parameter BUS_RESET = 6;
 
-parameter NUM_OF_STATE = 7;
+parameter NUM_OF_BUS_STATE = 7;
+
+parameter TRANSMIT_ADDR 		= 0;
+parameter TRANSMIT_DATA 		= 1;
+parameter TRANSMIT_EOT0 		= 2;
+parameter TRANSMIT_EOT1 		= 3;
+parameter TRANSMIT_WAIT_ACK0 	= 4;
+parameter TRANSMIT_WAIT_ACK1 	= 5;
+parameter TRANSMIT_WAIT_ACK2 	= 6;
+parameter TRANSMIT_ERROR		= 7;
+parameter TRANSMIT_FWD 			= 15;
+
+parameter RECEIVE_ADDR			= 0;
+parameter RECEIVE_DATA			= 1;
+parameter RECEIVE_CONT			= 2;
+parameter RECEIVE_DRIVE_ACK0	= 3;
+parameter RECEIVE_DRIVE_ACK1	= 4;
+parameter RECEIVE_DRIVE_ACK2	= 5;
+parameter RECEIVE_DRIVE_ACK3	= 6;
+parameter RECEIVE_OVERFLOW		= 7;
+parameter RECEIVE_FWD			= 15;
+
+parameter NUM_OF_NODE_STATE = 15;
 
 // general registers
-reg		[log2(NUM_OF_STATE-1)-1:0] bus_state, next_bus_state;
-reg		[log2(RESET_CNT-1)-1:0] reset_cnt, next_reset_cnt;
-reg		[log2(DATA_WIDTH-1)-1:0] bit_position, next_bit_position; 
-reg		addr_done, next_addr_done;
-reg		[1:0] input_buffer;
+reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state;
+reg		[log2(NUM_OF_NODE_STATE-1)-1:0] node_state, next_node_state;
+reg		[log2(`DATA_WIDTH-1)-1:0] bit_position, next_bit_position; 
+reg		[5:0] input_buffer;
 reg		out_reg, next_out_reg;
 reg		[1:0] mode, next_mode;
-reg		self_reset, next_self_reset;
 
 // interface registers
-reg		TX_ACK, next_tx_ack;
-reg		TX_FAIL, next_tx_fail;
-reg		TX_SUCC, next_tx_success;
+reg		next_tx_ack;
+reg		next_tx_fail;
+reg		next_tx_success;
 
 // tx registers
-reg		[ADDR_WIDTH-1:0] ADDR, next_addr;
-reg		[DATA_WIDTH-1:0] DATA0, next_data0;
-reg		tx_end_of_trans, next_tx_end_of_trans;
-reg		tx_done, next_tx_done;
-reg		tx_wait_for_ack, next_tx_wait_for_ack;
-reg		tx_underflow, next_tx_underflow;
+reg		[`ADDR_WIDTH-1:0] ADDR, next_addr;
+reg		[`DATA_WIDTH-1:0] DATA0, next_data0;
 reg		tx_pend, next_tx_pend;
 
 // rx registers
-reg		[ADDR_WIDTH-1:0] RX_ADDR, next_rx_addr;
-reg		[DATA_WIDTH-1:0] RX_DATA, next_rx_data; 
-reg		[DATA_WIDTH-2:0] rx_data_out_buf, next_rx_data_buf;
-reg		RX_REQ, next_rx_req;
-reg		RX_PEND, next_rx_pend;
-reg		rx_done, next_rx_done; 
-reg		rx_overflow, next_rx_overflow;
-reg		rx_word_completed, next_rx_word_completed;
+reg		[`ADDR_WIDTH-1:0] next_rx_addr;
+reg		[`DATA_WIDTH-1:0] next_rx_data; 
+reg		[`DATA_WIDTH-1:0] rx_data_out_buf, next_rx_data_buf;
+reg		next_rx_req;
+reg		next_rx_pend;
 
 wire	addr_bit_extract = ((ADDR  & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	data0_bit_extract = ((DATA0 & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	input_buffer_xor = input_buffer[0] ^ input_buffer[1];
 wire	address_match = (((RX_ADDR^ADDRESS)&ADDRESS_MASK)==0)? 1'b1 : 1'b0;
+
+wire	[1:0] MES_SEQ_WIRE = `MES_SEQ;
+wire	[3:0] ACK_SEQ_WIRE = `ACK_SEQ;
 
 always @ (posedge CLK or negedge RESET)
 begin
@@ -91,12 +103,10 @@ begin
 	begin
 		// general registers
 		bus_state <= BUS_IDLE;
-		reset_cnt <= RESET_CNT - 1'b1;
-		bit_position <= ADDR_WIDTH - 1'b1;
-		addr_done <= 0;
+		node_state <= RECEIVE_ADDR;
+		bit_position <= `ADDR_WIDTH - 1'b1;
 		out_reg <= 1;
 		mode <= MODE_IDLE;
-		self_reset <= 0;
 		// interface registers
 		TX_ACK <= 0;
 		TX_FAIL <= 0;
@@ -104,10 +114,6 @@ begin
 		// tx registers
 		ADDR <= 0;
 		DATA0 <= 0;
-		tx_end_of_trans <= 0;
-		tx_done <= 0;
-		tx_wait_for_ack <= 0;
-		tx_underflow <= 0;
 		tx_pend <= 0;
 		// rx registers
 		RX_ADDR <= 0;
@@ -115,20 +121,15 @@ begin
 		RX_REQ <= 0;
 		RX_PEND <= 0;
 		rx_data_out_buf <= 0;
-		rx_done <= 0;
-		rx_overflow <= 0;
-		rx_word_completed <= 0;
 	end
 	else
 	begin
 		// general registers
 		bus_state <= next_bus_state;
-		reset_cnt <= next_reset_cnt;
+		node_state <= next_node_state;
 		bit_position <= next_bit_position;
-		addr_done <= next_addr_done;
 		out_reg <= next_out_reg;
 		mode <= next_mode;
-		self_reset <= next_self_reset;
 		// interface registers
 		TX_ACK <= next_tx_ack;
 		TX_FAIL <= next_tx_fail;
@@ -136,10 +137,6 @@ begin
 		// tx registers
 		ADDR <= next_addr;
 		DATA0 <= next_data0;
-		tx_end_of_trans <= next_tx_end_of_trans;
-		tx_done <= next_tx_done;
-		tx_wait_for_ack <= next_tx_wait_for_ack;
-		tx_underflow <= next_tx_underflow;
 		tx_pend <= next_tx_pend;
 		// rx registers
 		RX_ADDR <= next_rx_addr;
@@ -147,9 +144,6 @@ begin
 		RX_REQ <= next_rx_req;
 		RX_PEND <= next_rx_pend;
 		rx_data_out_buf <= next_rx_data_buf;
-		rx_done <= next_rx_done;
-		rx_overflow <= next_rx_overflow;
-		rx_word_completed <= next_rx_word_completed;
 	end
 end
 
@@ -157,12 +151,10 @@ always @ *
 begin
 	// general registers
 	next_bus_state = bus_state;
-	next_reset_cnt = reset_cnt;
 	next_bit_position = bit_position;
-	next_addr_done = addr_done;
 	next_out_reg = out_reg;
 	next_mode = mode;
-	next_self_reset = self_reset;
+	next_node_state = node_state;
 	// interface registers
 	next_tx_ack = TX_ACK;
 	next_tx_fail = TX_FAIL;
@@ -170,10 +162,6 @@ begin
 	// tx registers
 	next_addr = ADDR;
 	next_data0 = DATA0;
-	next_tx_end_of_trans = tx_end_of_trans;
-	next_tx_done = tx_done;
-	next_tx_wait_for_ack = tx_wait_for_ack;
-	next_tx_underflow = tx_underflow;
 	next_tx_pend = tx_pend;
 	// rx registers
 	next_rx_addr = RX_ADDR;
@@ -181,9 +169,6 @@ begin
 	next_rx_req = RX_REQ;
 	next_rx_pend = RX_PEND;
 	next_rx_data_buf = rx_data_out_buf;
-	next_rx_done = rx_done;
-	next_rx_overflow = rx_overflow;
-	next_rx_word_completed = rx_word_completed;
 
 	if (TX_ACK & (~TX_REQ))
 		next_tx_ack = 0;
@@ -211,6 +196,7 @@ begin
 				next_mode = MODE_TX;
 				next_tx_ack = 1;
 				next_tx_pend = TX_PEND;
+				next_node_state = TRANSMIT_ADDR;
 				// interface registers
 			end
 			else
@@ -218,19 +204,11 @@ begin
 
 			// general registers
 			next_bus_state = ARBI_RESOLVED;
-			next_bit_position = ADDR_WIDTH - 1'b1;
-			next_addr_done = 0;
-			next_self_reset = 0;
+			next_bit_position = `ADDR_WIDTH - 1'b1;
 			// interface registers
 			// tx registers
-			next_tx_end_of_trans = 0;
-			next_tx_done = 0;
-			next_tx_wait_for_ack = 0;
-			next_tx_underflow = 0;
 			// rx registers
-			next_rx_done = 0;
-			next_rx_overflow = 0;
-			next_rx_word_completed = 0;
+			next_node_state = RECEIVE_ADDR;
 		end
 
 		ARBI_RESOLVED:
@@ -243,228 +221,304 @@ begin
 		DRIVE1:
 		begin
 			next_bus_state = LATCH1;
-			if ((mode==MODE_RX)&&(addr_done==1)&&(address_match==0))
+			if ((mode==MODE_RX)&&(node_state==RECEIVE_DATA)&&(address_match==0))
 				next_mode = MODE_FWD;
 		end
 
 		LATCH1:
 		begin
-			case (mode)
-				MODE_TX:
-				begin
-					if ((~tx_end_of_trans) & tx_done)
+			if (input_buffer[2:0]==`RST_SEQ)
+				next_bus_state = BUS_RESET;
+			else
+			begin
+				next_bus_state = DRIVE2;
+				case (mode)
+					MODE_TX:
 					begin
-						if (tx_underflow)
-							next_out_reg = 0;
-						else
-							next_out_reg = 1;
+						case (node_state)
+							TRANSMIT_ERROR:
+							begin
+								next_out_reg = ~out_reg;
+							end
+
+							TRANSMIT_EOT0:
+							begin
+								next_node_state = TRANSMIT_EOT1;
+								next_out_reg = MES_SEQ_WIRE[0];
+							end
+						endcase
 					end
-				end
 
-				MODE_RX:
-				begin
-					if (rx_overflow)
-						next_out_reg = ~DIN;
-					else if (rx_done)
-						next_out_reg = 0;
-				end
+					MODE_RX:
+					begin
+						case (node_state)
+							RECEIVE_OVERFLOW:
+							begin
+								next_out_reg = ~out_reg;
+							end
 
-			endcase
-			next_bus_state = DRIVE2;
+							RECEIVE_DRIVE_ACK0:
+							begin
+								next_node_state = RECEIVE_DRIVE_ACK1;
+								next_out_reg = ACK_SEQ_WIRE[2];
+							end
+
+							RECEIVE_DRIVE_ACK2:
+							begin
+								next_node_state = RECEIVE_DRIVE_ACK3;
+								next_out_reg = ACK_SEQ_WIRE[0];
+							end
+						endcase
+					end
+				endcase
+			end
 		end
 
 		DRIVE2:
 		begin
 			next_bus_state = LATCH2;
+			// advances bit position
 			if (mode==MODE_TX)
 			begin
-				if (tx_done)
-					next_tx_end_of_trans = 1;
-				else
-				begin
-					if (bit_position)
-						next_bit_position = bit_position - 1'b1;
-					else
+				case (node_state)
+					TRANSMIT_ADDR:
 					begin
-						next_bit_position = DATA_WIDTH - 1'b1;
-						next_addr_done = 1;
-						if (addr_done)
+						if (bit_position)
+							next_bit_position = bit_position - 1'b1;
+						else
 						begin
-							if (tx_pend)
-							begin
-								if (TX_REQ)
+							next_bit_position = `DATA_WIDTH - 1'b1;
+							next_node_state = TRANSMIT_DATA;
+						end
+					end
+
+					TRANSMIT_DATA:
+					begin
+						if (bit_position)
+							next_bit_position = bit_position - 1'b1;
+						else
+						begin
+							next_bit_position = `DATA_WIDTH - 1'b1;
+							case ({tx_pend, TX_REQ})
+								2'b11:
 								begin
 									next_tx_pend = TX_PEND;
 									next_data0 = TX_DATA;
 									next_tx_ack = 1;
 								end
-								else
+								
+								2'b10:
 								begin
-									next_tx_underflow = 1;
-									next_tx_done = 1;
+									// underflow
+									next_node_state = TRANSMIT_FWD;
+									next_tx_fail = 1;
 								end
-							end
-							else
-								next_tx_done = 1;
+
+								default:
+								begin
+									next_node_state = TRANSMIT_EOT0;
+								end
+							endcase
 						end
 					end
-				end
+
+				endcase
 			end
 		end
 
 		LATCH2:
 		begin
-			case (mode)
-				MODE_TX:
-				begin
-					if (self_reset)
-						next_bus_state = BUS_RESET;
-					else
+			if (input_buffer[2:0]==`RST_SEQ)
+				next_bus_state = BUS_RESET;
+			else
+			begin
+				next_bus_state = DRIVE1;
+				case (mode)
+					MODE_TX:
 					begin
-						case ({tx_done, tx_end_of_trans})
-							// DRIVE End of Bit
-							2'b10:
+						case (node_state)
+							TRANSMIT_ADDR:
 							begin
-								if (tx_underflow)
-									next_out_reg = 1;
-								else
-									next_out_reg = 0;
-								next_bus_state = DRIVE1;
-								// should ALWAYS NOT happen, out of sync
-								if (input_buffer_xor)
-									next_self_reset = 1;
-							end
-
-							2'b11:
-							begin
-								next_tx_wait_for_ack = 1;
-								if (~tx_wait_for_ack)
-									next_bus_state = DRIVE1;
-								else
+								// Receive is the same as transmitted
+								if (input_buffer[1:0]=={2{out_reg}})
 								begin
-									next_bus_state = BUS_RESET;
-									if (input_buffer_xor & (~tx_underflow))
-										next_tx_success = 1;
-									else
-										next_tx_fail = 1;
+									next_out_reg = addr_bit_extract;
 								end
-							end
-
-							default:
-							begin
-								next_bus_state = DRIVE1;
-								// RESET by Receiver
-								if (input_buffer_xor)
+								// Receive differ from transmitted, error
+								else
 								begin
-									next_self_reset = 1;
+									next_node_state = TRANSMIT_ERROR;
 									next_tx_fail = 1;
-								end
-								else
-								begin
-									if (addr_done)
-									begin
-										next_out_reg = data0_bit_extract;
-									end
-									else
-										next_out_reg = addr_bit_extract;
+									next_out_reg = ~MES_SEQ_WIRE[1];
+									next_bit_position = ERROR_RST_CYCLES;
 								end
 							end
+
+							TRANSMIT_DATA:
+							begin
+								// Receive is the same as transmitted
+								if (input_buffer[1:0]=={2{out_reg}})
+								begin
+									next_out_reg = data0_bit_extract;
+								end
+								// Receive differ from transmitted, error
+								else
+								begin
+									next_node_state = TRANSMIT_ERROR;
+									next_tx_fail = 1;
+									next_out_reg = ~MES_SEQ_WIRE[1];
+									next_bit_position = ERROR_RST_CYCLES;
+								end
+							end
+
+							TRANSMIT_EOT0:
+							begin
+								next_out_reg = MES_SEQ_WIRE[1];
+							end
+
+							TRANSMIT_EOT1:
+							begin
+								next_node_state = TRANSMIT_WAIT_ACK0;
+							end
+
+							TRANSMIT_WAIT_ACK0:
+							begin
+								next_node_state = TRANSMIT_WAIT_ACK1;
+							end
+
+							TRANSMIT_WAIT_ACK1:
+							begin
+								next_node_state = TRANSMIT_WAIT_ACK2;
+							end
+
+							TRANSMIT_WAIT_ACK2:
+							begin
+								next_node_state = TRANSMIT_FWD;
+								// received ack
+								if (input_buffer==`TX_ACK_SEQ)
+									next_tx_success = 1;
+								else
+									next_tx_fail = 1;
+							end
+
+							TRANSMIT_ERROR:
+							begin
+								if (bit_position)
+									next_bit_position = bit_position - 1'b1;
+								else
+									next_node_state = TRANSMIT_FWD;
+							end
+
 						endcase
 					end
-				end
 
-				MODE_RX:
-				begin
-					if (self_reset)
-						next_bus_state = BUS_RESET;
-					else
+					MODE_RX:
 					begin
-						if (input_buffer_xor)
-						begin
-							if (rx_overflow)
+						case (node_state)
+							RECEIVE_ADDR:
 							begin
-								next_self_reset = 1;
-								next_bus_state = DRIVE1;
-							end
-							else
-							// send ACK
-							begin
-								next_rx_done = 1;
-								if (~rx_done)
-								begin
-									next_out_reg = 1;
-									next_bus_state = DRIVE1;
-								end
+								if (input_buffer_xor)
+									next_node_state = RECEIVE_FWD;
 								else
-									next_bus_state = BUS_RESET;
-
-								if (rx_word_completed)
 								begin
-									next_rx_req = 1;
-									next_rx_pend = 0;
-									next_rx_word_completed = 0;
-								end
-							end
-						end
-						else
-						begin
-							next_bus_state = DRIVE1;
-							if (bit_position)
-							begin
-								next_bit_position = bit_position - 1'b1;
-								if (rx_word_completed)
-								begin
-									next_rx_req = 1;
-									next_rx_pend = 1;
-									next_rx_word_completed = 0;
-								end
-							end
-							else
-							begin
-								next_addr_done = 1;
-								next_bit_position = DATA_WIDTH - 1'b1;
-								if (addr_done)
-								begin
-									// OVERFLOW, PREPARE RESET BUS
-									if (RX_REQ | RX_ACK)
-										next_rx_overflow = 1;
+									if (bit_position)
+									begin
+										next_bit_position = bit_position - 1'b1;
+									end
 									else
 									begin
-										next_rx_data = {rx_data_out_buf[DATA_WIDTH-2:0], input_buffer[0]};
-										next_rx_word_completed = 1;
+										next_bit_position = `DATA_WIDTH - 1'b1;
+										next_node_state = RECEIVE_DATA;
+									end
+									next_rx_addr = {RX_ADDR[`ADDR_WIDTH-2:0], input_buffer[0]};
+								end
+							end
+
+							RECEIVE_DATA:
+							begin
+								if (input_buffer_xor)
+									next_node_state = RECEIVE_FWD;
+								else
+								begin
+									next_rx_data_buf = {rx_data_out_buf[`DATA_WIDTH-2:0], input_buffer[0]};
+									if (bit_position)
+									begin
+										next_bit_position = bit_position - 1'b1;
+									end
+									else
+									begin
+										next_bit_position = `DATA_WIDTH - 1'b1;
+										next_node_state = RECEIVE_CONT;
 									end
 								end
 							end
 
-							if (~addr_done)
-								next_rx_addr = {RX_ADDR[ADDR_WIDTH-2:0], input_buffer[0]};
-							else
-								next_rx_data_buf = {rx_data_out_buf[DATA_WIDTH-2:0], input_buffer[0]};
-						end
-					end
-				end
+							RECEIVE_CONT:
+							begin
+								if (RX_REQ | RX_ACK)
+								begin
+									// reset issue by Receiver?
+									next_node_state = RECEIVE_OVERFLOW;
+									next_out_reg = ~MES_SEQ_WIRE[1];
+									next_bit_position = ERROR_RST_CYCLES;
+								end
+								else
+								begin
+									next_rx_req = 1;
+									next_rx_data = rx_data_out_buf;
+									// end of tx
+									if (input_buffer_xor)
+									begin
+										if (input_buffer[1:0]==`MES_SEQ)
+										begin
+											next_node_state = RECEIVE_DRIVE_ACK0;
+											next_out_reg = ACK_SEQ_WIRE[3];
+										end
+										else
+											next_node_state = RECEIVE_FWD;
+										next_rx_pend = 0;
+									end
+									// bit streaming
+									else
+									begin
+										next_bit_position = bit_position - 1'b1;
+										next_rx_data_buf = {rx_data_out_buf[`DATA_WIDTH-2:0], input_buffer[0]};
+										next_node_state = RECEIVE_DATA;
+										next_rx_pend = 1;
+									end
+								end
+							end
 
-				MODE_FWD:
-				begin
-					if (self_reset)
-						next_bus_state = BUS_RESET;
-					else
-					begin
-						next_bus_state = DRIVE1;
-						if (input_buffer_xor)
-							next_self_reset = 1;
+							RECEIVE_DRIVE_ACK1:
+							begin
+								next_node_state = RECEIVE_DRIVE_ACK2;
+								next_out_reg = ACK_SEQ_WIRE[1];
+							end
+
+							// ACK completed
+							RECEIVE_DRIVE_ACK3:
+							begin
+								next_node_state = RECEIVE_FWD;
+							end
+
+							RECEIVE_OVERFLOW:
+							begin
+								if (bit_position)
+									next_bit_position = bit_position - 1'b1;
+								else
+									next_node_state = RECEIVE_FWD;
+							end
+
+						endcase
 					end
-				end
-			endcase
-			next_reset_cnt = RESET_CNT - 1'b1;
-			
+
+				endcase
+			end
 		end
 
 		BUS_RESET:
 		begin
-			if (reset_cnt)
-				next_reset_cnt = reset_cnt - 1'b1;
-			else
+			if (input_buffer[1:0]==2'b11)
 			begin
 				next_bus_state = BUS_IDLE;
 				next_mode = MODE_IDLE;
@@ -496,39 +550,14 @@ begin
 			case (mode)
 				MODE_TX:
 				begin
-					if (~tx_wait_for_ack)
+					if ((node_state==TRANSMIT_ADDR)||(node_state==TRANSMIT_DATA)||(node_state==TRANSMIT_EOT0)||(node_state==TRANSMIT_ERROR))
 						DOUT = out_reg;
-					else
-						DOUT = DIN;
 				end
 
 				MODE_RX:
 				begin
-					if (rx_done)
+					if ((node_state==RECEIVE_DRIVE_ACK0)||(node_state==RECEIVE_DRIVE_ACK2)||(node_state==RECEIVE_OVERFLOW))
 						DOUT = out_reg;
-					else
-						DOUT = DIN;
-				end
-			endcase
-		end
-
-		LATCH1:
-		begin
-			case (mode)
-				MODE_TX:
-				begin
-					if ((~tx_wait_for_ack)&(~self_reset))
-						DOUT = out_reg;
-					else
-						DOUT = DIN;
-				end
-
-				MODE_RX:
-				begin
-					if ((rx_done)&(~self_reset))
-						DOUT = out_reg;
-					else
-						DOUT = DIN;
 				end
 			endcase
 		end
@@ -538,46 +567,16 @@ begin
 			case (mode)
 				MODE_TX:
 				begin
-					if (((~tx_end_of_trans)&tx_done)&(~self_reset))
+					if ((node_state==TRANSMIT_ADDR)||(node_state==TRANSMIT_DATA)||(node_state==TRANSMIT_EOT1)||(node_state==TRANSMIT_ERROR))
 						DOUT = out_reg;
-					else
-						DOUT = DIN;
 				end
 
 				MODE_RX:
 				begin
-					if (((rx_done)|(rx_overflow))&(~self_reset))
+					if ((node_state==RECEIVE_DRIVE_ACK1)||(node_state==RECEIVE_DRIVE_ACK3)||(node_state==RECEIVE_OVERFLOW))
 						DOUT = out_reg;
-					else
-						DOUT = DIN;
 				end
 			endcase
-		end
-
-		LATCH2:
-		begin
-			case (mode)
-				MODE_TX:
-				begin
-					if ((~tx_end_of_trans) & tx_done)
-						DOUT = out_reg;
-					else
-						DOUT = DIN;
-				end
-
-				MODE_RX:
-				begin
-					if ((rx_done)||(rx_overflow))
-						DOUT = out_reg;
-					else
-						DOUT = DIN;
-				end
-			endcase
-		end
-
-		BUS_RESET:
-		begin
-			DOUT = DIN;
 		end
 
 	endcase
@@ -591,8 +590,8 @@ begin
 	end
 	else
 	begin
-		if ((bus_state==DRIVE1)||(bus_state==DRIVE2))
-			input_buffer <= {input_buffer[0], DIN};
+		if ((bus_state==DRIVE1)||(bus_state==DRIVE2)||(bus_state==BUS_RESET))
+			input_buffer <= {input_buffer[4:0], DIN};
 	end
 end
 

@@ -350,7 +350,7 @@ begin
 			if (CLK_HALF)
 			begin
 				// 1st reset bit successed
-				if (input_buffer[2:0]==0)
+				if (input_buffer[2:0]=={3{RST_SEQ_WIRE[2]}})
 				begin
 					next_state = RESET_S1_D_NEG;
 					next_ctrl_dout = RST_SEQ_WIRE[1];
@@ -401,7 +401,7 @@ begin
 			if (CLK_HALF)
 			begin
 				// 2nd reset bit successed
-				if (input_buffer==4'b1111)
+				if (input_buffer=={4{RST_SEQ_WIRE[1]}})
 				begin
 					next_state = RESET_S0_D1_NEG;
 					next_ctrl_dout = RST_SEQ_WIRE[0];
@@ -453,7 +453,7 @@ begin
 			if (CLK_HALF)
 			begin
 				// 3rd reset bit successed
-				if (input_buffer==4'b0000)
+				if (input_buffer=={4{RST_SEQ_WIRE[0]}})
 				begin
 					next_state = RESET_R_D_NEG;
 					next_ctrl_dout = 1;

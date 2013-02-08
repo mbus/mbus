@@ -43,8 +43,10 @@ parameter RESET_R_D_NEG 	= 6'b011001;
 parameter RESET_R_D_POS 	= 6'b011010;
 parameter RESET_R_L_NEG 	= 6'b011011;
 parameter RESET_R_L_POS 	= 6'b011100;
-parameter BACK_TO_IDLE_NEG	= 6'b011101;
-parameter BACK_TO_IDLE_POS	= 6'b011110;
+parameter RESET_ADDI_CLK_NEG= 6'b011101;
+parameter RESET_ADDI_CLK_POS= 6'b011110;
+parameter BACK_TO_IDLE_NEG	= 6'b011111;
+parameter BACK_TO_IDLE_POS	= 6'b111111;
 
 parameter NUM_OF_STATES = 31;
 
@@ -55,7 +57,8 @@ reg		ctrl_hold, next_ctrl_hold;
 reg		ctrl_dout, next_ctrl_dout; 
 
 // Reset registers
-reg		[2:0] seq_state, next_seq_state;
+reg		[1:0] seq_state, next_seq_state;
+reg		[1:0] input_reset_seq, next_input_reset_seq;
 
 // General registers
 reg		[5:0] state, next_state;
@@ -69,16 +72,14 @@ assign DOUT = (ctrl_hold)? ctrl_dout : DIN;
 assign test_pt = state;
 
 wire	[2:0] RST_SEQ_WIRE = `RST_SEQ;
-wire	[3:0] ACK_SEQ_WIRE = `ACK_SEQ;
+wire	[1:0] ACK_SEQ_WIRE = `ACK_SEQ;
 
 always @ *
 begin
 	ACK_SEQ_EXTRACT = 0;
 	case (seq_state)
-		1: begin ACK_SEQ_EXTRACT = ACK_SEQ_WIRE[3]; end
-		2: begin ACK_SEQ_EXTRACT = ACK_SEQ_WIRE[2]; end
-		3: begin ACK_SEQ_EXTRACT = ACK_SEQ_WIRE[1]; end
-		4: begin ACK_SEQ_EXTRACT = ACK_SEQ_WIRE[0]; end
+		1: begin ACK_SEQ_EXTRACT = ACK_SEQ_WIRE[1]; end
+		2: begin ACK_SEQ_EXTRACT = ACK_SEQ_WIRE[0]; end
 	endcase
 end
 
@@ -93,6 +94,7 @@ begin
 		ctrl_dout <= 1;
 		// Reset registers
 		seq_state <= 0;
+		input_reset_seq <= 0;
 		// General registers
 		state <= BUS_IDLE;
 		start_cycle_cnt <= START_CYCLES - 1'b1;
@@ -106,6 +108,7 @@ begin
 		ctrl_dout <= next_ctrl_dout;
 		// Reset registers
 		seq_state <= next_seq_state;
+		input_reset_seq <= next_input_reset_seq;
 		// General registers
 		state <= next_state;
 		start_cycle_cnt <= next_start_cycle_cnt;
@@ -129,6 +132,7 @@ begin
 	next_ctrl_dout = ctrl_dout;
 	// Reset registers
 	next_seq_state = seq_state;
+	next_input_reset_seq = input_reset_seq;
 	// General registers
 	next_state = state;
 	next_start_cycle_cnt = start_cycle_cnt;
@@ -143,6 +147,7 @@ begin
 			next_start_cycle_cnt = START_CYCLES - 1'b1;
 			next_seq_state = 0;
 			next_clk_half = 0;
+			next_input_reset_seq = 0;
 		end
 
 		WAIT_FOR_START:
@@ -287,7 +292,7 @@ begin
 					end
 				end
 
-				4:
+				2:
 				begin
 					next_state = RESET_S0_D_NEG;
 					next_clk_out = 0;
@@ -351,16 +356,9 @@ begin
 			begin
 				// 1st reset bit successed
 				if (input_buffer[2:0]=={3{RST_SEQ_WIRE[2]}})
-				begin
-					next_state = RESET_S1_D_NEG;
-					next_ctrl_dout = RST_SEQ_WIRE[1];
-				end
-				// 1st reset bit failed
-				else
-				begin
-					next_state = RESET_S0_D_NEG;
-					next_ctrl_dout = RST_SEQ_WIRE[2];
-				end
+					next_input_reset_seq = {input_reset_seq[0], RST_SEQ_WIRE[2]};
+				next_state = RESET_S1_D_NEG;
+				next_ctrl_dout = RST_SEQ_WIRE[1];
 				next_clk_out = 0;
 			end
 		end
@@ -402,17 +400,9 @@ begin
 			begin
 				// 2nd reset bit successed
 				if (input_buffer=={4{RST_SEQ_WIRE[1]}})
-				begin
-					next_state = RESET_S0_D1_NEG;
-					next_ctrl_dout = RST_SEQ_WIRE[0];
-				end
-				// 2nd reset bit failed
-				else
-				begin
-					next_state = RESET_S0_D_NEG;
-					next_ctrl_dout = RST_SEQ_WIRE[2];
-				end
-				next_ctrl_dout = 0;
+					next_input_reset_seq = {input_reset_seq[0], RST_SEQ_WIRE[1]};
+				next_state = RESET_S0_D1_NEG;
+				next_ctrl_dout = RST_SEQ_WIRE[2];
 				next_clk_out = 0;
 			end
 		end
@@ -453,16 +443,25 @@ begin
 			if (CLK_HALF)
 			begin
 				// 3rd reset bit successed
-				if (input_buffer=={4{RST_SEQ_WIRE[0]}})
+				if (input_buffer=={4{RST_SEQ_WIRE[2]}})
 				begin
-					next_state = RESET_R_D_NEG;
-					next_ctrl_dout = 1;
+					next_input_reset_seq = {input_reset_seq[0], RST_SEQ_WIRE[2]};
+					if (input_reset_seq==RST_SEQ_WIRE[2:1])
+					begin
+						next_state = RESET_R_D_NEG;
+						next_ctrl_dout = 1;
+					end
+					else
+					begin
+						next_state = RESET_S1_D_NEG;
+						next_ctrl_dout = RST_SEQ_WIRE[1];
+					end
 				end
 				// 3rd reset bit failed
 				else
 				begin
-					next_state = RESET_S0_D_NEG;
-					next_ctrl_dout = RST_SEQ_WIRE[2];
+					next_state = RESET_S1_D_NEG;
+					next_ctrl_dout = RST_SEQ_WIRE[1];
 				end
 				next_clk_out = 0;
 			end
@@ -503,6 +502,26 @@ begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
 			begin
+				next_state = RESET_ADDI_CLK_NEG;
+				next_clk_out = 0;
+			end
+		end
+
+		RESET_ADDI_CLK_NEG:
+		begin
+			next_clk_half = ~CLK_HALF;
+			if (CLK_HALF)
+			begin
+				next_state = RESET_ADDI_CLK_POS;
+				next_clk_out = 1;
+			end
+		end
+
+		RESET_ADDI_CLK_POS:
+		begin
+			next_clk_half = ~CLK_HALF;
+			if (CLK_HALF)
+			begin
 				next_state = BACK_TO_IDLE_NEG;
 				next_clk_out = 0;
 			end
@@ -536,7 +555,6 @@ begin
 		input_buffer <= 0;
 	else
 	begin
-		// need to modify
 		if (state[5]&(~CLK_HALF))
 			input_buffer <= {input_buffer[2:0], DIN};
 	end

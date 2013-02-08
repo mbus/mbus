@@ -1,18 +1,20 @@
 
-`timescale 1ns/1ps
 
 //`define SYNTH
 
 `ifdef SYNTH
+	`timescale 1ns/1ps
 	`include "/afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/verilog/tsmc18_neg.v"
 `endif
+
+`include "include/ulpb_def.v"
 
 module testbench();
 
 reg 	RESET, CLK_IN;
 
 wire	OUT, CLK_OUT;
-wire	[3:0]	state_out;
+wire	[5:0]	state_out;
 reg		IN;
 
 parameter MODE_IDLE = 0;
@@ -38,6 +40,9 @@ control c0(.DIN(IN), .DOUT(OUT), .RESET(RESET), .CLK_OUT(CLK_OUT), .CLK(CLK_IN),
 
 `define SD #1
 
+wire [1:0] MES_SEQ_WIRE = `MES_SEQ;
+wire [1:0] ACK_SEQ_WIRE = `ACK_SEQ;
+
 reg ACK_SEQ_EXTRACT;
 
 always @ *
@@ -45,10 +50,8 @@ begin
 	ACK_SEQ_EXTRACT = 0;
 	case (tx_state)
 		// ACK
-		2: begin ACK_SEQ_EXTRACT = 0; end
-		3: begin ACK_SEQ_EXTRACT = 1; end
-		4: begin ACK_SEQ_EXTRACT = 1; end
-		5: begin ACK_SEQ_EXTRACT = 0; end
+		2: begin ACK_SEQ_EXTRACT = ACK_SEQ_WIRE[1]; end
+		3: begin ACK_SEQ_EXTRACT = ACK_SEQ_WIRE[0]; end
 	endcase
 end
 
@@ -120,8 +123,8 @@ begin
 				state <= MODE_DRIVE2;
 				case (tx_state)
 					0: begin end
-					1: begin IN_REG <= 0; tx_state <= 2; tx_state <= tx_state + 1; end
-					5: begin end
+					1: begin IN_REG <= MES_SEQ_WIRE[0]; tx_state <= tx_state + 1; end
+					4: begin end
 					default: begin IN_REG <= ACK_SEQ_EXTRACT; tx_state <= tx_state + 1; end
 				endcase
 			end
@@ -147,11 +150,11 @@ begin
 						end
 						else
 						begin
-							IN_REG <= 1;
+							IN_REG <= MES_SEQ_WIRE[1];
 							tx_state <= 1;
 						end
 					end
-					5: begin wait_reset <= 1; end
+					4: begin wait_reset <= 1; end
 					default: begin IN_REG <= ACK_SEQ_EXTRACT; tx_state <= tx_state + 1; end
 				endcase
 			end
@@ -209,6 +212,7 @@ begin
 			else
 				IN = OUT;
 		end
+
 		MODE_DRIVE2:
 		begin
 			if (~wait_reset)

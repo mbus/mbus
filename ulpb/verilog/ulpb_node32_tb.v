@@ -1,9 +1,11 @@
 
-`timescale 1ns/1ps
+
+`ifdef SYNTH
+	`timescale 1ns/1ps
+	`include "/afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/verilog/tsmc18_neg.v"
+`endif
 
 module testbench();
-
-//`include "/afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/verilog/tsmc18_neg.v"
 
 reg		clk, resetn;
 wire	SCLK;
@@ -11,6 +13,7 @@ wire	SCLK;
 parameter ADDR_WIDTH=8;
 parameter DATA_WIDTH=32;
 
+wire	[5:0] ctrl_state_out;
 reg		[ADDR_WIDTH-1:0] n0_tx_addr, n1_tx_addr, n2_tx_addr;
 reg		[DATA_WIDTH-1:0] n0_tx_data, n1_tx_data, n2_tx_data;
 reg		n0_tx_req, n1_tx_req, n2_tx_req;
@@ -42,7 +45,7 @@ parameter TASK5=6;
 parameter TASK6=7;
 
 
-control c0(.DIN(w_n2c0), .DOUT(w_c0n0), .RESET(resetn), .CLK_OUT(SCLK), .CLK_IN(clk));
+control c0(.DIN(w_n2c0), .DOUT(w_c0n0), .RESET(resetn), .CLK_OUT(SCLK), .CLK(clk), .test_pt(ctrl_state_out));
 
 ulpb_node32 #(.ADDRESS(8'hab)) n0
 			(.CLK(SCLK), .RESET(resetn), .DIN(w_c0n0), .DOUT(w_n0n1), 
@@ -62,7 +65,7 @@ ulpb_node32 #(.ADDRESS(8'hef)) n2
 			.RX_ADDR(n2_rx_addr), .RX_DATA(n2_rx_data), .RX_REQ(n2_rx_req), .RX_ACK(n2_rx_ack), .RX_PEND(n2_rx_pend),
 			.TX_SUCC(n2_tx_succ), .TX_FAIL(n2_tx_fail), .TX_RESP_ACK(n2_tx_resp_ack));
 
-always #5 clk = ~clk;
+always #50 clk = ~clk;
 
 `define SD #1
 reg	n1_auto_rx_ack;
@@ -85,44 +88,44 @@ begin
 	@ (posedge clk)
 	@ (posedge clk)
 
-	#1000
+	#10000
 		state = TASK0;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 
-	#1000
+	#10000
 		word_counter = 7;
 		state = TASK1;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 
-	#1000
+	#10000
 		state = TASK2;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 
-	#1000
+	#10000
 		word_counter = 7;
 		state = TASK3;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 		
-	#1000
+	#10000
 		word_counter = 7;
 		state = TASK4;
 		n1_auto_rx_ack = 0;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 		n1_auto_rx_ack = 1;
 
-	#1000
+	#10000
 		word_counter = 1;
 		state = TASK5;
 		n1_auto_rx_ack = 0;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 		n1_auto_rx_ack = 1;
 		
-	#1000
+	#10000
 		state = TASK6;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 	@ (posedge n1_tx_succ | n1_tx_fail)
 
-	#1000
+	#10000
 		$stop;
 end
 

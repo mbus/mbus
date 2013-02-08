@@ -25,7 +25,6 @@ module ulpb_node32(
 
 parameter ADDRESS = 8'hef;
 parameter ADDRESS_MASK=8'hff;
-parameter ERROR_RST_CYCLES = 5'd2;	// # bits cannot greater than log2(`DATA_WIDTH), i.e. 5
 
 parameter MODE_IDLE = 0;
 parameter MODE_TX = 1;
@@ -49,7 +48,8 @@ parameter TRANSMIT_EOT1 		= 3;
 parameter TRANSMIT_WAIT_ACK0 	= 4;
 parameter TRANSMIT_WAIT_ACK1 	= 5;
 parameter TRANSMIT_WAIT_ACK2 	= 6;
-parameter TRANSMIT_ERROR		= 7;
+parameter TRANSMIT_UNDERFLOW	= 7;
+parameter TRANSMIT_ERROR		= 8;
 parameter TRANSMIT_FWD 			= 15;
 
 parameter RECEIVE_ADDR			= 0;
@@ -59,7 +59,6 @@ parameter RECEIVE_DRIVE_ACK0	= 3;
 parameter RECEIVE_DRIVE_ACK1	= 4;
 parameter RECEIVE_DRIVE_ACK2	= 5;
 parameter RECEIVE_DRIVE_ACK3	= 6;
-parameter RECEIVE_OVERFLOW		= 7;
 parameter RECEIVE_FWD			= 15;
 
 parameter NUM_OF_NODE_STATE = 15;
@@ -68,7 +67,7 @@ parameter NUM_OF_NODE_STATE = 15;
 reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state;
 reg		[log2(NUM_OF_NODE_STATE-1)-1:0] node_state, next_node_state;
 reg		[log2(`DATA_WIDTH-1)-1:0] bit_position, next_bit_position; 
-reg		[5:0] input_buffer;
+reg		[4:0] input_buffer;
 reg		out_reg, next_out_reg;
 reg		[1:0] mode, next_mode;
 
@@ -95,7 +94,7 @@ wire	input_buffer_xor = input_buffer[0] ^ input_buffer[1];
 wire	address_match = (((RX_ADDR^ADDRESS)&ADDRESS_MASK)==0)? 1'b1 : 1'b0;
 
 wire	[1:0] MES_SEQ_WIRE = `MES_SEQ;
-wire	[3:0] ACK_SEQ_WIRE = `ACK_SEQ;
+wire	[1:0] ACK_SEQ_WIRE = `ACK_SEQ;
 
 always @ (posedge CLK or negedge RESET)
 begin
@@ -228,7 +227,16 @@ begin
 		LATCH1:
 		begin
 			if (input_buffer[2:0]==`RST_SEQ)
+			begin
 				next_bus_state = BUS_RESET;
+				if ((node_state==TRANSMIT_WAIT_ACK2)&&(mode==MODE_TX))
+				begin
+					if (input_buffer[4:3]==`ACK_SEQ)
+						next_tx_success = 1;
+					else
+						next_tx_fail = 1;
+				end
+			end
 			else
 			begin
 				next_bus_state = DRIVE2;
@@ -246,28 +254,24 @@ begin
 								next_node_state = TRANSMIT_EOT1;
 								next_out_reg = MES_SEQ_WIRE[0];
 							end
+
+							TRANSMIT_WAIT_ACK2:
+							begin
+								next_node_state = TRANSMIT_FWD;
+								next_tx_fail = 1;
+							end
 						endcase
 					end
 
 					MODE_RX:
 					begin
 						case (node_state)
-							RECEIVE_OVERFLOW:
-							begin
-								next_out_reg = ~out_reg;
-							end
-
 							RECEIVE_DRIVE_ACK0:
 							begin
 								next_node_state = RECEIVE_DRIVE_ACK1;
-								next_out_reg = ACK_SEQ_WIRE[2];
-							end
-
-							RECEIVE_DRIVE_ACK2:
-							begin
-								next_node_state = RECEIVE_DRIVE_ACK3;
 								next_out_reg = ACK_SEQ_WIRE[0];
 							end
+
 						endcase
 					end
 				endcase
@@ -310,8 +314,7 @@ begin
 								2'b10:
 								begin
 									// underflow
-									next_node_state = TRANSMIT_FWD;
-									next_tx_fail = 1;
+									next_node_state = TRANSMIT_UNDERFLOW;
 								end
 
 								default:
@@ -350,7 +353,6 @@ begin
 									next_node_state = TRANSMIT_ERROR;
 									next_tx_fail = 1;
 									next_out_reg = ~MES_SEQ_WIRE[1];
-									next_bit_position = ERROR_RST_CYCLES;
 								end
 							end
 
@@ -367,7 +369,6 @@ begin
 									next_node_state = TRANSMIT_ERROR;
 									next_tx_fail = 1;
 									next_out_reg = ~MES_SEQ_WIRE[1];
-									next_bit_position = ERROR_RST_CYCLES;
 								end
 							end
 
@@ -391,14 +392,12 @@ begin
 								next_node_state = TRANSMIT_WAIT_ACK2;
 							end
 
-							TRANSMIT_WAIT_ACK2:
+							TRANSMIT_UNDERFLOW:
 							begin
-								next_node_state = TRANSMIT_FWD;
-								// received ack
-								if (input_buffer==`TX_ACK_SEQ)
-									next_tx_success = 1;
-								else
-									next_tx_fail = 1;
+								next_node_state = TRANSMIT_ERROR; 
+								next_tx_fail = 1;
+								next_out_reg = ~MES_SEQ_WIRE[1];
+								next_bit_position = 2;
 							end
 
 							TRANSMIT_ERROR:
@@ -457,10 +456,8 @@ begin
 							begin
 								if (RX_REQ | RX_ACK)
 								begin
-									// reset issue by Receiver?
-									next_node_state = RECEIVE_OVERFLOW;
-									next_out_reg = ~MES_SEQ_WIRE[1];
-									next_bit_position = ERROR_RST_CYCLES;
+									// RX overflow, ignore
+									next_node_state = RECEIVE_FWD;
 								end
 								else
 								begin
@@ -472,7 +469,7 @@ begin
 										if (input_buffer[1:0]==`MES_SEQ)
 										begin
 											next_node_state = RECEIVE_DRIVE_ACK0;
-											next_out_reg = ACK_SEQ_WIRE[3];
+											next_out_reg = ACK_SEQ_WIRE[1];
 										end
 										else
 											next_node_state = RECEIVE_FWD;
@@ -489,25 +486,12 @@ begin
 								end
 							end
 
-							RECEIVE_DRIVE_ACK1:
-							begin
-								next_node_state = RECEIVE_DRIVE_ACK2;
-								next_out_reg = ACK_SEQ_WIRE[1];
-							end
-
 							// ACK completed
-							RECEIVE_DRIVE_ACK3:
+							RECEIVE_DRIVE_ACK1:
 							begin
 								next_node_state = RECEIVE_FWD;
 							end
 
-							RECEIVE_OVERFLOW:
-							begin
-								if (bit_position)
-									next_bit_position = bit_position - 1'b1;
-								else
-									next_node_state = RECEIVE_FWD;
-							end
 
 						endcase
 					end
@@ -556,7 +540,7 @@ begin
 
 				MODE_RX:
 				begin
-					if ((node_state==RECEIVE_DRIVE_ACK0)||(node_state==RECEIVE_DRIVE_ACK2)||(node_state==RECEIVE_OVERFLOW))
+					if (node_state==RECEIVE_DRIVE_ACK0)
 						DOUT = out_reg;
 				end
 			endcase
@@ -573,7 +557,7 @@ begin
 
 				MODE_RX:
 				begin
-					if ((node_state==RECEIVE_DRIVE_ACK1)||(node_state==RECEIVE_DRIVE_ACK3)||(node_state==RECEIVE_OVERFLOW))
+					if (node_state==RECEIVE_DRIVE_ACK1)
 						DOUT = out_reg;
 				end
 			endcase

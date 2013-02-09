@@ -25,12 +25,15 @@ module ulpb_node32(
 
 parameter ADDRESS = 8'hef;
 parameter ADDRESS_MASK=8'hff;
+parameter ERROR_RST_CNT = 5'b00100;	// # of bit should not greater than log2(32) = 5
 
+// Node mode
 parameter MODE_IDLE = 0;
 parameter MODE_TX = 1;
 parameter MODE_RX = 2;
 parameter MODE_FWD = 3;
 
+// BUS state
 parameter BUS_IDLE = 0;
 parameter ARBI_RESOLVED = 1;
 parameter DRIVE1 = 2;
@@ -44,6 +47,7 @@ parameter BUS_RESET_L2 = 9;
 
 parameter NUM_OF_BUS_STATE = 10;
 
+// Node state, TX
 parameter TRANSMIT_ADDR 		= 0;
 parameter TRANSMIT_DATA 		= 1;
 parameter TRANSMIT_EOT0 		= 2;
@@ -55,6 +59,7 @@ parameter TRANSMIT_UNDERFLOW	= 7;
 parameter TRANSMIT_ERROR		= 8;
 parameter TRANSMIT_FWD 			= 15;
 
+// Node state, RX
 parameter RECEIVE_ADDR			= 0;
 parameter RECEIVE_DATA			= 1;
 parameter RECEIVE_CONT			= 2;
@@ -96,8 +101,9 @@ wire	data0_bit_extract = ((DATA0 & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	input_buffer_xor = input_buffer[0] ^ input_buffer[1];
 wire	address_match = (((RX_ADDR^ADDRESS)&ADDRESS_MASK)==0)? 1'b1 : 1'b0;
 
-wire	[1:0] MES_SEQ_WIRE = `MES_SEQ;
-wire	[1:0] ACK_SEQ_WIRE = `ACK_SEQ;
+// constant
+wire	[1:0] MES_SEQ_CONST = `MES_SEQ;
+wire	[1:0] ACK_SEQ_CONST = `ACK_SEQ;
 
 always @ (posedge CLK or negedge RESET)
 begin
@@ -172,6 +178,7 @@ begin
 	next_rx_pend = RX_PEND;
 	next_rx_data_buf = rx_data_out_buf;
 
+	// Asynchronous interface
 	if (TX_ACK & (~TX_REQ))
 		next_tx_ack = 0;
 	
@@ -187,9 +194,11 @@ begin
 		next_tx_success = 0;
 	end
 
+	// BUS FSM
 	case (bus_state)
 		BUS_IDLE:
 		begin
+			// Win Arbitration, Transmitter
 			if (DIN^DOUT)
 			begin
 				// tx registers
@@ -201,16 +210,17 @@ begin
 				next_node_state = TRANSMIT_ADDR;
 				// interface registers
 			end
+			// Lose Arbitration, Receiver
 			else
+			begin
 				next_mode = MODE_RX;
+				// rx registers
+				next_node_state = RECEIVE_ADDR;
+			end
 
 			// general registers
 			next_bus_state = ARBI_RESOLVED;
 			next_bit_position = `ADDR_WIDTH - 1'b1;
-			// interface registers
-			// tx registers
-			// rx registers
-			next_node_state = RECEIVE_ADDR;
 		end
 
 		ARBI_RESOLVED:
@@ -223,6 +233,7 @@ begin
 		DRIVE1:
 		begin
 			next_bus_state = LATCH1;
+			// Address completed received, Address mismatch -> Forwarder
 			if ((mode==MODE_RX)&&(node_state==RECEIVE_DATA)&&(address_match==0))
 				next_mode = MODE_FWD;
 		end
@@ -255,7 +266,7 @@ begin
 							TRANSMIT_EOT0:
 							begin
 								next_node_state = TRANSMIT_EOT1;
-								next_out_reg = MES_SEQ_WIRE[0];
+								next_out_reg = MES_SEQ_CONST[0];
 							end
 
 							TRANSMIT_WAIT_ACK2:
@@ -272,7 +283,7 @@ begin
 							RECEIVE_DRIVE_ACK0:
 							begin
 								next_node_state = RECEIVE_DRIVE_ACK1;
-								next_out_reg = ACK_SEQ_WIRE[0];
+								next_out_reg = ACK_SEQ_CONST[0];
 							end
 
 						endcase
@@ -284,7 +295,7 @@ begin
 		DRIVE2:
 		begin
 			next_bus_state = LATCH2;
-			// advances bit position
+			// Transmiter advances bit position
 			if (mode==MODE_TX)
 			begin
 				case (node_state)
@@ -307,6 +318,7 @@ begin
 						begin
 							next_bit_position = `DATA_WIDTH - 1'b1;
 							case ({tx_pend, TX_REQ})
+								// continue next word
 								2'b11:
 								begin
 									next_tx_pend = TX_PEND;
@@ -314,12 +326,13 @@ begin
 									next_tx_ack = 1;
 								end
 								
+								// underflow
 								2'b10:
 								begin
-									// underflow
 									next_node_state = TRANSMIT_UNDERFLOW;
 								end
 
+								// End of current tx, prepare drive EOT
 								default:
 								begin
 									next_node_state = TRANSMIT_EOT0;
@@ -345,39 +358,41 @@ begin
 						case (node_state)
 							TRANSMIT_ADDR:
 							begin
-								// Receive is the same as transmitted
+								// Received is the same as transmitted
 								if (input_buffer[1:0]=={2{out_reg}})
 								begin
 									next_out_reg = addr_bit_extract;
 								end
-								// Receive differ from transmitted, error
+								// Received differ from transmitted, error
 								else
 								begin
 									next_node_state = TRANSMIT_ERROR;
 									next_tx_fail = 1;
-									next_out_reg = ~MES_SEQ_WIRE[1];
+									next_out_reg = ~MES_SEQ_CONST[1];
+									next_bit_position = ERROR_RST_CNT - 1'b1;
 								end
 							end
 
 							TRANSMIT_DATA:
 							begin
-								// Receive is the same as transmitted
+								// Received is the same as transmitted
 								if (input_buffer[1:0]=={2{out_reg}})
 								begin
 									next_out_reg = data0_bit_extract;
 								end
-								// Receive differ from transmitted, error
+								// Received differ from transmitted, error
 								else
 								begin
 									next_node_state = TRANSMIT_ERROR;
 									next_tx_fail = 1;
-									next_out_reg = ~MES_SEQ_WIRE[1];
+									next_out_reg = ~MES_SEQ_CONST[1];
+									next_bit_position = ERROR_RST_CNT - 1'b1;
 								end
 							end
 
 							TRANSMIT_EOT0:
 							begin
-								next_out_reg = MES_SEQ_WIRE[1];
+								next_out_reg = MES_SEQ_CONST[1];
 							end
 
 							TRANSMIT_EOT1:
@@ -399,8 +414,8 @@ begin
 							begin
 								next_node_state = TRANSMIT_ERROR; 
 								next_tx_fail = 1;
-								next_out_reg = ~MES_SEQ_WIRE[1];
-								next_bit_position = 2;
+								next_out_reg = ~MES_SEQ_CONST[1];
+								next_bit_position = ERROR_RST_CNT - 1'b1;
 							end
 
 							TRANSMIT_ERROR:
@@ -472,7 +487,7 @@ begin
 										if (input_buffer[1:0]==`MES_SEQ)
 										begin
 											next_node_state = RECEIVE_DRIVE_ACK0;
-											next_out_reg = ACK_SEQ_WIRE[1];
+											next_out_reg = ACK_SEQ_CONST[1];
 										end
 										else
 											next_node_state = RECEIVE_FWD;
@@ -532,6 +547,7 @@ begin
 	endcase
 end
 
+// Output MUX, Purely combinational
 always @ *
 begin
 	DOUT = DIN;
@@ -586,6 +602,7 @@ begin
 	endcase
 end
 
+// Latch DIN only when BUS state in D1, D2, RESET_D1, RESET_D2
 always @ (posedge CLK or negedge RESET)
 begin
 	if (~RESET)
@@ -595,7 +612,7 @@ begin
 	else
 	begin
 		if ((bus_state==DRIVE1)||(bus_state==DRIVE2)||(bus_state==BUS_RESET_D1)||(bus_state==BUS_RESET_D2))
-			input_buffer <= {input_buffer[4:0], DIN};
+			input_buffer <= {input_buffer[3:0], DIN};
 	end
 end
 

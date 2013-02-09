@@ -71,15 +71,15 @@ reg		ACK_SEQ_EXTRACT;
 assign DOUT = (ctrl_hold)? ctrl_dout : DIN;
 assign test_pt = state;
 
-wire	[2:0] RST_SEQ_WIRE = `RST_SEQ;
-wire	[1:0] ACK_SEQ_WIRE = `ACK_SEQ;
+wire	[2:0] RST_SEQ_CONST = `RST_SEQ;
+wire	[1:0] ACK_SEQ_CONST = `ACK_SEQ;
 
 always @ *
 begin
 	ACK_SEQ_EXTRACT = 0;
 	case (seq_state)
-		1: begin ACK_SEQ_EXTRACT = ACK_SEQ_WIRE[1]; end
-		2: begin ACK_SEQ_EXTRACT = ACK_SEQ_WIRE[0]; end
+		1: begin ACK_SEQ_EXTRACT = ACK_SEQ_CONST[1]; end
+		2: begin ACK_SEQ_EXTRACT = ACK_SEQ_CONST[0]; end
 	endcase
 end
 
@@ -193,7 +193,7 @@ begin
 				next_state = RESET_S0_D_NEG;
 				next_clk_out = 0;
 				next_ctrl_hold = 1;
-				next_ctrl_dout = RST_SEQ_WIRE[2];
+				next_ctrl_dout = RST_SEQ_CONST[2];
 			end
 			else
 			begin
@@ -230,7 +230,7 @@ begin
 						next_state = RESET_S0_D_NEG;
 						next_clk_out = 0;
 						next_ctrl_hold = 1;
-						next_ctrl_dout = RST_SEQ_WIRE[2];
+						next_ctrl_dout = RST_SEQ_CONST[2];
 					end
 				end
 			endcase
@@ -249,7 +249,7 @@ begin
 				next_state = RESET_S0_D_NEG;
 				next_clk_out = 0;
 				next_ctrl_hold = 1;
-				next_ctrl_dout = RST_SEQ_WIRE[2];
+				next_ctrl_dout = RST_SEQ_CONST[2];
 			end
 			else
 			begin
@@ -282,7 +282,7 @@ begin
 							next_state = RESET_S0_D_NEG;
 							next_clk_out = 0;
 							next_ctrl_hold = 1;
-							next_ctrl_dout = RST_SEQ_WIRE[2];
+							next_ctrl_dout = RST_SEQ_CONST[2];
 						end
 					end
 					else
@@ -297,7 +297,7 @@ begin
 					next_state = RESET_S0_D_NEG;
 					next_clk_out = 0;
 					next_ctrl_hold = 1;
-					next_ctrl_dout = RST_SEQ_WIRE[2];
+					next_ctrl_dout = RST_SEQ_CONST[2];
 				end
 
 				default:
@@ -313,7 +313,7 @@ begin
 						next_state = RESET_S0_D_NEG;
 						next_clk_out = 0;
 						next_ctrl_hold = 1;
-						next_ctrl_dout = RST_SEQ_WIRE[2];
+						next_ctrl_dout = RST_SEQ_CONST[2];
 					end
 				end
 			endcase
@@ -355,10 +355,10 @@ begin
 			if (CLK_HALF)
 			begin
 				// 1st reset bit successed
-				if (input_buffer[2:0]=={3{RST_SEQ_WIRE[2]}})
-					next_input_reset_seq = {input_reset_seq[0], RST_SEQ_WIRE[2]};
+				if (input_buffer[2:0]=={3{RST_SEQ_CONST[2]}})
+					next_input_reset_seq = {input_reset_seq[0], RST_SEQ_CONST[2]};
 				next_state = RESET_S1_D_NEG;
-				next_ctrl_dout = RST_SEQ_WIRE[1];
+				next_ctrl_dout = RST_SEQ_CONST[1];
 				next_clk_out = 0;
 			end
 		end
@@ -399,10 +399,10 @@ begin
 			if (CLK_HALF)
 			begin
 				// 2nd reset bit successed
-				if (input_buffer=={4{RST_SEQ_WIRE[1]}})
-					next_input_reset_seq = {input_reset_seq[0], RST_SEQ_WIRE[1]};
+				if (input_buffer=={4{RST_SEQ_CONST[1]}})
+					next_input_reset_seq = {input_reset_seq[0], RST_SEQ_CONST[1]};
 				next_state = RESET_S0_D1_NEG;
-				next_ctrl_dout = RST_SEQ_WIRE[2];
+				next_ctrl_dout = RST_SEQ_CONST[0];
 				next_clk_out = 0;
 			end
 		end
@@ -443,10 +443,10 @@ begin
 			if (CLK_HALF)
 			begin
 				// 3rd reset bit successed
-				if (input_buffer=={4{RST_SEQ_WIRE[2]}})
+				if (input_buffer=={4{RST_SEQ_CONST[0]}})
 				begin
-					next_input_reset_seq = {input_reset_seq[0], RST_SEQ_WIRE[2]};
-					if (input_reset_seq==RST_SEQ_WIRE[2:1])
+					next_input_reset_seq = {input_reset_seq[0], RST_SEQ_CONST[0]};
+					if (input_reset_seq==RST_SEQ_CONST[2:1])
 					begin
 						next_state = RESET_R1_D_NEG;
 						next_ctrl_dout = 1;
@@ -454,14 +454,14 @@ begin
 					else
 					begin
 						next_state = RESET_S1_D_NEG;
-						next_ctrl_dout = RST_SEQ_WIRE[1];
+						next_ctrl_dout = RST_SEQ_CONST[1];
 					end
 				end
 				// 3rd reset bit failed
 				else
 				begin
 					next_state = RESET_S1_D_NEG;
-					next_ctrl_dout = RST_SEQ_WIRE[1];
+					next_ctrl_dout = RST_SEQ_CONST[1];
 				end
 				next_clk_out = 0;
 			end

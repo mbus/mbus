@@ -37,10 +37,12 @@ parameter DRIVE1 = 2;
 parameter LATCH1 = 3;
 parameter DRIVE2 = 4;
 parameter LATCH2 = 5;
-parameter BUS_RESET_D = 6;
-parameter BUS_RESET_L = 7;
+parameter BUS_RESET_D1 = 6;
+parameter BUS_RESET_L1 = 7;
+parameter BUS_RESET_D2 = 8;
+parameter BUS_RESET_L2 = 9;
 
-parameter NUM_OF_BUS_STATE = 8;
+parameter NUM_OF_BUS_STATE = 10;
 
 parameter TRANSMIT_ADDR 		= 0;
 parameter TRANSMIT_DATA 		= 1;
@@ -229,7 +231,7 @@ begin
 		begin
 			if (input_buffer[2:0]==`RST_SEQ)
 			begin
-				next_bus_state = BUS_RESET_D;
+				next_bus_state = BUS_RESET_D1;
 				if ((node_state==TRANSMIT_WAIT_ACK2)&&(mode==MODE_TX))
 				begin
 					if (input_buffer[4:3]==`ACK_SEQ)
@@ -333,7 +335,7 @@ begin
 		LATCH2:
 		begin
 			if (input_buffer[2:0]==`RST_SEQ)
-				next_bus_state = BUS_RESET_D;
+				next_bus_state = BUS_RESET_D1;
 			else
 			begin
 				next_bus_state = DRIVE1;
@@ -501,20 +503,30 @@ begin
 			end
 		end
 
-		BUS_RESET_D:
+		BUS_RESET_D1:
 		begin
-			next_bus_state = BUS_RESET_L;
+			next_bus_state = BUS_RESET_L1;
 		end
 
-		BUS_RESET_L:
+		BUS_RESET_L1:
 		begin
-			if (input_buffer[1:0]==2'b11)
+			next_bus_state = BUS_RESET_D2:
+		end
+
+		BUS_RESET_D2:
+		begin
+			next_bus_state = BUS_RESET_L2;
+		end
+
+		BUS_RESET_L2:
+		begin
+			if (input_buffer==`BACK_TO_IDLE_SEQ)
 			begin
 				next_bus_state = BUS_IDLE;
 				next_mode = MODE_IDLE;
 			end
 			else
-				next_bus_state = BUS_RESET_D;
+				next_bus_state = BUS_RESET_D1;
 		end
 
 	endcase
@@ -582,7 +594,7 @@ begin
 	end
 	else
 	begin
-		if ((bus_state==DRIVE1)||(bus_state==DRIVE2)||(bus_state==BUS_RESET_D))
+		if ((bus_state==DRIVE1)||(bus_state==DRIVE2)||(bus_state==BUS_RESET_D1)||(bus_state==BUS_RESET_D2))
 			input_buffer <= {input_buffer[4:0], DIN};
 	end
 end

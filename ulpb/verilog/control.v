@@ -39,16 +39,16 @@ parameter RESET_S0_D1_NEG 	= 6'b110101;
 parameter RESET_S0_D1_POS 	= 6'b110110;
 parameter RESET_S0_L1_NEG 	= 6'b110111;
 parameter RESET_S0_L1_POS 	= 6'b111000;
-parameter RESET_R_D_NEG 	= 6'b011001;
-parameter RESET_R_D_POS 	= 6'b011010;
-parameter RESET_R_L_NEG 	= 6'b011011;
-parameter RESET_R_L_POS 	= 6'b011100;
-parameter RESET_ADDI_CLK_NEG= 6'b011101;
-parameter RESET_ADDI_CLK_POS= 6'b011110;
-parameter BACK_TO_IDLE_NEG	= 6'b011111;
-parameter BACK_TO_IDLE_POS	= 6'b111111;
-
-parameter NUM_OF_STATES = 31;
+parameter RESET_R1_D_NEG 	= 6'b011001;
+parameter RESET_R1_D_POS 	= 6'b011010;
+parameter RESET_R1_L_NEG 	= 6'b011011;
+parameter RESET_R1_L_POS 	= 6'b011100;
+parameter RESET_R2_D_NEG 	= 6'b011101;
+parameter RESET_R2_D_POS 	= 6'b011110;
+parameter RESET_R2_L_NEG 	= 6'b011111;
+parameter RESET_R2_L_POS 	= 6'b111100;
+parameter BACK_TO_IDLE_NEG	= 6'b111101;
+parameter BACK_TO_IDLE_POS	= 6'b111110;
 
 // CLK registers
 reg		CLK_HALF, next_clk_half;
@@ -448,7 +448,7 @@ begin
 					next_input_reset_seq = {input_reset_seq[0], RST_SEQ_WIRE[2]};
 					if (input_reset_seq==RST_SEQ_WIRE[2:1])
 					begin
-						next_state = RESET_R_D_NEG;
+						next_state = RESET_R1_D_NEG;
 						next_ctrl_dout = 1;
 					end
 					else
@@ -467,57 +467,77 @@ begin
 			end
 		end
 
-		RESET_R_D_NEG:
+		RESET_R1_D_NEG:
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
 			begin
-				next_state = RESET_R_D_POS;
+				next_state = RESET_R1_D_POS;
 				next_clk_out = 1;
 			end
 		end
 
-		RESET_R_D_POS:
+		RESET_R1_D_POS:
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
 			begin
-				next_state = RESET_R_L_NEG;
+				next_state = RESET_R1_L_NEG;
 				next_clk_out = 0;
 			end
 		end
 
-		RESET_R_L_NEG:
+		RESET_R1_L_NEG:
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
 			begin
-				next_state = RESET_R_L_POS;
+				next_state = RESET_R1_L_POS;
 				next_clk_out = 1;
 			end
 		end
 
-		RESET_R_L_POS:
+		RESET_R1_L_POS:
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
 			begin
-				next_state = RESET_ADDI_CLK_NEG;
+				next_state = RESET_R2_D_NEG;
 				next_clk_out = 0;
 			end
 		end
 
-		RESET_ADDI_CLK_NEG:
+		RESET_R2_D_NEG:
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)
 			begin
-				next_state = RESET_ADDI_CLK_POS;
+				next_state = RESET_R2_D_POS;
 				next_clk_out = 1;
 			end
 		end
 
-		RESET_ADDI_CLK_POS:
+		RESET_R2_D_POS:
+		begin
+			next_clk_half = ~CLK_HALF;
+			if (CLK_HALF)
+			begin
+				next_state = RESET_R2_L_NEG;
+				next_clk_out = 0;
+			end
+		end
+
+		RESET_R2_L_NEG:
+		begin
+			next_clk_half = ~CLK_HALF;
+			if (CLK_HALF)
+			begin
+				next_state = RESET_R2_L_POS;
+				next_clk_out = 1;
+			end
+		end
+
+		RESET_R2_L_POS:
 		begin
 			next_clk_half = ~CLK_HALF;
 			if (CLK_HALF)

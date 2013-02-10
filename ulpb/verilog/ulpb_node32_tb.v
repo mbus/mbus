@@ -30,6 +30,8 @@ wire	n0_tx_succ, n1_tx_succ, n2_tx_succ;
 wire	n0_tx_fail, n1_tx_fail, n2_tx_fail;
 reg		n0_tx_resp_ack, n1_tx_resp_ack, n2_tx_resp_ack;
 
+wire	w_n2c0, w_c0n0, w_n0n1, w_n1n2;
+
 reg		[31:0] rand_dat, rand_dat2;
 reg		[2:0] state;
 reg		[5:0] word_counter;

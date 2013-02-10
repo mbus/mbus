@@ -23,9 +23,11 @@ module ulpb_node32(
 
 `include "include/ulpb_func.v"
 
+`define OVERLAP_ACK
+
 parameter ADDRESS = 8'hef;
 parameter ADDRESS_MASK=8'hff;
-parameter ERROR_RST_CNT = 5'b00100;	// # of bit should not greater than log2(32) = 5
+parameter ERROR_RST_CNT = 5'b00001;	// # of bit should not greater than log2(32) = 5
 
 // Node mode
 parameter MODE_IDLE = 0;
@@ -40,12 +42,10 @@ parameter DRIVE1 = 2;
 parameter LATCH1 = 3;
 parameter DRIVE2 = 4;
 parameter LATCH2 = 5;
-parameter BUS_RESET_D1 = 6;
-parameter BUS_RESET_L1 = 7;
-parameter BUS_RESET_D2 = 8;
-parameter BUS_RESET_L2 = 9;
+parameter PHASE_ALIGN = 6;
+parameter BUS_RESET = 7;
 
-parameter NUM_OF_BUS_STATE = 10;
+parameter NUM_OF_BUS_STATE = 8;
 
 // Node state, TX
 parameter TRANSMIT_ADDR 		= 0;
@@ -67,6 +67,7 @@ parameter RECEIVE_DRIVE_ACK0	= 3;
 parameter RECEIVE_DRIVE_ACK1	= 4;
 parameter RECEIVE_DRIVE_ACK2	= 5;
 parameter RECEIVE_DRIVE_ACK3	= 6;
+parameter RECEIVE_ERROR			= 7;
 parameter RECEIVE_FWD			= 15;
 
 parameter NUM_OF_NODE_STATE = 15;
@@ -242,7 +243,7 @@ begin
 		begin
 			if (input_buffer[2:0]==`RST_SEQ)
 			begin
-				next_bus_state = BUS_RESET_D1;
+				next_bus_state = PHASE_ALIGN;
 				`ifdef OVERLAP_ACK
 				if ((node_state==TRANSMIT_WAIT_ACK2)&&(mode==MODE_TX))
 				begin
@@ -288,6 +289,11 @@ begin
 							begin
 								next_node_state = RECEIVE_DRIVE_ACK1;
 								next_out_reg = ACK_SEQ_CONST[0];
+							end
+
+							RECEIVE_ERROR:
+							begin
+								next_out_reg = ~out_reg;
 							end
 
 						endcase
@@ -352,7 +358,7 @@ begin
 		LATCH2:
 		begin
 			if (input_buffer[2:0]==`RST_SEQ)
-				next_bus_state = BUS_RESET_D1;
+				next_bus_state = PHASE_ALIGN;
 			else
 			begin
 				next_bus_state = DRIVE1;
@@ -410,7 +416,7 @@ begin
 								next_node_state = TRANSMIT_WAIT_ACK1;
 							`else
 								if (input_buffer[1:0]==`ACK_SEQ)
-									next_tx_succ = 1;
+									next_tx_success = 1;
 								else
 									next_tx_fail = 1;
 								next_node_state = TRANSMIT_FWD;
@@ -435,7 +441,10 @@ begin
 							TRANSMIT_ERROR:
 							begin
 								if (bit_position)
+								begin
 									next_bit_position = bit_position - 1'b1;
+									next_out_reg = ~out_reg;
+								end
 								else
 									next_node_state = TRANSMIT_FWD;
 							end
@@ -488,8 +497,14 @@ begin
 							begin
 								if (RX_REQ | RX_ACK)
 								begin
-									// RX overflow, ignore
-									next_node_state = RECEIVE_FWD;
+									// RX overflow 
+									next_node_state = RECEIVE_ERROR;
+									next_bit_position = ERROR_RST_CNT - 1'b1;
+									// happenede in last bit
+									if (input_buffer_xor)
+										next_out_reg = MES_SEQ_CONST[1];
+									else
+										next_out_reg = ~MES_SEQ_CONST[1];
 								end
 								else
 								begin
@@ -518,6 +533,17 @@ begin
 								end
 							end
 
+							RECEIVE_ERROR:
+							begin
+								if (bit_position)
+								begin
+									next_bit_position = bit_position - 1'b1;
+									next_out_reg = ~out_reg;
+								end
+								else
+									next_node_state = RECEIVE_FWD;
+							end
+
 							// ACK completed
 							RECEIVE_DRIVE_ACK1:
 							begin
@@ -532,36 +558,24 @@ begin
 			end
 		end
 
-		BUS_RESET_D1:
+		PHASE_ALIGN:
 		begin
-			next_bus_state = BUS_RESET_L1;
+			next_bus_state = BUS_RESET;
 		end
 
-		BUS_RESET_L1:
+		BUS_RESET:
 		begin
-			next_bus_state = BUS_RESET_D2:
-		end
-
-		BUS_RESET_D2:
-		begin
-			next_bus_state = BUS_RESET_L2;
-		end
-
-		BUS_RESET_L2:
-		begin
-			if (input_buffer==`BACK_TO_IDLE_SEQ)
+			if (input_buffer[2:0]==3'b111)
 			begin
 				next_bus_state = BUS_IDLE;
 				next_mode = MODE_IDLE;
 			end
-			else
-				next_bus_state = BUS_RESET_D1;
 		end
 
 	endcase
 end
 
-// Output MUX, Purely combinational
+// Output MUX
 always @ *
 begin
 	DOUT = DIN;
@@ -590,7 +604,8 @@ begin
 
 				MODE_RX:
 				begin
-					if (node_state==RECEIVE_DRIVE_ACK0)
+					if ((node_state==RECEIVE_DRIVE_ACK0)||(node_state==RECEIVE_ERROR))
+					//if (node_state==RECEIVE_DRIVE_ACK0)
 						DOUT = out_reg;
 				end
 			endcase
@@ -607,7 +622,8 @@ begin
 
 				MODE_RX:
 				begin
-					if (node_state==RECEIVE_DRIVE_ACK1)
+					if ((node_state==RECEIVE_DRIVE_ACK1)||(node_state==RECEIVE_ERROR))
+					//if (node_state==RECEIVE_DRIVE_ACK1)
 						DOUT = out_reg;
 				end
 			endcase
@@ -616,7 +632,7 @@ begin
 	endcase
 end
 
-// Latch DIN only when BUS state in D1, D2, RESET_D1, RESET_D2
+// Latch DIN only when BUS state in D1, D2, phase align, reset1, reset2
 always @ (posedge CLK or negedge RESET)
 begin
 	if (~RESET)
@@ -625,7 +641,7 @@ begin
 	end
 	else
 	begin
-		if ((bus_state==DRIVE1)||(bus_state==DRIVE2)||(bus_state==BUS_RESET_D1)||(bus_state==BUS_RESET_D2))
+		if ((bus_state==DRIVE1)||(bus_state==DRIVE2)||(bus_state==PHASE_ALIGN)||(bus_state==BUS_RESET))
 			input_buffer <= {input_buffer[3:0], DIN};
 	end
 end

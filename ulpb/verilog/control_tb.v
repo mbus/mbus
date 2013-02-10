@@ -23,7 +23,8 @@ parameter MODE_DRIVE1 = 2;
 parameter MODE_LATCH1 = 3;
 parameter MODE_DRIVE2 = 4;
 parameter MODE_LATCH2 = 5;
-parameter MODE_RESET = 6;
+parameter MODE_ALIGN = 6;
+parameter MODE_RESET = 7;
 
 reg wait_reset;
 reg	[4:0] data_counter;
@@ -113,7 +114,7 @@ begin
 			MODE_DRIVE1:
 			begin
 				if (input_buffer==3'b010)
-					state <= MODE_RESET;
+					state <= MODE_ALIGN;
 				else
 					state <= MODE_LATCH1;
 			end
@@ -132,7 +133,7 @@ begin
 			MODE_DRIVE2:
 			begin
 				if (input_buffer==3'b010)
-					state <= MODE_RESET;
+					state <= MODE_ALIGN;
 				else
 					state <= MODE_LATCH2;
 			end
@@ -159,14 +160,19 @@ begin
 				endcase
 			end
 
+			MODE_ALIGN:
+			begin
+				state <= MODE_RESET;
+			end
+
 			MODE_RESET:
 			begin
 				tx_state <= 0;
 				data_counter <= 0;
 				wait_reset <= 0;
 				IN_REG <= 1;
-				if (input_buffer[1:0]==2'b11)
-					state = MODE_IDLE;
+				if (input_buffer[2:0]==3'b111)
+					state <= MODE_IDLE;
 			end
 		endcase
 	end
@@ -180,7 +186,7 @@ begin
 	end
 	else
 	begin
-		if ((state==MODE_DRIVE1)||(state==MODE_DRIVE2)||(state==MODE_RESET))
+		if ((state==MODE_DRIVE1)||(state==MODE_DRIVE2)||(state==MODE_ALIGN)||(state==MODE_RESET))
 			input_buffer <= {input_buffer[1:0], OUT};
 	end
 end

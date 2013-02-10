@@ -243,6 +243,7 @@ begin
 			if (input_buffer[2:0]==`RST_SEQ)
 			begin
 				next_bus_state = BUS_RESET_D1;
+				`ifdef OVERLAP_ACK
 				if ((node_state==TRANSMIT_WAIT_ACK2)&&(mode==MODE_TX))
 				begin
 					if (input_buffer[4:3]==`ACK_SEQ)
@@ -250,6 +251,7 @@ begin
 					else
 						next_tx_fail = 1;
 				end
+				`endif
 			end
 			else
 			begin
@@ -269,11 +271,13 @@ begin
 								next_out_reg = MES_SEQ_CONST[0];
 							end
 
+							`ifdef OVERLAP_ACK
 							TRANSMIT_WAIT_ACK2:
 							begin
 								next_node_state = TRANSMIT_FWD;
 								next_tx_fail = 1;
 							end
+							`endif
 						endcase
 					end
 
@@ -402,13 +406,23 @@ begin
 
 							TRANSMIT_WAIT_ACK0:
 							begin
+							`ifdef OVERLAP_ACK
 								next_node_state = TRANSMIT_WAIT_ACK1;
+							`else
+								if (input_buffer[1:0]==`ACK_SEQ)
+									next_tx_succ = 1;
+								else
+									next_tx_fail = 1;
+								next_node_state = TRANSMIT_FWD;
+							`endif
 							end
 
+							`ifdef OVERLAP_ACK
 							TRANSMIT_WAIT_ACK1:
 							begin
 								next_node_state = TRANSMIT_WAIT_ACK2;
 							end
+							`endif
 
 							TRANSMIT_UNDERFLOW:
 							begin

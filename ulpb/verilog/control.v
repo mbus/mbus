@@ -39,16 +39,18 @@ parameter RESET_S0_D1_NEG 	= 6'b110101;
 parameter RESET_S0_D1_POS 	= 6'b110110;
 parameter RESET_S0_L1_NEG 	= 6'b110111;
 parameter RESET_S0_L1_POS 	= 6'b111000;
-parameter RESET_R1_D_NEG 	= 6'b011001;
-parameter RESET_R1_D_POS 	= 6'b011010;
-parameter RESET_R1_L_NEG 	= 6'b011011;
-parameter RESET_R1_L_POS 	= 6'b011100;
-parameter RESET_R2_D_NEG 	= 6'b011101;
-parameter RESET_R2_D_POS 	= 6'b011110;
-parameter RESET_R2_L_NEG 	= 6'b011111;
-parameter RESET_R2_L_POS 	= 6'b111100;
-parameter BACK_TO_IDLE_NEG	= 6'b111101;
-parameter BACK_TO_IDLE_POS	= 6'b111110;
+parameter RESET_R_ALIGN_NEG = 6'b011001;
+parameter RESET_R_ALIGN_POS = 6'b011010;
+parameter RESET_R1_D_NEG 	= 6'b011011;
+parameter RESET_R1_D_POS 	= 6'b011100;
+parameter RESET_R1_L_NEG 	= 6'b011101;
+parameter RESET_R1_L_POS 	= 6'b011110;
+parameter RESET_R2_D_NEG 	= 6'b011111;
+parameter RESET_R2_D_POS 	= 6'b111001;
+parameter RESET_R2_L_NEG 	= 6'b111010;
+parameter RESET_R2_L_POS 	= 6'b111011;
+parameter BACK_TO_IDLE_NEG	= 6'b111100;
+parameter BACK_TO_IDLE_POS	= 6'b111101;
 
 // CLK registers
 reg		CLK_HALF, next_clk_half;
@@ -448,8 +450,8 @@ begin
 					next_input_reset_seq = {input_reset_seq[0], RST_SEQ_CONST[0]};
 					if (input_reset_seq==RST_SEQ_CONST[2:1])
 					begin
-						next_state = RESET_R1_D_NEG;
-						next_ctrl_dout = 1;
+						next_state = RESET_R_ALIGN_NEG;
+						next_ctrl_dout = 0;
 					end
 					else
 					begin
@@ -463,6 +465,27 @@ begin
 					next_state = RESET_S1_D_NEG;
 					next_ctrl_dout = RST_SEQ_CONST[1];
 				end
+				next_clk_out = 0;
+			end
+		end
+
+		RESET_R_ALIGN_NEG:
+		begin
+			next_clk_half = ~CLK_HALF;
+			if (CLK_HALF)
+			begin
+				next_state = RESET_R_ALIGN_POS;
+				next_clk_out = 1;
+			end
+		end
+
+		RESET_R_ALIGN_POS:
+		begin
+			next_clk_half = ~CLK_HALF;
+			if (CLK_HALF)
+			begin
+				next_state = RESET_R1_D_NEG;
+				next_ctrl_dout = 1;
 				next_clk_out = 0;
 			end
 		end

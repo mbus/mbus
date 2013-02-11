@@ -14,41 +14,45 @@ module control(
 
 parameter START_CYCLES = 12;
 
-parameter BUS_IDLE 			= 6'b000000;
-parameter WAIT_FOR_START 	= 6'b000001;
-parameter ENABLE_CLK_NEG 	= 6'b100010;
-parameter ARBI_RES_POS 		= 6'b000011;
-parameter ARBI_RES_NEG 		= 6'b100100;
-parameter DRIVE1_POS 		= 6'b000101;
-parameter DRIVE1_NEG 		= 6'b100110;
-parameter LATCH1_POS 		= 6'b000111;
-parameter LATCH1_NEG 		= 6'b101000;
-parameter DRIVE2_POS 		= 6'b001001;
-parameter DRIVE2_NEG 		= 6'b101010;
-parameter LATCH2_POS 		= 6'b001011;
-parameter LATCH2_NEG 		= 6'b101100;
-parameter RESET_S0_D_NEG 	= 6'b001101;
-parameter RESET_S0_D_POS 	= 6'b101110;
-parameter RESET_S0_L_NEG 	= 6'b101111;
-parameter RESET_S0_L_POS 	= 6'b110000;
-parameter RESET_S1_D_NEG 	= 6'b110001;
-parameter RESET_S1_D_POS 	= 6'b110010;
-parameter RESET_S1_L_NEG 	= 6'b110011;
-parameter RESET_S1_L_POS 	= 6'b110100;
-parameter RESET_S0_D1_NEG 	= 6'b110101;
-parameter RESET_S0_D1_POS 	= 6'b110110;
-parameter RESET_S0_L1_NEG 	= 6'b110111;
-parameter RESET_S0_L1_POS 	= 6'b111000;
-parameter RESET_R_ALIGN_NEG = 6'b011001;
-parameter RESET_R_ALIGN_POS = 6'b011010;
-parameter RESET1_NEG 		= 6'b011011;
-parameter RESET1_POS 		= 6'b011100;
-parameter RESET2_NEG 		= 6'b011101;
-parameter RESET2_POS 		= 6'b011110;
-parameter RESET3_NEG 		= 6'b011111;
-parameter RESET3_POS 		= 6'b111001;
-parameter BACK_TO_IDLE_NEG	= 6'b111010;
-parameter BACK_TO_IDLE_POS	= 6'b111011;
+parameter BUS_IDLE 			= 6'b0_00000;
+parameter WAIT_FOR_START 	= 6'b0_00001;
+parameter ENABLE_CLK_NEG 	= 6'b0_00010;
+parameter ARBI_RES_POS 		= 6'b0_00011;
+parameter ARBI_RES_NEG 		= 6'b0_00100;
+parameter PRIO_DRIVE_POS	= 6'b0_00101;
+parameter PRIO_DRIVE_NEG	= 6'b0_00110;
+parameter PRIO_LATCH_POS	= 6'b0_00111;
+parameter PRIO_LATCH_NEG	= 6'b0_01000;
+parameter DRIVE1_POS 		= 6'b0_01001;
+parameter DRIVE1_NEG 		= 6'b1_00000;
+parameter LATCH1_POS 		= 6'b0_01010;
+parameter LATCH1_NEG 		= 6'b1_00001;
+parameter DRIVE2_POS 		= 6'b0_01011;
+parameter DRIVE2_NEG 		= 6'b1_00010;
+parameter LATCH2_POS 		= 6'b0_01100;
+parameter LATCH2_NEG 		= 6'b1_00011;
+parameter RESET_S0_D_NEG 	= 6'b0_01101;
+parameter RESET_S0_D_POS 	= 6'b1_00100;
+parameter RESET_S0_L_NEG 	= 6'b1_00101;
+parameter RESET_S0_L_POS 	= 6'b1_00110;
+parameter RESET_S1_D_NEG 	= 6'b1_00111;
+parameter RESET_S1_D_POS 	= 6'b1_01000;
+parameter RESET_S1_L_NEG 	= 6'b1_01001;
+parameter RESET_S1_L_POS 	= 6'b1_01010;
+parameter RESET_S0_D1_NEG 	= 6'b1_01011;
+parameter RESET_S0_D1_POS 	= 6'b1_01100;
+parameter RESET_S0_L1_NEG 	= 6'b1_01101;
+parameter RESET_S0_L1_POS 	= 6'b1_01110;
+parameter RESET_R_ALIGN_NEG = 6'b0_01110;
+parameter RESET_R_ALIGN_POS = 6'b0_01111;
+parameter RESET1_NEG 		= 6'b0_10000;
+parameter RESET1_POS 		= 6'b0_10001;
+parameter RESET2_NEG 		= 6'b0_10010;
+parameter RESET2_POS 		= 6'b0_10011;
+parameter RESET3_NEG 		= 6'b0_10100;
+parameter RESET3_POS 		= 6'b0_10101;
+parameter BACK_TO_IDLE_NEG	= 6'b0_10110;
+parameter BACK_TO_IDLE_POS	= 6'b0_10111;
 
 // CLK registers
 reg		CLK_HALF, next_clk_half;
@@ -167,6 +171,7 @@ begin
 			next_clk_out = 1;
 		end
 
+
 		ARBI_RES_POS:
 		begin
 			next_state = ARBI_RES_NEG;
@@ -175,9 +180,33 @@ begin
 
 		ARBI_RES_NEG:
 		begin
-			next_state = DRIVE1_POS;
+			next_state = PRIO_DRIVE_POS;
 			next_clk_out = 1;
 			next_ctrl_hold = 0;
+		end
+
+		PRIO_DRIVE_POS:
+		begin
+			next_state = PRIO_DRIVE_NEG;
+			next_clk_out = 0;
+		end
+
+		PRIO_DRIVE_NEG:
+		begin
+			next_state = PRIO_LATCH_POS;
+			next_clk_out = 1;
+		end
+
+		PRIO_LATCH_POS:
+		begin
+			next_state = PRIO_LATCH_NEG;
+			next_clk_out = 0;
+		end
+
+		PRIO_LATCH_NEG:
+		begin
+			next_state = DRIVE1_POS;
+			next_clk_out = 1;
 		end
 
 		DRIVE1_POS:

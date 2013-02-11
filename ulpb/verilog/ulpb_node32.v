@@ -10,6 +10,7 @@ module ulpb_node32(
 	input [`DATA_WIDTH-1:0] TX_DATA, 
 	input TX_PEND, 
 	input TX_REQ, 
+	input PRIORITY,
 	output reg TX_ACK, 
 	output reg [`ADDR_WIDTH-1:0] RX_ADDR, 
 	output reg [`DATA_WIDTH-1:0] RX_DATA, 
@@ -30,7 +31,7 @@ parameter ADDRESS_MASK=8'hff;
 parameter ERROR_RST_CNT = 5'b00001;	// # of bit should not greater than log2(32) = 5
 
 // Node mode
-parameter MODE_IDLE = 0;
+parameter MODE_TX_NON_PRIO = 0;
 parameter MODE_TX = 1;
 parameter MODE_RX = 2;
 parameter MODE_FWD = 3;
@@ -38,14 +39,16 @@ parameter MODE_FWD = 3;
 // BUS state
 parameter BUS_IDLE = 0;
 parameter ARBI_RESOLVED = 1;
-parameter DRIVE1 = 2;
-parameter LATCH1 = 3;
-parameter DRIVE2 = 4;
-parameter LATCH2 = 5;
-parameter PHASE_ALIGN = 6;
-parameter BUS_RESET = 7;
+parameter PRIO_DRIVE = 2;
+parameter PRIO_LATCH = 3;
+parameter DRIVE1 = 4;
+parameter LATCH1 = 5;
+parameter DRIVE2 = 6;
+parameter LATCH2 = 7;
+parameter PHASE_ALIGN = 8;
+parameter BUS_RESET = 9;
 
-parameter NUM_OF_BUS_STATE = 8;
+parameter NUM_OF_BUS_STATE = 10;
 
 // Node state, TX
 parameter TRANSMIT_ADDR 		= 0;
@@ -105,6 +108,7 @@ wire	address_match = (((RX_ADDR^ADDRESS)&ADDRESS_MASK)==0)? 1'b1 : 1'b0;
 // constant
 wire	[1:0] MES_SEQ_CONST = `MES_SEQ;
 wire	[1:0] ACK_SEQ_CONST = `ACK_SEQ;
+wire	[2:0] RST_SEQ_CONST = `RST_SEQ;
 
 always @ (posedge CLK or negedge RESET)
 begin
@@ -115,7 +119,7 @@ begin
 		node_state <= RECEIVE_ADDR;
 		bit_position <= `ADDR_WIDTH - 1'b1;
 		out_reg <= 1;
-		mode <= MODE_IDLE;
+		mode <= MODE_FWD;
 		// interface registers
 		TX_ACK <= 0;
 		TX_FAIL <= 0;
@@ -199,26 +203,10 @@ begin
 	case (bus_state)
 		BUS_IDLE:
 		begin
-			// Win Arbitration, Transmitter
 			if (DIN^DOUT)
-			begin
-				// tx registers
-				next_addr = TX_ADDR;
-				next_data0 = TX_DATA;
-				next_mode = MODE_TX;
-				next_tx_ack = 1;
-				next_tx_pend = TX_PEND;
-				next_node_state = TRANSMIT_ADDR;
-				// interface registers
-			end
-			// Lose Arbitration, Receiver
+				next_mode = MODE_TX_NON_PRIO;
 			else
-			begin
 				next_mode = MODE_RX;
-				// rx registers
-				next_node_state = RECEIVE_ADDR;
-			end
-
 			// general registers
 			next_bus_state = ARBI_RESOLVED;
 			next_bit_position = `ADDR_WIDTH - 1'b1;
@@ -226,9 +214,56 @@ begin
 
 		ARBI_RESOLVED:
 		begin
-			next_bus_state = DRIVE1;
+			next_bus_state = PRIO_DRIVE;
+		end
+
+		PRIO_DRIVE:
+		begin
+			if (mode==MODE_TX_NON_PRIO)
+			begin
+				// Lose Priority
+				if (DIN)
+				begin
+					next_mode = MODE_RX;
+					next_node_state = RECEIVE_ADDR;
+				end
+				// Remain Arbitration
+				else
+				begin
+					next_addr = TX_ADDR;
+					next_data0 = TX_DATA;
+					next_mode = MODE_TX;
+					next_tx_ack = 1;
+					next_tx_pend = TX_PEND;
+					next_node_state = TRANSMIT_ADDR;
+				end
+			end
+			else
+			begin
+				// Win Priority
+				if (DIN^DOUT)
+				begin
+					next_addr = TX_ADDR;
+					next_data0 = TX_DATA;
+					next_mode = MODE_TX;
+					next_tx_ack = 1;
+					next_tx_pend = TX_PEND;
+					next_node_state = TRANSMIT_ADDR;
+				end
+				else
+				begin
+					next_mode = MODE_RX;
+					next_node_state = RECEIVE_ADDR;
+				end
+			end
+			next_bus_state = PRIO_LATCH;
+		end
+
+		PRIO_LATCH:
+		begin
 			if (mode==MODE_TX)
 				next_out_reg = addr_bit_extract;
+			next_bus_state = DRIVE1;
 		end
 
 		DRIVE1:
@@ -244,15 +279,15 @@ begin
 			if (input_buffer[2:0]==`RST_SEQ)
 			begin
 				next_bus_state = PHASE_ALIGN;
-				`ifdef OVERLAP_ACK
-				if ((node_state==TRANSMIT_WAIT_ACK2)&&(mode==MODE_TX))
+				if (mode==MODE_TX)
 				begin
-					if (input_buffer[4:3]==`ACK_SEQ)
-						next_tx_success = 1;
-					else
+					if ((node_state==TRANSMIT_ADDR)||(node_state==TRANSMIT_DATA))
 						next_tx_fail = 1;
-				end
+				`ifdef OVERLAP_ACK
+					if (node_state==TRANSMIT_WAIT_ACK2)
+						next_tx_success = 1;
 				`endif
+				end
 			end
 			else
 			begin
@@ -358,7 +393,14 @@ begin
 		LATCH2:
 		begin
 			if (input_buffer[2:0]==`RST_SEQ)
+			begin
 				next_bus_state = PHASE_ALIGN;
+				if (mode==MODE_TX)
+				begin
+					if ((node_state==TRANSMIT_ADDR)||(node_state==TRANSMIT_DATA))
+						next_tx_fail = 1;
+				end
+			end
 			else
 			begin
 				next_bus_state = DRIVE1;
@@ -413,7 +455,13 @@ begin
 							TRANSMIT_WAIT_ACK0:
 							begin
 							`ifdef OVERLAP_ACK
-								next_node_state = TRANSMIT_WAIT_ACK1;
+								if (input_buffer[1:0]==`ACK_SEQ)
+									next_node_state = TRANSMIT_WAIT_ACK1;
+								else
+								begin
+									next_tx_fail = 1;
+									next_node_state = TRANSMIT_FWD;
+								end
 							`else
 								if (input_buffer[1:0]==`ACK_SEQ)
 									next_tx_success = 1;
@@ -426,7 +474,13 @@ begin
 							`ifdef OVERLAP_ACK
 							TRANSMIT_WAIT_ACK1:
 							begin
-								next_node_state = TRANSMIT_WAIT_ACK2;
+								if (input_buffer[1:0]==RST_SEQ_CONST[2:1])
+									next_node_state = TRANSMIT_WAIT_ACK2;
+								else
+								begin
+									next_tx_fail = 1;
+									next_node_state = TRANSMIT_FWD;
+								end
 							end
 							`endif
 
@@ -570,7 +624,7 @@ begin
 			if (input_buffer[2:0]==3'b111)
 			begin
 				next_bus_state = BUS_IDLE;
-				next_mode = MODE_IDLE;
+				next_mode = MODE_FWD;
 			end
 		end
 
@@ -589,10 +643,21 @@ begin
 
 		ARBI_RESOLVED:
 		begin
-			if (mode==MODE_TX)
+			if (mode==MODE_TX_NON_PRIO)
 				DOUT = 0;
-			else
-				DOUT = DIN;
+		end
+
+		PRIO_DRIVE:
+		begin
+			if (mode==MODE_TX_NON_PRIO)
+				DOUT = 0;
+			else if ((mode==MODE_RX)&&(PRIORITY & TX_REQ))
+				DOUT = 1;
+		end
+
+		PRIO_LATCH:
+		begin
+			DOUT = 0;
 		end
 
 		DRIVE1:

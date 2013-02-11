@@ -17,6 +17,7 @@ wire	[5:0] ctrl_state_out;
 reg		[ADDR_WIDTH-1:0] n0_tx_addr, n1_tx_addr, n2_tx_addr;
 reg		[DATA_WIDTH-1:0] n0_tx_data, n1_tx_data, n2_tx_data;
 reg		n0_tx_req, n1_tx_req, n2_tx_req;
+reg		n0_priority, n1_priority, n2_priority;
 wire	n0_tx_ack, n1_tx_ack, n2_tx_ack;
 reg		n0_tx_pend, n1_tx_pend, n2_tx_pend;
 
@@ -33,7 +34,7 @@ reg		n0_tx_resp_ack, n1_tx_resp_ack, n2_tx_resp_ack;
 wire	w_n2c0, w_c0n0, w_n0n1, w_n1n2;
 
 reg		[31:0] rand_dat, rand_dat2;
-reg		[2:0] state;
+reg		[3:0] state;
 reg		[5:0] word_counter;
 integer	handle;
 
@@ -45,25 +46,26 @@ parameter TASK3=4;
 parameter TASK4=5;
 parameter TASK5=6;
 parameter TASK6=7;
+parameter TASK7=8;
 
 
 control c0(.DIN(w_n2c0), .DOUT(w_c0n0), .RESET(resetn), .CLK_OUT(SCLK), .CLK(clk), .test_pt(ctrl_state_out));
 
 ulpb_node32 #(.ADDRESS(8'hab)) n0
 			(.CLK(SCLK), .RESET(resetn), .DIN(w_c0n0), .DOUT(w_n0n1), 
-			.TX_ADDR(n0_tx_addr), .TX_DATA(n0_tx_data),	.TX_REQ(n0_tx_req), .TX_ACK(n0_tx_ack), .TX_PEND(n0_tx_pend),
+			.TX_ADDR(n0_tx_addr), .TX_DATA(n0_tx_data),	.TX_REQ(n0_tx_req), .TX_ACK(n0_tx_ack), .TX_PEND(n0_tx_pend), .PRIORITY(n0_priority),
 			.RX_ADDR(n0_rx_addr), .RX_DATA(n0_rx_data), .RX_REQ(n0_rx_req), .RX_ACK(n0_rx_ack), .RX_PEND(n0_rx_pend),
 			.TX_SUCC(n0_tx_succ), .TX_FAIL(n0_tx_fail), .TX_RESP_ACK(n0_tx_resp_ack));
 
 ulpb_node32 #(.ADDRESS(8'hcd)) n1
 			(.CLK(SCLK), .RESET(resetn), .DIN(w_n0n1), .DOUT(w_n1n2), 
-			.TX_ADDR(n1_tx_addr), .TX_DATA(n1_tx_data), .TX_REQ(n1_tx_req), .TX_ACK(n1_tx_ack), .TX_PEND(n1_tx_pend), 
+			.TX_ADDR(n1_tx_addr), .TX_DATA(n1_tx_data), .TX_REQ(n1_tx_req), .TX_ACK(n1_tx_ack), .TX_PEND(n1_tx_pend), .PRIORITY(n1_priority),
 			.RX_ADDR(n1_rx_addr), .RX_DATA(n1_rx_data), .RX_REQ(n1_rx_req), .RX_ACK(n1_rx_ack), .RX_PEND(n1_rx_pend),
 			.TX_SUCC(n1_tx_succ), .TX_FAIL(n1_tx_fail), .TX_RESP_ACK(n1_tx_resp_ack));
 
 ulpb_node32 #(.ADDRESS(8'hef)) n2
 			(.CLK(SCLK), .RESET(resetn), .DIN(w_n1n2), .DOUT(w_n2c0), 
-			.TX_ADDR(n2_tx_addr), .TX_DATA(n2_tx_data), .TX_REQ(n2_tx_req), .TX_ACK(n2_tx_ack), .TX_PEND(n2_tx_pend), 
+			.TX_ADDR(n2_tx_addr), .TX_DATA(n2_tx_data), .TX_REQ(n2_tx_req), .TX_ACK(n2_tx_ack), .TX_PEND(n2_tx_pend), .PRIORITY(n2_priority),
 			.RX_ADDR(n2_rx_addr), .RX_DATA(n2_rx_data), .RX_REQ(n2_rx_req), .RX_ACK(n2_rx_ack), .RX_PEND(n2_rx_pend),
 			.TX_SUCC(n2_tx_succ), .TX_FAIL(n2_tx_fail), .TX_RESP_ACK(n2_tx_resp_ack));
 
@@ -90,7 +92,6 @@ begin
 	@ (posedge clk)
 	@ (posedge clk)
 
-/*
 	#10000
 		state = TASK0;
 	@ (posedge n0_tx_succ | n0_tx_fail)
@@ -108,7 +109,7 @@ begin
 		word_counter = 7;
 		state = TASK3;
 	@ (posedge n0_tx_succ | n0_tx_fail)
-*/		
+
 	#10000
 		word_counter = 7;
 		state = TASK4;
@@ -129,6 +130,11 @@ begin
 	@ (posedge n1_tx_succ | n1_tx_fail)
 
 	#10000
+		state = TASK7;
+	@ (posedge n1_tx_succ | n1_tx_fail)
+	@ (posedge n0_tx_succ | n0_tx_fail)
+
+	#10000
 		$stop;
 end
 
@@ -140,16 +146,19 @@ begin
 		n0_tx_data <= 0;
 		n0_tx_pend <= 0;
 		n0_tx_req <= 0;
+		n0_priority <= 0;
 
 		n1_tx_addr <= 0;
 		n1_tx_data <= 0;
 		n1_tx_pend <= 0;
 		n1_tx_req <= 0;
+		n1_priority <= 0;
 
 		n2_tx_addr <= 0;
 		n2_tx_data <= 0;
 		n2_tx_pend <= 0;
 		n2_tx_req <= 0;
+		n2_priority <= 0;
 
 		word_counter <= 0;
 	end
@@ -316,6 +325,30 @@ begin
 					state <= TX_WAIT;
 				end
 
+			end
+
+			// Priority test
+			TASK7:
+			begin
+				if ((~n0_tx_ack) & (~n0_tx_req))
+				begin
+					n0_tx_addr <= 8'hef;
+					n0_tx_data <= rand_dat;
+					n0_tx_pend <= 0;
+					n0_tx_req <= 1;
+   					$fdisplay(handle, "N0 Data in =\t32'h%h", rand_dat);
+				end
+
+				if ((~n1_tx_ack) & (~n1_tx_req))
+				begin
+					n1_tx_addr <= 8'hef;
+					n1_tx_data <= rand_dat2;
+					n1_tx_pend <= 0;
+					n1_tx_req <= 1;
+					n1_priority <= 1;
+   					$fdisplay(handle, "N1 Data in =\t32'h%h", rand_dat2);
+					state <= TX_WAIT;
+				end
 			end
 
 		endcase

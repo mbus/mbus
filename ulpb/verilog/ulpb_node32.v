@@ -222,7 +222,7 @@ begin
 			if (mode==MODE_TX_NON_PRIO)
 			begin
 				// Lose Priority
-				if (DIN)
+				if (DIN^DOUT)
 				begin
 					next_mode = MODE_RX;
 					next_node_state = RECEIVE_ADDR;
@@ -650,7 +650,12 @@ begin
 		PRIO_DRIVE:
 		begin
 			if (mode==MODE_TX_NON_PRIO)
-				DOUT = 0;
+			begin
+				if (~PRIORITY)
+					DOUT = 0;
+				else
+					DOUT = DIN;
+			end
 			else if ((mode==MODE_RX)&&(PRIORITY & TX_REQ))
 				DOUT = 1;
 		end

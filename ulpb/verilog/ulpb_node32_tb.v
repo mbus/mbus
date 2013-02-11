@@ -47,6 +47,7 @@ parameter TASK4=5;
 parameter TASK5=6;
 parameter TASK6=7;
 parameter TASK7=8;
+parameter TASK8=9;
 
 
 control c0(.DIN(w_n2c0), .DOUT(w_c0n0), .RESET(resetn), .CLK_OUT(SCLK), .CLK(clk), .test_pt(ctrl_state_out));
@@ -133,6 +134,14 @@ begin
 		state = TASK7;
 	@ (posedge n1_tx_succ | n1_tx_fail)
 	@ (posedge n0_tx_succ | n0_tx_fail)
+	n1_priority = 0;
+
+	#10000
+		state = TASK8;
+	@ (posedge n0_tx_succ | n0_tx_fail)
+	@ (posedge n1_tx_succ | n1_tx_fail)
+	n0_priority = 0;
+	n1_priority = 0;
 
 	#10000
 		$stop;
@@ -327,7 +336,7 @@ begin
 
 			end
 
-			// Priority test
+			// Priority test1
 			TASK7:
 			begin
 				if ((~n0_tx_ack) & (~n0_tx_req))
@@ -351,6 +360,30 @@ begin
 				end
 			end
 
+			// Priority test2
+			TASK8:
+			begin
+				if ((~n0_tx_ack) & (~n0_tx_req))
+				begin
+					n0_tx_addr <= 8'hef;
+					n0_tx_data <= rand_dat;
+					n0_tx_pend <= 0;
+					n0_tx_req <= 1;
+					n0_priority <= 1;
+   					$fdisplay(handle, "N0 Data in =\t32'h%h", rand_dat);
+				end
+
+				if ((~n1_tx_ack) & (~n1_tx_req))
+				begin
+					n1_tx_addr <= 8'hef;
+					n1_tx_data <= rand_dat2;
+					n1_tx_pend <= 0;
+					n1_tx_req <= 1;
+					n1_priority <= 1;
+   					$fdisplay(handle, "N1 Data in =\t32'h%h", rand_dat2);
+					state <= TX_WAIT;
+				end
+			end
 		endcase
 	end
 end

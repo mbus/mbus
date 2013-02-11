@@ -9,7 +9,7 @@ set top_level "ulpb_node32"
 # Read verilog files
 read_verilog "../verilog/ulpb_node32.v"
 analyze -format verilog "../verilog/ulpb_node32.v"
-elaborate $top_level -param "ADDRESS=8'hef"
+elaborate $top_level -param "ADDRESS=8'hcd"
 #current_design $top_level
 
 list_designs

@@ -296,6 +296,15 @@ begin
 					MODE_TX:
 					begin
 						case (node_state)
+							TRANSMIT_WAIT_ACK0:
+							begin
+								if (input_buffer[0]!=ACK_SEQ_CONST[1])
+								begin
+									next_tx_fail = 1;
+									next_node_state = TRANSMIT_FWD;
+								end
+							end
+
 							TRANSMIT_ERROR:
 							begin
 								next_out_reg = ~out_reg;

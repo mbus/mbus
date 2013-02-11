@@ -498,13 +498,15 @@ begin
 								if (RX_REQ | RX_ACK)
 								begin
 									// RX overflow 
-									next_node_state = RECEIVE_ERROR;
 									next_bit_position = ERROR_RST_CNT - 1'b1;
 									// happenede in last bit
 									if (input_buffer_xor)
-										next_out_reg = MES_SEQ_CONST[1];
+										next_node_state = RECEIVE_FWD;
 									else
+									begin
 										next_out_reg = ~MES_SEQ_CONST[1];
+										next_node_state = RECEIVE_ERROR;
+									end
 								end
 								else
 								begin
@@ -611,6 +613,23 @@ begin
 			endcase
 		end
 
+		LATCH1:
+		begin
+			case (mode)
+				MODE_TX:
+				begin
+					if (node_state==TRANSMIT_ERROR)
+						DOUT = out_reg;
+				end
+
+				MODE_RX:
+				begin
+					if (node_state==RECEIVE_ERROR)
+						DOUT = out_reg;
+				end
+			endcase
+		end
+
 		DRIVE2:
 		begin
 			case (mode)
@@ -628,6 +647,25 @@ begin
 				end
 			endcase
 		end
+
+		LATCH2:
+		begin
+			case (mode)
+				MODE_TX:
+				begin
+					if (node_state==TRANSMIT_ERROR)
+						DOUT = out_reg;
+				end
+
+				MODE_RX:
+				begin
+					if (node_state==RECEIVE_ERROR)
+						DOUT = out_reg;
+				end
+			endcase
+		end
+
+		default: begin DOUT = DIN; end
 
 	endcase
 end

@@ -90,6 +90,7 @@ begin
 	@ (posedge clk)
 	@ (posedge clk)
 
+/*
 	#10000
 		state = TASK0;
 	@ (posedge n0_tx_succ | n0_tx_fail)
@@ -107,7 +108,7 @@ begin
 		word_counter = 7;
 		state = TASK3;
 	@ (posedge n0_tx_succ | n0_tx_fail)
-		
+*/		
 	#10000
 		word_counter = 7;
 		state = TASK4;

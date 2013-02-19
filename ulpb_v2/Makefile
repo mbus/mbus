@@ -1,3 +1,8 @@
+VV      = vcs
+SIMV    = ./simv -cm line+cond+fsm+tgl
+URG	= urg -dir simv.vdb -report ./COVERAGE/
+VFLAGS  = +v2k +vc -sverilog +lint=all,noVCDE +warn=all -timescale=1ns/1ps +vcs+lic+wait +multisource_int_delays +plusarg_save +overlap -full64 -Mupdate -line -debug +libext+.v+.vlib+.vh +prof +notimingcheck +memopt -cm line+cond+fsm+tgl
+VFLAGSnl = +v2k +vc -sverilog +lint=all,noVCDE +warn=all -timescale=1ns/1ps +vcs+lic+wait +multisource_int_delays +plusarg_save +overlap -full64 -Mupdate -line -debug +libext+.v+.vlib+.vh +prof +neg_tchk +memopt +define+NETLIST  -cm line+cond+fsm+tgl
 STD_CELLS = /afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/verilog/tsmc18_neg.v
 ULPB = ulpb_node32
 CTRL = control
@@ -27,6 +32,13 @@ clean:
 	-cd syn; rm -f *.log; rm -f *.rpt; rm -f *.nl.v; rm -f *.sdf; rm -f *.svf; rm -f *.key; rm -rf INCA_libs; rm -rf *.log; rm -rf waves.shm; rm -rf .nclaunch*; rm -rf .simvision*;
 	-cd syn; rm -f *.syn; rm -f *.pvl; rm -f *.mr; rm -f *.txt; rm -f log;
 
+verilog:
+	cd verilog ; \
+	$(VV) $(VFLAGS)$(VCSFLAGS) -l ulpb_swapper.log \
+	./ulpb_swapper.v \
+	./ulpb_swapper_test.v ; \
+	$(SIMV) ; \
+	$(URG)
+
 #int:
 #	-cd syn; vcs +v2k +vc -Mupdate -line -full64 -I +memcbk -full64 ${TESTBENCH} ${SIM_SYNTH_FILES} -o int_simv -RI
-

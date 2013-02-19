@@ -126,10 +126,10 @@ begin
 
 		BUS_ARBITRATE:
 		begin
-			next_bus_state = BUS_PRIO_D;
+			next_bus_state = BUS_PRIO;
 		end
 
-		BUS_PRIO_D:
+		BUS_PRIO:
 		begin
 			if (mode==MODE_TX_NON_PRIO)
 			begin
@@ -148,6 +148,8 @@ begin
 					next_tx_ack = 1;
 					next_tx_pend = TX_PEND;
 					next_node_state = TRANSMIT_ADDR;
+					next_out_reg = addr_bit_extract;
+					next_bit_position = bit_position - 1'b1;
 				end
 			end
 			else
@@ -161,22 +163,14 @@ begin
 					next_tx_ack = 1;
 					next_tx_pend = TX_PEND;
 					next_node_state = TRANSMIT_ADDR;
+					next_out_reg = addr_bit_extract;
+					next_bit_position = bit_position - 1'b1;
 				end
 				else
 				begin
 					next_mode = MODE_RX;
 					next_node_state = RECEIVE_ADDR;
 				end
-			end
-			next_bus_state = BUS_PRIO_L;
-		end
-
-		BUS_PRIO_L:
-		begin
-			if (mode==MODE_TX)
-			begin
-				next_out_reg = addr_bit_extract;
-				next_bit_position = bit_position - 1'b1;
 			end
 			next_bus_state = BUS_ADDR;
 		end
@@ -290,7 +284,7 @@ begin
 				DOUT = 0;
 		end
 
-		BUS_PRIO_D:
+		BUS_PRIO:
 		begin
 			if (mode==MODE_TX_NON_PRIO)
 			begin
@@ -301,11 +295,6 @@ begin
 			end
 			else if ((mode==MODE_RX)&&(PRIORITY & TX_REQ))
 				DOUT = 1;
-		end
-
-		BUS_PRIO_L:
-		begin
-			DOUT = 0;
 		end
 
 		BUS_ADDR:

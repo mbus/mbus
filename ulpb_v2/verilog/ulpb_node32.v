@@ -3,7 +3,7 @@
 
 module ulpb_node32(
 	input CLKIN, 
-	input RESET, 
+	input RESETn, 
 	input DIN, 
 	output reg CLKOUT,
 	output reg DOUT, 
@@ -37,7 +37,6 @@ parameter MODE_FWD = 3;
 parameter NUM_OF_BUS_STATE = 10;
 
 // general registers
-reg		[2:0] RESET_COUNT;		// magic reset counter
 reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state, bus_state_neg;
 reg		[log2(NUM_OF_NODE_STATE-1)-1:0] node_state, next_node_state;
 reg		[log2(`DATA_WIDTH-1)-1:0] bit_position, next_bit_position; 
@@ -65,6 +64,9 @@ wire	addr_bit_extract = ((ADDR  & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	data_bit_extract = ((DATA & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	address_match = (((RX_ADDR^ADDRESS)&ADDRESS_MASK)==0)? 1'b1 : 1'b0;
 
+// BUS interrupt interface
+reg		BUS_INT_RSTn, next_bus_int_rstn;
+wire	BUS_INT_STATE, BUS_INT;
 
 // FSM1 changes at every posedge CLK
 // always @ (negedge CLKIN)
@@ -73,21 +75,24 @@ wire	address_match = (((RX_ADDR^ADDRESS)&ADDRESS_MASK)==0)? 1'b1 : 1'b0;
 // case (FSM2)
 // 	CLKOUT = 0, CLKOUT = CLKIN:
 //
-always @ (posedge CLKIN or posedge RESET)
+always @ (posedge CLKIN or negedge RESETn)
 begin
-	if (RESET)
+	if (~RESETn)
 	begin
 		bus_state <= BUS_IDLE;
+		BUS_INT_RSTn <= 1;
 	end
 	else
 	begin
 		bus_state <= next_bus_state;
+		BUS_INT_RSTn <= next_bus_int_rstn;
 	end
 end
 
 always @ *
 begin
 	next_bus_state = bus_state;
+	next_bus_int_rstn = 1;
 	
 	// Interface registers
 	next_tx_ack = TX_ACK;
@@ -111,6 +116,7 @@ begin
 		next_tx_fail = 0;
 		next_tx_success = 0;
 	end
+
 
 	case (bus_state)
 		BUS_IDLE:
@@ -177,80 +183,96 @@ begin
 
 		BUS_ADDR:
 		begin
-			if (mode==MODE_TX)
+			if (BUS_INT)
 			begin
-				next_out_reg = addr_bit_extract;
-				if (bit_position)
-					next_bit_position = bit_position - 1'b1;
-				else
-				begin
-					next_bit_position = `DATA_WIDTH - 1'b1;
-					next_bus_state = BUS_DATA;
-				end
+				next_bus_state = ?
+				next_bus_int_rstn = 0;
 			end
 			else
 			begin
-				next_rx_addr = {RX_ADDR[`ADDR_WIDTH-2:0], DIN};
-			end
-		end
-
-		BUS_DATA:
-		begin
-			case (mode)
-				MODE_TX:
+				if (mode==MODE_TX)
 				begin
-					next_out_reg = data_bit_extract;
+					next_out_reg = addr_bit_extract;
 					if (bit_position)
 						next_bit_position = bit_position - 1'b1;
 					else
 					begin
 						next_bit_position = `DATA_WIDTH - 1'b1;
-						case ({tx_pend, TX_REQ})
-							// continue next word
-							2'b11:
-							begin
-								next_tx_pend = TX_PEND;
-								next_data0 = TX_DATA;
-								next_tx_ack = 1;
-							end
-							
-							// underflow
-							2'b10:
-							begin
-							end
-
-							// Drive last bit
-							default:
-							begin
-								next_bus_state = BUS_EOB;
-							end
-						endcase
+						next_bus_state = BUS_DATA;
 					end
 				end
-
-				BUS_EOB:
+				else
 				begin
-					next_bus_state = BUS_EOT;
+					next_rx_addr = {RX_ADDR[`ADDR_WIDTH-2:0], DIN};
 				end
+			end
+		end
 
-				MODE_RX:
-				begin
-					next_rx_addr = {RX_DATA[`DATA_WIDTH-2:0], DIN};
-					if (address_match==0)
-						next_mode = MODE_FWD;
-				end
+		BUS_DATA:
+		begin
+			if (BUS_INT)
+			begin
+				next_bus_state = ?
+				next_bus_int_rstn = 0;
+			end
+			else
+			begin
+				case (mode)
+					MODE_TX:
+					begin
+						next_out_reg = data_bit_extract;
+						if (bit_position)
+							next_bit_position = bit_position - 1'b1;
+						else
+						begin
+							next_bit_position = `DATA_WIDTH - 1'b1;
+							case ({tx_pend, TX_REQ})
+								// continue next word
+								2'b11:
+								begin
+									next_tx_pend = TX_PEND;
+									next_data0 = TX_DATA;
+									next_tx_ack = 1;
+								end
+								
+								// underflow
+								2'b10:
+								begin
+								end
 
-				MODE_FWD:
-				begin
-				end
-			endcase
+								// Drive last bit
+								default:
+								begin
+									next_bus_state = BUS_EOB;
+								end
+							endcase
+						end
+					end
+
+					BUS_EOB:
+					begin
+						next_bus_state = BUS_EOT;
+					end
+
+					MODE_RX:
+					begin
+						next_rx_addr = {RX_DATA[`DATA_WIDTH-2:0], DIN};
+						if (address_match==0)
+							next_mode = MODE_FWD;
+					end
+
+					MODE_FWD:
+					begin
+					end
+				endcase
+			end
 		end
 	endcase
 end
 
-always @ (negedge CLKIN or posedge RESET)
+always @ (negedge CLKIN or negedge RESETn)
 begin
-	if (RESET)
+	if (~RESETn)
 	begin
 		bus_state_neg <= BUS_IDLE;
 		out_reg <= 1;
@@ -320,12 +342,15 @@ begin
 	endcase
 end
 
-always @ (posedge DIN or posedge CLKIN)
-begin
-	if (CLKIN)
-		RESET_COUNT <= 0;
-	else
-		RESET_COUNT <= RESET_COUNT + 1'b1;
-end
+ulpb_swapper swapper0(
+	// inputs
+	.CLK(CLKIN),
+    .RESETn(RESETn),
+    .DATA(DIN),
+    .INT_FLAG_RESETn(BUS_INT_RSTn),
+   	//Outputs
+    .INT(),
+    .LAST_CLK(BUS_INT_STATE),
+    .INT_FLAG(BUS_INT));
 
 endmodule

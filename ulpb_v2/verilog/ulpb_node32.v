@@ -34,29 +34,44 @@ parameter MODE_TX = 1;
 parameter MODE_RX = 2;
 parameter MODE_FWD = 3;
 
+// BUS state
+parameter BUS_IDLE = 0;
+parameter BUS_ARBITRATE = 1;
+parameter BUS_PRIO = 2;
+parameter BUS_ADDR = 3;
+parameter BUS_DATA_RX_ADDI = 4;
+parameter BUS_DATA = 5;
+parameter BUS_INTERRUPT = 6;
+parameter BUS_CONTROL0 = 7;
+parameter BUS_CONTROL1 = 8;
+parameter BUS_CONTROL2 = 9;
 parameter NUM_OF_BUS_STATE = 10;
 
 // general registers
-reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state, bus_state_neg;
-reg		[log2(NUM_OF_NODE_STATE-1)-1:0] node_state, next_node_state;
-reg		[log2(`DATA_WIDTH-1)-1:0] bit_position, next_bit_position; 
-reg		out_reg, next_out_reg;
 reg		[1:0] mode, next_mode;
-
-// interface registers
-reg		next_tx_ack;
-reg		next_tx_fail;
-reg		next_tx_success;
+reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state, bus_state_neg;
+reg		[log2(`DATA_WIDTH-1)-1:0] bit_position, next_bit_position; 
+reg		req_interrupt, next_req_interrupt;
+reg		out_reg_pos, next_out_reg_pos;
 
 // tx registers
 reg		[`ADDR_WIDTH-1:0] ADDR, next_addr;
-reg		[`DATA_WIDTH-1:0] DATA0, next_data0;
+reg		[`DATA_WIDTH-1:0] DATA, next_data;
 reg		tx_pend, next_tx_pend;
 
 // rx registers
 reg		[`ADDR_WIDTH-1:0] next_rx_addr;
 reg		[`DATA_WIDTH-1:0] next_rx_data; 
-reg		[`DATA_WIDTH-1:0] rx_data_out_buf, next_rx_data_buf;
+reg		[`DATA_WIDTH+1:0] rx_data_out_buf, next_rx_data_buf;
+
+// interrupt register
+reg		BUS_INT_RSTn, next_bus_int_rstn;
+wire	BUS_INT_STATE, BUS_INT;
+
+// interface registers
+reg		next_tx_ack;
+reg		next_tx_fail;
+reg		next_tx_success;
 reg		next_rx_req;
 reg		next_rx_pend;
 
@@ -64,46 +79,91 @@ wire	addr_bit_extract = ((ADDR  & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	data_bit_extract = ((DATA & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	address_match = (((RX_ADDR^ADDRESS)&ADDRESS_MASK)==0)? 1'b1 : 1'b0;
 
-// BUS interrupt interface
-reg		BUS_INT_RSTn, next_bus_int_rstn;
-wire	BUS_INT_STATE, BUS_INT;
-
-// FSM1 changes at every posedge CLK
-// always @ (negedge CLKIN)
-// 		FSM2 <= FSM1
-// always @ *
-// case (FSM2)
-// 	CLKOUT = 0, CLKOUT = CLKIN:
-//
 always @ (posedge CLKIN or negedge RESETn or posedge BUS_INT)
 begin
 	if (~RESETn)
 	begin
+		// general registers
+		mode <= MODE_RX;
 		bus_state <= BUS_IDLE;
+		bit_position <= `ADDR_WIDTH - 1'b1;
+		req_interrupt <= 0;
+		out_reg_pos <= 0;
+		// Transmitter registers
+		ADDR <= 0;
+		DATA <= 0;
+		tx_pend <= 0;
+		// Receiver register
+		RX_ADDR <= 0;
+		RX_DATA <= 0;
+		rx_data_buf <= 0;
+		// interrupt register
 		BUS_INT_RSTn <= 1;
+		// Interface registers
+		TX_ACK <= 0;
+		RX_REQ <= 0;
+		RX_PEND <= 0;
+		TX_FAIL <= 0;
+		TX_SUCC <= 0;
 	end
 	else
 	begin
+		// general registers
+		mode <= next_mode;
 		if (BUS_INT)
 			bus_state <= BUS_INTERRUPT;
 		else
 			bus_state <= next_bus_state;
+		bit_position <= next_bit_position;
+		req_interrupt <= next_req_interrupt;
+		out_reg_pos <= next_out_reg_pos;
+		// Transmitter registers
+		ADDR <= next_addr;
+		DATA <= next_data;
+		tx_pend <= next_tx_pend;
+		// Receiver register
+		RX_ADDR <= next_rx_addr;
+		RX_DATA <= next_rx_data;
+		rx_data_buf <= next_rx_data_buf;
+		// interrupt register
 		BUS_INT_RSTn <= next_bus_int_rstn;
+		// Interface registers
+		TX_ACK <= next_tx_ack;
+		RX_REQ <= next_rx_req;
+		RX_PEND <= next_rx_pend;
+		TX_FAIL <= next_tx_fail;
+		TX_SUCC <= next_tx_succ;
 	end
 end
 
 always @ *
 begin
+	// general registers
+	next_mode = mode;
 	next_bus_state = bus_state;
-	next_bus_int_rstn = 1;
+	next_bit_position = bit_position;
 	next_req_interrupt = req_interrupt;
+	next_out_reg_pos = out_reg_pos;
+
+	// Transmitter registers
+	next_addr = ADDR;
+	next_data = DATA;
+	next_tx_pend = tx_pend;
+
+	// Receiver register
+	next_rx_addr = RX_ADDR;
+	next_rx_data = RX_DATA;
+	next_rx_data_buf = rx_data_buf;
+
+	// interrupt register
+	next_bus_int_rstn = 1;
 	
 	// Interface registers
-	next_tx_ack = TX_ACK;
 	next_rx_reg = RX_REQ;
 	next_rx_pend = RX_PEND;
 	next_tx_fail = TX_FAIL;
 	next_tx_success = TX_SUCC;
+	next_tx_ack = TX_ACK;
 
 	// Asynchronous interface
 	if (TX_ACK & (~TX_REQ))
@@ -147,17 +207,15 @@ begin
 				if (DIN^DOUT)
 				begin
 					next_mode = MODE_RX;
-					next_node_state = RECEIVE_ADDR;
 				end
 				// Remain Arbitration
 				else
 				begin
 					next_addr = TX_ADDR;
-					next_data0 = TX_DATA;
+					next_data = TX_DATA;
 					next_mode = MODE_TX;
 					next_tx_ack = 1;
 					next_tx_pend = TX_PEND;
-					next_node_state = TRANSMIT_ADDR;
 				end
 			end
 			else
@@ -166,16 +224,14 @@ begin
 				if (DIN^DOUT)
 				begin
 					next_addr = TX_ADDR;
-					next_data0 = TX_DATA;
+					next_data = TX_DATA;
 					next_mode = MODE_TX;
 					next_tx_ack = 1;
 					next_tx_pend = TX_PEND;
-					next_node_state = TRANSMIT_ADDR;
 				end
 				else
 				begin
 					next_mode = MODE_RX;
-					next_node_state = RECEIVE_ADDR;
 				end
 			end
 			next_bus_state = BUS_ADDR;
@@ -225,7 +281,7 @@ begin
 							2'b11:
 							begin
 								next_tx_pend = TX_PEND;
-								next_data0 = TX_DATA;
+								next_data = TX_DATA;
 								next_tx_ack = 1;
 							end
 							
@@ -275,23 +331,7 @@ begin
 		BUS_INTERRUPT:
 		begin
 			next_bus_state = BUS_CONTROL0;
-			if (req_interrupt)
-			begin
-				case (mode)
-					MODE_TX:
-					begin
-						if (tx_underflow)
-							next_out_reg_pos = 0;
-						else
-							next_out_reg_pos = 1;
-					end
-
-					default:
-					begin
-						next_out_reg = 0;
-					end
-				endcase
-			end
+			next_bus_int_rstn = 0;
 		end
 
 		BUS_CONTROL0:
@@ -311,12 +351,15 @@ begin
 						next_rx_req = 1;
 						next_rx_pend = 0;
 						// node above tx, two additional bits
+						// NEED TO CHECK COUNTER STATE!!!
 						if (BUS_INT_STATE)
 							next_rx_data = rx_data_buf[`DATA_WIDTH+1:2];
 						else
 							next_rx_data = rx_data_buf[`DATA_WIDTH-1:0];
 					end
 				end
+				else
+					next_out_reg_pos = 0;
 			end
 		end
 
@@ -333,7 +376,6 @@ begin
 					else
 						next_tx_fail = 1;
 				end
-				next_out_reg_pos = 1;
 			end
 		end
 
@@ -365,6 +407,31 @@ begin
 			begin
 				if (mode==MODE_TX)
 					out_reg <= data_bit_extract;
+			end
+
+			BUS_CONTROL0:
+			begin
+				if ((req_interrupt)&&(mode==MODE_TX))
+				begin
+					if (tx_underflow)
+						out_reg <= 0;
+					else
+						out_reg <= 1;
+				end
+				else
+					out_reg <= 0;
+			end
+
+			BUS_CONTROL1:
+			begin
+				out_reg <= out_reg_pos;
+			end
+
+			BUS_CONTROL2:
+			begin
+				// for now... might be changed
+				if (req_interrupt)
+					out_reg <= 0;
 			end
 
 		endcase
@@ -408,6 +475,24 @@ begin
 		BUS_DATA:
 		begin
 			if (mode==MODE_TX)
+				DOUT = out_reg;
+		end
+
+		BUS_CONTROL0:
+		begin
+			if (req_interrupt)
+				DOUT = our_reg;
+		end
+
+		BUS_CONTROL1:
+		begin
+			if ((mode==MODE_RX)&&(~req_interrupt))
+				DOUT = out_reg;
+		end
+
+		BUS_CONTROL2:
+		begin
+			if (req_interrupt)
 				DOUT = out_reg;
 		end
 

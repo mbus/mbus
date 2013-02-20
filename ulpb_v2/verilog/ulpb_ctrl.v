@@ -1,26 +1,40 @@
 
 `include "include/ulpb_def.v"
 
-module ulpb_ctrl{
+module ulpb_ctrl(
 	input CLK_EXT,
 	input RESETn,
 	input CLKIN,
 	output CLKOUT,
 	input DIN,
-	output DOUT
-};
+	output reg DOUT
+);
 
-parameter BUS_INTERRUPT_COUNTER 
+`include "include/ulpb_func.v"
 
-parameter BUS_IDLE
-parameter BUS_WAIT_START
-parameter BUS_ARBITRATE
+parameter BUS_IDLE = 0;
+parameter BUS_WAIT_START = 1;
+parameter BUS_ARBITRATE = 2;
+parameter BUS_PRIO = 3;
+parameter BUS_ACTIVE = 4;
+parameter BUS_INTERRUPT = 5;
+parameter BUS_INTERRUPT_CHECK = 6;
+parameter BUS_SWITCH_ROLE = 7;
+parameter BUS_CONTROL0 = 8;
+parameter BUS_CONTROL1 = 9;
+parameter BUS_CONTROL2 = 10;
+parameter BUS_BACK_TO_IDLE = 11;
 
+parameter NUM_OF_BUS_STATE = 12;
+parameter START_CYCLES = 10;
+parameter BUS_INTERRUPT_COUNTER = 6;
 
-reg		[3:0] bus_state, next_bus_state;
+reg		[log2(START_CYCLES-1)-1:0] start_cycle_cnt, next_start_cycle_cnt;
+reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state;
 reg		clk_en, next_clk_en;
-
 reg		[log2(BUS_INTERRUPT_COUNTER-1)-1:0] bus_interrupt_cnt, next_bus_interrupt_cnt;
+
+reg		clkin_sampled_neg, din_sampled_neg, din_sampled_pos;
 
 assign CLKOUT = (clk_en)? CLK_EXT : 1'b1;
 
@@ -31,7 +45,7 @@ begin
 		bus_state <= BUS_IDLE;
 		start_cycle_cnt <= START_CYCLES - 1'b1;
 		clk_en <= 0;
-		bus_interrupt_cnt <= BUS_INTERRUPT_CNT - 1'b1;
+		bus_interrupt_cnt <= BUS_INTERRUPT_COUNTER - 1'b1;
 	end
 	else
 	begin
@@ -47,6 +61,7 @@ begin
 	next_bus_state = bus_state;
 	next_start_cycle_cnt = start_cycle_cnt;
 	next_clk_en = clk_en;
+	next_bus_interrupt_cnt = bus_interrupt_cnt;
 
 	case (bus_state)
 		BUS_IDLE:
@@ -79,7 +94,7 @@ begin
 
 		BUS_ACTIVE:
 		begin
-			if (~clkin_sampled)
+			if (~clkin_sampled_neg)
 			begin
 				next_clk_en = 0;
 				next_bus_state = BUS_INTERRUPT;
@@ -97,7 +112,7 @@ begin
 
 		BUS_INTERRUPT_CHECK:
 		begin
-			if (din_sampled_neg ^ din_sampled_pos)
+			if ({din_sampled_neg, din_sampled_pos}==2'b10)
 			begin
 				next_bus_state = BUS_SWITCH_ROLE;
 				next_clk_en = 1;
@@ -106,9 +121,29 @@ begin
 
 		BUS_SWITCH_ROLE:
 		begin
-
+			next_bus_state = BUS_CONTROL0;
 		end
 
+		BUS_CONTROL0:
+		begin
+			next_bus_state = BUS_CONTROL1;
+		end
+
+		BUS_CONTROL1:
+		begin
+			next_bus_state = BUS_CONTROL2;
+		end
+
+		BUS_CONTROL2:
+		begin
+			next_bus_state = BUS_BACK_TO_IDLE;
+		end
+
+		BUS_BACK_TO_IDLE:
+		begin
+			next_bus_state = BUS_IDLE;
+			next_clk_en = 0;
+		end
 	endcase
 end
 
@@ -116,13 +151,13 @@ always @ (negedge CLK_EXT or negedge RESETn)
 begin
 	if (~RESETn)
 	begin
-		clkin_sampled <= 0;
+		clkin_sampled_neg <= 0;
 		din_sampled_neg <= 0;
 	end
 	else
 	begin
-		clkin_sampled <= CLKIN;
-		if (bus_state==BUS_INTERRUPT)
+		clkin_sampled_neg <= CLKIN;
+		if ((bus_state==BUS_INTERRUPT)||(bus_state==BUS_INTERRUPT_CHECK))
 			din_sampled_neg <= DIN;
 	end
 end
@@ -135,7 +170,7 @@ begin
 	end
 	else
 	begin
-		if (bus_state==BUS_INTERRUPT)
+		if ((bus_state==BUS_INTERRUPT)||(bus_state==BUS_INTERRUPT_CHECK))
 			din_sampled_pos <= DIN;
 	end
 end

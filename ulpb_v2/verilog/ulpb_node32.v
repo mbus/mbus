@@ -52,17 +52,18 @@ reg		[1:0] mode, next_mode;
 reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state, bus_state_neg;
 reg		[log2(`DATA_WIDTH-1)-1:0] bit_position, next_bit_position; 
 reg		req_interrupt, next_req_interrupt;
-reg		out_reg_pos, next_out_reg_pos;
+reg		out_reg_pos, next_out_reg_pos, out_reg_neg;
 
 // tx registers
 reg		[`ADDR_WIDTH-1:0] ADDR, next_addr;
 reg		[`DATA_WIDTH-1:0] DATA, next_data;
 reg		tx_pend, next_tx_pend;
+reg		tx_underflow, next_tx_underflow;
 
 // rx registers
 reg		[`ADDR_WIDTH-1:0] next_rx_addr;
 reg		[`DATA_WIDTH-1:0] next_rx_data; 
-reg		[`DATA_WIDTH+1:0] rx_data_out_buf, next_rx_data_buf;
+reg		[`DATA_WIDTH+1:0] rx_data_buf, next_rx_data_buf;
 
 // interrupt register
 reg		BUS_INT_RSTn, next_bus_int_rstn;
@@ -93,6 +94,7 @@ begin
 		ADDR <= 0;
 		DATA <= 0;
 		tx_pend <= 0;
+		tx_underflow <= 0;
 		// Receiver register
 		RX_ADDR <= 0;
 		RX_DATA <= 0;
@@ -121,6 +123,7 @@ begin
 		ADDR <= next_addr;
 		DATA <= next_data;
 		tx_pend <= next_tx_pend;
+		tx_underflow <= next_tx_underflow;
 		// Receiver register
 		RX_ADDR <= next_rx_addr;
 		RX_DATA <= next_rx_data;
@@ -132,7 +135,7 @@ begin
 		RX_REQ <= next_rx_req;
 		RX_PEND <= next_rx_pend;
 		TX_FAIL <= next_tx_fail;
-		TX_SUCC <= next_tx_succ;
+		TX_SUCC <= next_tx_success;
 	end
 end
 
@@ -149,6 +152,7 @@ begin
 	next_addr = ADDR;
 	next_data = DATA;
 	next_tx_pend = tx_pend;
+	next_tx_underflow = tx_underflow;
 
 	// Receiver register
 	next_rx_addr = RX_ADDR;
@@ -159,7 +163,7 @@ begin
 	next_bus_int_rstn = 1;
 	
 	// Interface registers
-	next_rx_reg = RX_REQ;
+	next_rx_req = RX_REQ;
 	next_rx_pend = RX_PEND;
 	next_tx_fail = TX_FAIL;
 	next_tx_success = TX_SUCC;
@@ -260,7 +264,7 @@ begin
 			if (bit_position==(`DATA_WIDTH-2'b11))
 			begin
 				next_bus_state = BUS_DATA;
-				next_bis_position = `DATA_WIDTH - 1'b1;
+				next_bit_position = `DATA_WIDTH - 1'b1;
 			end
 			if (address_match==0)
 				next_mode = MODE_FWD;
@@ -330,8 +334,11 @@ begin
 
 		BUS_INTERRUPT:
 		begin
-			next_bus_state = BUS_CONTROL0;
-			next_bus_int_rstn = 0;
+			if (BUS_INT)
+			begin
+				next_bus_state = BUS_CONTROL0;
+				next_bus_int_rstn = 0;
+			end
 		end
 
 		BUS_CONTROL0:
@@ -372,7 +379,7 @@ begin
 				begin
 					// ACK received
 					if (DIN)
-						next_tx_succ = 1;
+						next_tx_success = 1;
 					else
 						next_tx_fail = 1;
 				end
@@ -382,6 +389,7 @@ begin
 		BUS_CONTROL2:
 		begin
 			next_bus_state = BUS_IDLE;
+			next_req_interrupt = 0;
 		end
 	endcase
 end
@@ -391,7 +399,7 @@ begin
 	if (~RESETn)
 	begin
 		bus_state_neg <= BUS_IDLE;
-		out_reg <= 1;
+		out_reg_neg <= 1;
 	end
 	else
 	begin
@@ -400,13 +408,13 @@ begin
 			BUS_ADDR:
 			begin
 				if (mode==MODE_TX)
-					out_reg <= addr_bit_extract;
+					out_reg_neg <= addr_bit_extract;
 			end
 
 			BUS_DATA:
 			begin
 				if (mode==MODE_TX)
-					out_reg <= data_bit_extract;
+					out_reg_neg <= data_bit_extract;
 			end
 
 			BUS_CONTROL0:
@@ -414,24 +422,24 @@ begin
 				if ((req_interrupt)&&(mode==MODE_TX))
 				begin
 					if (tx_underflow)
-						out_reg <= 0;
+						out_reg_neg <= 0;
 					else
-						out_reg <= 1;
+						out_reg_neg <= 1;
 				end
 				else
-					out_reg <= 0;
+					out_reg_neg <= 0;
 			end
 
 			BUS_CONTROL1:
 			begin
-				out_reg <= out_reg_pos;
+				out_reg_neg <= out_reg_pos;
 			end
 
 			BUS_CONTROL2:
 			begin
 				// for now... might be changed
 				if (req_interrupt)
-					out_reg <= 0;
+					out_reg_neg <= 0;
 			end
 
 		endcase
@@ -469,31 +477,31 @@ begin
 		BUS_ADDR:
 		begin
 			if (mode==MODE_TX)
-				DOUT = out_reg;
+				DOUT = out_reg_neg;
 		end
 
 		BUS_DATA:
 		begin
 			if (mode==MODE_TX)
-				DOUT = out_reg;
+				DOUT = out_reg_neg;
 		end
 
 		BUS_CONTROL0:
 		begin
 			if (req_interrupt)
-				DOUT = our_reg;
+				DOUT = out_reg_neg;
 		end
 
 		BUS_CONTROL1:
 		begin
 			if ((mode==MODE_RX)&&(~req_interrupt))
-				DOUT = out_reg;
+				DOUT = out_reg_neg;
 		end
 
 		BUS_CONTROL2:
 		begin
 			if (req_interrupt)
-				DOUT = out_reg;
+				DOUT = out_reg_neg;
 		end
 
 	endcase
@@ -503,7 +511,7 @@ always @ *
 begin
 	CLKOUT = CLKIN;
 	case (bus_state_neg)
-		BUS_INTERRUPT: begin if (req_interrupt) CLK_OUT = 0; end
+		BUS_INTERRUPT: begin if (req_interrupt) CLKOUT = 0; end
 	endcase
 end
 
@@ -514,8 +522,8 @@ ulpb_swapper swapper0(
     .DATA(DIN),
     .INT_FLAG_RESETn(BUS_INT_RSTn),
    	//Outputs
-    .INT(BUS_INT),
+    .INT(),
     .LAST_CLK(BUS_INT_STATE),
-    .INT_FLAG());
+    .INT_FLAG(BUS_INT));
 
 endmodule

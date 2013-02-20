@@ -75,7 +75,7 @@ wire	BUS_INT_STATE, BUS_INT;
 // case (FSM2)
 // 	CLKOUT = 0, CLKOUT = CLKIN:
 //
-always @ (posedge CLKIN or negedge RESETn)
+always @ (posedge CLKIN or negedge RESETn or posedge BUS_INT)
 begin
 	if (~RESETn)
 	begin
@@ -84,7 +84,10 @@ begin
 	end
 	else
 	begin
-		bus_state <= next_bus_state;
+		if (BUS_INT)
+			bus_state <= BUS_INTERRUPT;
+		else
+			bus_state <= next_bus_state;
 		BUS_INT_RSTn <= next_bus_int_rstn;
 	end
 end
@@ -93,6 +96,7 @@ always @ *
 begin
 	next_bus_state = bus_state;
 	next_bus_int_rstn = 1;
+	next_req_interrupt = req_interrupt;
 	
 	// Interface registers
 	next_tx_ack = TX_ACK;
@@ -154,8 +158,6 @@ begin
 					next_tx_ack = 1;
 					next_tx_pend = TX_PEND;
 					next_node_state = TRANSMIT_ADDR;
-					next_out_reg = addr_bit_extract;
-					next_bit_position = bit_position - 1'b1;
 				end
 			end
 			else
@@ -169,8 +171,6 @@ begin
 					next_tx_ack = 1;
 					next_tx_pend = TX_PEND;
 					next_node_state = TRANSMIT_ADDR;
-					next_out_reg = addr_bit_extract;
-					next_bit_position = bit_position - 1'b1;
 				end
 				else
 				begin
@@ -183,89 +183,85 @@ begin
 
 		BUS_ADDR:
 		begin
-			if (BUS_INT)
-			begin
-				next_bus_state = ?
-				next_bus_int_rstn = 0;
-			end
+			if (bit_position)
+				next_bit_position = bit_position - 1'b1;
 			else
 			begin
-				if (mode==MODE_TX)
+				next_bit_position = `DATA_WIDTH - 1'b1;
+				next_bus_state = BUS_DATA;
+			end
+			if (mode==MODE_RX)
+				next_rx_addr = {RX_ADDR[`ADDR_WIDTH-2:0], DIN};
+		end
+
+		BUS_DATA:
+		begin
+			case (mode)
+				MODE_TX:
 				begin
-					next_out_reg = addr_bit_extract;
 					if (bit_position)
 						next_bit_position = bit_position - 1'b1;
 					else
 					begin
 						next_bit_position = `DATA_WIDTH - 1'b1;
-						next_bus_state = BUS_DATA;
+						case ({tx_pend, TX_REQ})
+							// continue next word
+							2'b11:
+							begin
+								next_tx_pend = TX_PEND;
+								next_data0 = TX_DATA;
+								next_tx_ack = 1;
+							end
+							
+							// underflow
+							2'b10:
+							begin
+								next_bus_state = BUS_INTERRUPT;
+								next_req_interrupt = 1;
+							end
+
+							default:
+							begin
+								next_bus_state = BUS_INTERRUPT;
+								next_req_interrupt = 1;
+							end
+						endcase
 					end
 				end
-				else
+
+				MODE_RX:
 				begin
-					next_rx_addr = {RX_ADDR[`ADDR_WIDTH-2:0], DIN};
+					next_rx_data_buffer = {rx_data_buffer[0], DIN};
+					next_rx_data = {RX_DATA[`DATA_WIDTH-2:0], rx_data_buffer[1]};
+					if (bit_position)
+						next_bit_position = bit_position - 1'b1;
+					else
+						next_bit_position = `DATA_WIDTH - 1'b1;
+					if (address_match==0)
+						next_mode = MODE_FWD;
 				end
-			end
+
+			endcase
 		end
 
-		BUS_DATA:
+		BUS_INTERRUPT:
 		begin
-			if (BUS_INT)
-			begin
-				next_bus_state = ?
-				next_bus_int_rstn = 0;
-			end
-			else
-			begin
-				case (mode)
-					MODE_TX:
-					begin
-						next_out_reg = data_bit_extract;
-						if (bit_position)
-							next_bit_position = bit_position - 1'b1;
-						else
-						begin
-							next_bit_position = `DATA_WIDTH - 1'b1;
-							case ({tx_pend, TX_REQ})
-								// continue next word
-								2'b11:
-								begin
-									next_tx_pend = TX_PEND;
-									next_data0 = TX_DATA;
-									next_tx_ack = 1;
-								end
-								
-								// underflow
-								2'b10:
-								begin
-								end
+			next_bus_state = BUS_CONTROL0;
+		end
 
-								// Drive last bit
-								default:
-								begin
-									next_bus_state = BUS_EOB;
-								end
-							endcase
-						end
-					end
+		BUS_CONTROL0:
+		begin
+			next_bus_state = BUS_CONTROL1;
+		end
 
-					BUS_EOB:
-					begin
-						next_bus_state = BUS_EOT;
-					end
+		BUS_CONTROL1:
+		begin
+			next_bus_state = BUS_CONTROL2;
+		end
 
-					MODE_RX:
-					begin
-						next_rx_addr = {RX_DATA[`DATA_WIDTH-2:0], DIN};
-						if (address_match==0)
-							next_mode = MODE_FWD;
-					end
-
-					MODE_FWD:
-					begin
-					end
-				endcase
-			end
+		BUS_CONTROL2:
+		begin
+			next_bus_state = BUS_IDLE;
 		end
 	endcase
 end
@@ -280,14 +276,20 @@ begin
 	else
 	begin
 		bus_state_neg <= bus_state;
-		if (mode==MODE_TX)
-		begin
-			case (bus_state)
-				BUS_ADDR: begin out_reg <= addr_bit_extract; end
-				BUS_DATA: begin out_reg <= data_but_extract; end
-				default: begin out_reg <= 1; end
-			endcase
-		end
+		case (bus_state)
+			BUS_ADDR:
+			begin
+				if (mode==MODE_TX)
+					out_reg <= addr_bit_extract;
+			end
+
+			BUS_DATA:
+			begin
+				if (mode==MODE_TX)
+					out_reg <= data_bit_extract;
+			end
+
+		endcase
 	end
 end
 
@@ -338,7 +340,7 @@ always @ *
 begin
 	CLKOUT = CLKIN;
 	case (bus_state_neg)
-		
+		BUS_INTERRUPT: begin if (req_interrupt) CLK_OUT = 0; end
 	endcase
 end
 

@@ -188,10 +188,26 @@ begin
 			else
 			begin
 				next_bit_position = `DATA_WIDTH - 1'b1;
-				next_bus_state = BUS_DATA;
+				if (mode==MODE_RX)
+					next_bus_state = BUS_DATA_RX_ADDI;
+				else
+					next_bus_state = BUS_DATA;
 			end
 			if (mode==MODE_RX)
 				next_rx_addr = {RX_ADDR[`ADDR_WIDTH-2:0], DIN};
+		end
+
+		BUS_DATA_RX_ADDI:
+		begin
+			next_rx_data_buf = {rx_data_buf[`DATA_WIDTH:0], DIN};
+			next_bit_position = bit_position - 1'b1;
+			if (bit_position==(`DATA_WIDTH-2'b11))
+			begin
+				next_bus_state = BUS_DATA;
+				next_bis_position = `DATA_WIDTH - 1'b1;
+			end
+			if (address_match==0)
+				next_mode = MODE_FWD;
 		end
 
 		BUS_DATA:
@@ -217,6 +233,7 @@ begin
 							2'b10:
 							begin
 								next_bus_state = BUS_INTERRUPT;
+								next_tx_underflow = 1;
 								next_req_interrupt = 1;
 							end
 
@@ -231,14 +248,25 @@ begin
 
 				MODE_RX:
 				begin
-					next_rx_data_buffer = {rx_data_buffer[0], DIN};
-					next_rx_data = {RX_DATA[`DATA_WIDTH-2:0], rx_data_buffer[1]};
+					next_rx_data_buf = {rx_data_buf[`DATA_WIDTH:0], DIN};
 					if (bit_position)
 						next_bit_position = bit_position - 1'b1;
 					else
-						next_bit_position = `DATA_WIDTH - 1'b1;
-					if (address_match==0)
-						next_mode = MODE_FWD;
+					begin
+						// RX overflow
+						if (RX_REQ)
+						begin
+							next_bus_state = BUS_INTERRUPT;
+							next_req_interrupt = 1;
+						end
+						else
+						begin
+							next_bit_position = `DATA_WIDTH - 1'b1;
+							next_rx_req = 1;
+							next_rx_pend = 1;
+							next_rx_data = rx_data_buf[`DATA_WIDTH+1:2];
+						end
+					end
 				end
 
 			endcase
@@ -247,16 +275,66 @@ begin
 		BUS_INTERRUPT:
 		begin
 			next_bus_state = BUS_CONTROL0;
+			if (req_interrupt)
+			begin
+				case (mode)
+					MODE_TX:
+					begin
+						if (tx_underflow)
+							next_out_reg_pos = 0;
+						else
+							next_out_reg_pos = 1;
+					end
+
+					default:
+					begin
+						next_out_reg = 0;
+					end
+				endcase
+			end
 		end
 
 		BUS_CONTROL0:
 		begin
 			next_bus_state = BUS_CONTROL1;
+			if ((mode==MODE_RX)&&(~req_interrupt))
+			begin
+				// End of Message
+				if (DIN)
+				begin
+					// RX overflow
+					if (RX_REQ)
+						next_out_reg_pos = 0;
+					else
+					begin
+						next_out_reg_pos = 1;
+						next_rx_req = 1;
+						next_rx_pend = 0;
+						// node above tx, two additional bits
+						if (BUS_INT_STATE)
+							next_rx_data = rx_data_buf[`DATA_WIDTH+1:2];
+						else
+							next_rx_data = rx_data_buf[`DATA_WIDTH-1:0];
+					end
+				end
+			end
 		end
 
 		BUS_CONTROL1:
 		begin
 			next_bus_state = BUS_CONTROL2;
+			if (req_interrupt)
+			begin
+				if ((mode==MODE_TX)&&(~tx_underflow))
+				begin
+					// ACK received
+					if (DIN)
+						next_tx_succ = 1;
+					else
+						next_tx_fail = 1;
+				end
+				next_out_reg_pos = 1;
+			end
 		end
 
 		BUS_CONTROL2:
@@ -351,8 +429,8 @@ ulpb_swapper swapper0(
     .DATA(DIN),
     .INT_FLAG_RESETn(BUS_INT_RSTn),
    	//Outputs
-    .INT(),
+    .INT(BUS_INT),
     .LAST_CLK(BUS_INT_STATE),
-    .INT_FLAG(BUS_INT));
+    .INT_FLAG());
 
 endmodule

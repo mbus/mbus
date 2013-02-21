@@ -68,7 +68,7 @@ reg		[`DATA_WIDTH-1:0] next_rx_data;
 reg		[`DATA_WIDTH+1:0] rx_data_buf, next_rx_data_buf;
 
 // interrupt register
-reg		BUS_INT_RSTn, next_bus_int_rstn;
+reg		BUS_INT_RSTn, next_bus_int_rstn, BUS_INT_TRIGGER;
 wire	BUS_INT_STATE, BUS_INT;
 
 // interface registers
@@ -90,9 +90,23 @@ begin
 	end
 	else
 	begin
+		if (BUS_INT & (~BUS_INT_TRIGGER))
 			bus_state <= BUS_INTERRUPT;
 		else
 			bus_state <= next_bus_state;
+	end
+end
+
+always @ (negedge RESETn or posedge BUS_INT or negedge BUS_INT_RSTn)
+begin
+	if ((~RESETn) | (~BUS_INT_RSTn))
+	begin
+		BUS_INT_TRIGGER <= 0;
+	end
+	else
+	begin
+		if (BUS_INT)
+			BUS_INT_TRIGGER <= 1;
 	end
 end
 

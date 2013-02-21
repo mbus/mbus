@@ -47,7 +47,10 @@ parameter BUS_CONTROL0 = 8;
 parameter BUS_CONTROL1 = 9;
 parameter BUS_CONTROL2 = 10;
 parameter BUS_BACK_TO_IDLE = 11;
-parameter NUM_OF_BUS_STATE = 12;
+parameter BUS_DATA_RX_CHECK = 12;
+parameter NUM_OF_BUS_STATE = 13;
+
+wire [2:0] CONTROL_BITS = 3'b100;	// EOM?, ACK?, reserved
 
 // general registers
 reg		[1:0] mode, next_mode;
@@ -346,15 +349,23 @@ begin
 						end
 						else
 						begin
+							next_bus_state = BUS_DATA_RX_CHECK;
 							next_bit_position = `DATA_WIDTH - 1'b1;
-							next_rx_req = 1;
-							next_rx_pend = 1;
-							next_rx_data = rx_data_buf[`DATA_WIDTH+1:2];
 						end
 					end
 				end
 
 			endcase
+		end
+
+		BUS_DATA_RX_CHECK:
+		begin
+			next_bit_position = bit_position - 1'b1;
+			next_rx_data_buf = {rx_data_buf[`DATA_WIDTH:0], DIN};
+			next_rx_req = 1;
+			next_rx_pend = 1;
+			next_rx_data = rx_data_buf[`DATA_WIDTH+1:2];
+			next_bus_state = BUS_DATA;
 		end
 
 		BUS_INTERRUPT:
@@ -372,26 +383,32 @@ begin
 			if ((mode==MODE_RX)&&(~req_interrupt))
 			begin
 				// End of Message
-				if (DIN)
+				if (DIN==CONTROL_BITS[2])
 				begin
-					// RX overflow
-					if (RX_REQ)
-						next_out_reg_pos = 0;
-					else
+					// correct ending state
+					// rx above tx = 31
+					// rx below tx = 1
+					if ((bit_position==1)||(bit_position==31))
 					begin
-						next_out_reg_pos = 1;
-						next_rx_req = 1;
-						next_rx_pend = 0;
-						// node above tx, two additional bits
-						// NEED TO CHECK COUNTER STATE!!!
-						if (BUS_INT_STATE)
-							next_rx_data = rx_data_buf[`DATA_WIDTH+1:2];
+						// RX overflow
+						if (RX_REQ)
+							next_out_reg_pos = ~CONTROL_BITS[1];
 						else
-							next_rx_data = rx_data_buf[`DATA_WIDTH-1:0];
+						begin
+							next_out_reg_pos = CONTROL_BITS[1];
+							next_rx_req = 1;
+							next_rx_pend = 0;
+							if (BUS_INT_STATE)
+								next_rx_data = rx_data_buf[`DATA_WIDTH+1:2];
+							else
+								next_rx_data = rx_data_buf[`DATA_WIDTH-1:0];
+						end
 					end
+					else
+						next_out_reg_pos = ~CONTROL_BITS[1];
 				end
 				else
-					next_out_reg_pos = 0;
+					next_out_reg_pos = ~CONTROL_BITS[1];
 			end
 		end
 
@@ -403,7 +420,7 @@ begin
 				if ((mode==MODE_TX)&&(~tx_underflow))
 				begin
 					// ACK received
-					if (DIN)
+					if (DIN==CONTROL_BITS[1])
 						next_tx_success = 1;
 					else
 						next_tx_fail = 1;
@@ -455,12 +472,12 @@ begin
 				if ((req_interrupt)&&(mode==MODE_TX))
 				begin
 					if (tx_underflow)
-						out_reg_neg <= 0;
+						out_reg_neg <= ~CONTROL_BITS[2];
 					else
-						out_reg_neg <= 1;
+						out_reg_neg <= CONTROL_BITS[2];
 				end
 				else
-					out_reg_neg <= 0;
+					out_reg_neg <= ~CONTROL_BITS[2];
 			end
 
 			BUS_CONTROL1:
@@ -472,7 +489,7 @@ begin
 			begin
 				// for now... might be changed
 				if (req_interrupt)
-					out_reg_neg <= 0;
+					out_reg_neg <= CONTROL_BITS[0];
 			end
 
 		endcase

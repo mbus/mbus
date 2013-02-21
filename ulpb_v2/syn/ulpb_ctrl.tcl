@@ -4,11 +4,11 @@
 source -verbose "common.tcl"
 
 # Set top level name
-set top_level "control"
+set top_level "ulpb_ctrl"
 
 # Read verilog files
-read_verilog "../verilog/control.v"
-analyze -format verilog "../verilog/control.v"
+read_verilog "../verilog/ulpb_ctrl.v"
+analyze -format verilog "../verilog/ulpb_ctrl.v"
 elaborate $top_level 
 #current_design $top_level
 
@@ -16,7 +16,7 @@ list_designs
 
 # Read timing constrints
 # Set clock names, ports
-source -verbose "timing.tcl"
+source -verbose "ulpb_ctrl_timing.tcl"
 
 # Register retiming
 #set_balance_registers

@@ -6,15 +6,15 @@ set clk_uncertainty 2
 set clk_transition 2
 
 #Create real clock if clock port is found
-if {[sizeof_collection [get_ports CLK]] > 0} {
-  set clk_name "CLK"
-  set clk_port "CLK"
+if {[sizeof_collection [get_ports CLK_EXT]] > 0} {
+  set clk_name "CLK_EXT"
+  set clk_port "CLK_EXT"
   #If no waveform is specified, 50% duty cycle is assumed
   create_clock -name $clk_name -period $clk_period [get_ports $clk_port] 
   set_drive 0 [get_clocks $clk_name] 
 }
 #If not real clock then create virtual clock
-if {[sizeof_collection [get_ports CLK]] == 0} {
+if {[sizeof_collection [get_ports CLK_EXT]] == 0} {
   set clk_name "vclk"
   create_clock -name $clk_name -period $clk_period 
 }

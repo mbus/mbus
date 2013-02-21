@@ -16,7 +16,7 @@ list_designs
 
 # Read timing constrints
 # Set clock names, ports
-source -verbose "timing.tcl"
+source -verbose "ulpb_node_timing.tcl"
 
 # Register retiming
 #set_balance_registers

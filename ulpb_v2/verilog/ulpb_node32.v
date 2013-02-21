@@ -42,7 +42,7 @@ parameter BUS_ADDR = 3;
 parameter BUS_DATA_RX_ADDI = 4;
 parameter BUS_DATA = 5;
 parameter BUS_INTERRUPT = 6;
-parameter BUS_CLK_FWD = 7;
+parameter BUS_FWD = 7;
 parameter BUS_CONTROL0 = 8;
 parameter BUS_CONTROL1 = 9;
 parameter BUS_CONTROL2 = 10;
@@ -323,6 +323,7 @@ begin
 								next_bus_state = BUS_INTERRUPT;
 								next_tx_underflow = 1;
 								next_req_interrupt = 1;
+								next_tx_fail = 1;
 							end
 
 							default:
@@ -374,6 +375,8 @@ begin
 			begin
 				next_bus_state = BUS_CONTROL0;
 				next_bus_int_rstn = 0;
+				if ((mode==MODE_TX)&&(~req_interrupt))
+					next_tx_fail = 1;
 			end
 		end
 
@@ -437,23 +440,27 @@ begin
 		begin
 			next_bus_state = BUS_IDLE;
 			next_req_interrupt = 0;
+			next_mode = MODE_RX;
+			next_tx_underflow = 0;
 		end
 	endcase
 end
 
-always @ (negedge CLKIN or negedge RESETn )
+always @ (negedge CLKIN or negedge RESETn)
 begin
 	if (~RESETn)
 	begin
-		bus_state_neg <= BUS_IDLE;
 		out_reg_neg <= 1;
+		bus_state_neg <= BUS_IDLE;
 	end
 	else
 	begin
+		// clock starts, forward clock
 		if (BUS_INT)
-			bus_state_neg <= BUS_CLK_FWD;
+			bus_state_neg <= BUS_FWD;
 		else
 			bus_state_neg <= bus_state;
+
 		case (bus_state)
 			BUS_ADDR:
 			begin
@@ -526,14 +533,16 @@ begin
 
 		BUS_ADDR:
 		begin
+			// BUS interrupt happened, forward DIN
 			if (mode==MODE_TX)
-				DOUT = out_reg_neg;
+				DOUT = (((~BUS_INT)&out_reg_neg) | (DIN & BUS_INT));
 		end
 
 		BUS_DATA:
 		begin
+			// BUS interrupt happened, forward DIN
 			if (mode==MODE_TX)
-				DOUT = out_reg_neg;
+				DOUT = (((~BUS_INT)&out_reg_neg) | (DIN & BUS_INT));
 		end
 
 		BUS_CONTROL0:

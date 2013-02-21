@@ -42,10 +42,12 @@ parameter BUS_ADDR = 3;
 parameter BUS_DATA_RX_ADDI = 4;
 parameter BUS_DATA = 5;
 parameter BUS_INTERRUPT = 6;
-parameter BUS_CONTROL0 = 7;
-parameter BUS_CONTROL1 = 8;
-parameter BUS_CONTROL2 = 9;
-parameter NUM_OF_BUS_STATE = 10;
+parameter BUS_CLK_FWD = 7;
+parameter BUS_CONTROL0 = 8;
+parameter BUS_CONTROL1 = 9;
+parameter BUS_CONTROL2 = 10;
+parameter BUS_BACK_TO_IDLE = 11;
+parameter NUM_OF_BUS_STATE = 12;
 
 // general registers
 reg		[1:0] mode, next_mode;
@@ -84,9 +86,22 @@ always @ (posedge CLKIN or negedge RESETn or posedge BUS_INT)
 begin
 	if (~RESETn)
 	begin
+		bus_state <= BUS_IDLE;
+	end
+	else
+	begin
+			bus_state <= BUS_INTERRUPT;
+		else
+			bus_state <= next_bus_state;
+	end
+end
+
+always @ (posedge CLKIN or negedge RESETn)
+begin
+	if (~RESETn)
+	begin
 		// general registers
 		mode <= MODE_RX;
-		bus_state <= BUS_IDLE;
 		bit_position <= `ADDR_WIDTH - 1'b1;
 		req_interrupt <= 0;
 		out_reg_pos <= 0;
@@ -112,10 +127,6 @@ begin
 	begin
 		// general registers
 		mode <= next_mode;
-		if (BUS_INT)
-			bus_state <= BUS_INTERRUPT;
-		else
-			bus_state <= next_bus_state;
 		bit_position <= next_bit_position;
 		req_interrupt <= next_req_interrupt;
 		out_reg_pos <= next_out_reg_pos;
@@ -261,7 +272,7 @@ begin
 		begin
 			next_rx_data_buf = {rx_data_buf[`DATA_WIDTH:0], DIN};
 			next_bit_position = bit_position - 1'b1;
-			if (bit_position==(`DATA_WIDTH-2'b11))
+			if (bit_position==(`DATA_WIDTH-2'b10))
 			begin
 				next_bus_state = BUS_DATA;
 				next_bit_position = `DATA_WIDTH - 1'b1;
@@ -388,13 +399,18 @@ begin
 
 		BUS_CONTROL2:
 		begin
+			next_bus_state = BUS_BACK_TO_IDLE;
+		end
+
+		BUS_BACK_TO_IDLE:
+		begin
 			next_bus_state = BUS_IDLE;
 			next_req_interrupt = 0;
 		end
 	endcase
 end
 
-always @ (negedge CLKIN or negedge RESETn)
+always @ (negedge CLKIN or negedge RESETn )
 begin
 	if (~RESETn)
 	begin
@@ -403,7 +419,10 @@ begin
 	end
 	else
 	begin
-		bus_state_neg <= bus_state;
+		if (BUS_INT)
+			bus_state_neg <= BUS_CLK_FWD;
+		else
+			bus_state_neg <= bus_state;
 		case (bus_state)
 			BUS_ADDR:
 			begin
@@ -502,6 +521,11 @@ begin
 		begin
 			if (req_interrupt)
 				DOUT = out_reg_neg;
+		end
+
+		BUS_BACK_TO_IDLE:
+		begin
+			DOUT = ((~TX_REQ) & DIN);
 		end
 
 	endcase

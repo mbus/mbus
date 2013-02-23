@@ -1,5 +1,5 @@
 
-//`define SYNTH
+`define SYNTH
 
 `ifdef SYNTH
 	`timescale 1ns/1ps
@@ -108,7 +108,7 @@ reg	n0_auto_rx_ack, n1_auto_rx_ack, n2_auto_rx_ack;
 initial
 begin
 	`ifdef SYNTH
-		$sdf_annotate("control.dc.sdf", c0);
+		$sdf_annotate("ulpb_ctrl.dc.sdf", c0);
 		$sdf_annotate("ulpb_node32_ab.dc.sdf", n0);
 		$sdf_annotate("ulpb_node32_cd.dc.sdf", n1);
 		$sdf_annotate("ulpb_node32_ef.dc.sdf", n2);
@@ -404,12 +404,6 @@ begin
 						state <= TX_WAIT;
 					end
 				end
-				
-				if (n1_tx_fail)
-				begin
-					state <= TX_WAIT;
-					n1_tx_req <= 0;
-				end
 			end
 
 			// RX buffer overflow, middle of transmission
@@ -432,12 +426,6 @@ begin
 						state <= TX_WAIT;
 					end
 				end
-				
-				if (n1_tx_fail)
-				begin
-					state <= TX_WAIT;
-					n1_tx_req <= 0;
-				end
 			end
 
 			// RX buffer overflow, last word
@@ -459,12 +447,6 @@ begin
 						n1_tx_pend <= 0;
 						state <= TX_WAIT;
 					end
-				end
-				
-				if (n1_tx_fail)
-				begin
-					state <= TX_WAIT;
-					n1_tx_req <= 0;
 				end
 			end
 

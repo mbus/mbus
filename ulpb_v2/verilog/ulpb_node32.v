@@ -106,6 +106,23 @@ begin
 	end
 end
 
+wire TX_RESP_RSTn = RESETn & (~TX_RESP_ACK);
+
+always @ (posedge CLKIN or negedge TX_RESP_RSTn)
+begin
+	if (~TX_RESP_RSTn)
+	begin
+		TX_FAIL <= 0;
+		TX_SUCC <= 0;
+	end
+	else
+	begin
+		TX_FAIL <= next_tx_fail;
+		TX_SUCC <= next_tx_success;
+	end
+end
+
+
 always @ (posedge CLKIN or negedge RESETn)
 begin
 	if (~RESETn)
@@ -128,8 +145,6 @@ begin
 		TX_ACK <= 0;
 		RX_REQ <= 0;
 		RX_PEND <= 0;
-		TX_FAIL <= 0;
-		TX_SUCC <= 0;
 	end
 	else
 	begin
@@ -154,8 +169,6 @@ begin
 		tx_underflow <= next_tx_underflow;
 		// Interface registers
 		TX_ACK <= next_tx_ack;
-		TX_FAIL <= next_tx_fail;
-		TX_SUCC <= next_tx_success;
 	end
 end
 
@@ -195,13 +208,6 @@ begin
 		next_rx_req = 0;
 		next_rx_pend = 0;
 	end
-
-	if (TX_RESP_ACK)
-	begin
-		next_tx_fail = 0;
-		next_tx_success = 0;
-	end
-
 
 	case (bus_state)
 		BUS_IDLE:

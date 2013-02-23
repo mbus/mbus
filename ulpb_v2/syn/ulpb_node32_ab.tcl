@@ -7,9 +7,9 @@ source -verbose "common.tcl"
 set top_level "ulpb_node32"
 
 # Read verilog files
-read_verilog "../verilog/ulpb_node32.v"
-analyze -format verilog "../verilog/ulpb_node32.v"
-elaborate $top_level -param "ADDRESS=8'hcd"
+read_verilog "../verilog/ulpb_node32.v ../verilog/ulpb_swapper.v"
+analyze -format verilog "../verilog/ulpb_node32.v ../verilog/ulpb_swapper.v"
+elaborate $top_level -param "ADDRESS=8'hab"
 #current_design $top_level
 
 list_designs
@@ -59,7 +59,7 @@ source -verbose "namingrules.tcl"
 write -hierarchy -format verilog -output "${current_design}.nl.v"
 
 # Generate Standard Delay Format (SDF) file
-write_sdf -context verilog "${top_level}.dc.sdf"
+write_sdf -context verilog "${current_design}.dc.sdf"
 
 # Generate report file
 set maxpaths 20

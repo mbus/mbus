@@ -41,6 +41,9 @@ set_output_delay $typical_output_delay [all_outputs] -clock $clk_name
 # Set loading of outputs 
 set_load $typical_wire_load [all_outputs] 
 
+# Set clock
+set_ideal_network $clk_name 
+
 # Verify the design
 check_design
 
@@ -49,7 +52,7 @@ uniquify
 
 # Synthesize the design
 #compile -map_effort medium
-compile -map_effort medium
+compile_ultra -map_effort medium
 
 # Rename modules, signals according to the naming rules
 # Used for tool exchange

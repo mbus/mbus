@@ -18,6 +18,7 @@ synth_node:
 	-perl ${POST_SDF} -s ${ULPB_ef}.dc.sdf -o ../netlist/${ULPB_ef}.dc.sdf
 	mv *.nl.v ../netlist
 
+
 synth_ctrl:
 	dc_shell -f ${CTRL}.tcl |tee ${CTRL}.dc.log
 	-perl ${POST_SDF} -s ${CTRL}.dc.sdf -o ../netlist/${CTRL}.dc.sdf

@@ -547,14 +547,15 @@ begin
 
 		BUS_CONTROL0:
 		begin
-			// Fail has higher priority
 			if (req_interrupt)
 				DOUT = out_reg_neg;
 		end
 
 		BUS_CONTROL1:
 		begin
-			if ((mode_neg==MODE_RX)&&(~req_interrupt))
+			if (mode_neg==MODE_RX)
+				DOUT = out_reg_neg;
+			else if (req_interrupt)
 				DOUT = out_reg_neg;
 		end
 

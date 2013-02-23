@@ -194,7 +194,6 @@ begin
 	@ (posedge n1_tx_succ | n1_tx_fail)
 		n2_auto_rx_ack = 1;
 
-/*
 	#10000
    	$fdisplay(handle, "TASK10, Correct result: N1 TX Fail");
 		word_counter = 1;
@@ -202,7 +201,6 @@ begin
 		n0_auto_rx_ack = 0;
 	@ (posedge n1_tx_succ | n1_tx_fail)
 		n0_auto_rx_ack = 1;
-		*/
 
 	#10000
    	$fdisplay(handle, "TASK1l, Correct result: N0, N1 TX Success");

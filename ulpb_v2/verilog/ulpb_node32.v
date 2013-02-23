@@ -49,7 +49,7 @@ parameter BUS_BACK_TO_IDLE = 11;
 parameter BUS_DATA_RX_CHECK = 12;
 parameter NUM_OF_BUS_STATE = 13;
 
-wire [1:0] CONTROL_BITS = 2'b10;	// EOM?, ACK?, reserved
+wire [1:0] CONTROL_BITS = `CONTROL_SEQ;	// EOM?, ACK?, reserved
 
 // general registers
 reg		[1:0] mode, next_mode, mode_neg;
@@ -384,36 +384,41 @@ begin
 			next_bus_state = BUS_CONTROL1;
 			next_ctrl_bit_buf = DIN;
 
-			// only receiver drive at BUS_CONTROL1
-			if ((mode==MODE_RX)&&(~req_interrupt))
+			// Prevent wire floating
+			if (req_interrupt)
+				next_out_reg_pos = ~CONTROL_BITS[0];
+			else
 			begin
-				// End of Message
-				if (DIN==CONTROL_BITS[1])
+				if (mode==MODE_RX)
 				begin
-					// correct ending state
-					// rx above tx = 31
-					// rx below tx = 1
-					if ((bit_position==1)||(bit_position==(`DATA_WIDTH-1'b1)))
+					// End of Message
+					if (DIN==CONTROL_BITS[1])
 					begin
-						// RX overflow
-						if (RX_REQ)
-							next_out_reg_pos = ~CONTROL_BITS[0];
-						else
+						// correct ending state
+						// rx above tx = 31
+						// rx below tx = 1
+						if ((bit_position==1)||(bit_position==(`DATA_WIDTH-1'b1)))
 						begin
-							next_out_reg_pos = CONTROL_BITS[0];
-							next_rx_req = 1;
-							next_rx_pend = 0;
-							if (BUS_INT_STATE)
-								next_rx_data = rx_data_buf[`DATA_WIDTH+1:2];
+							// RX overflow
+							if (RX_REQ)
+								next_out_reg_pos = ~CONTROL_BITS[0];
 							else
-								next_rx_data = rx_data_buf[`DATA_WIDTH-1:0];
+							begin
+								next_out_reg_pos = CONTROL_BITS[0];
+								next_rx_req = 1;
+								next_rx_pend = 0;
+								if (BUS_INT_STATE)
+									next_rx_data = rx_data_buf[`DATA_WIDTH+1:2];
+								else
+									next_rx_data = rx_data_buf[`DATA_WIDTH-1:0];
+							end
 						end
+						else
+							next_out_reg_pos = ~CONTROL_BITS[0];
 					end
 					else
 						next_out_reg_pos = ~CONTROL_BITS[0];
 				end
-				else
-					next_out_reg_pos = ~CONTROL_BITS[0];
 			end
 		end
 

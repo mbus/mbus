@@ -52,7 +52,7 @@ parameter NUM_OF_BUS_STATE = 13;
 wire [1:0] CONTROL_BITS = 2'b10;	// EOM?, ACK?, reserved
 
 // general registers
-reg		[1:0] mode, next_mode;
+reg		[1:0] mode, next_mode, mode_neg;
 reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state, bus_state_neg;
 reg		[log2(`DATA_WIDTH-1)-1:0] bit_position, next_bit_position; 
 reg		req_interrupt, next_req_interrupt;
@@ -449,6 +449,7 @@ begin
 	begin
 		out_reg_neg <= 1;
 		bus_state_neg <= BUS_IDLE;
+		mode_neg <= MODE_RX;
 	end
 	else
 	begin
@@ -456,6 +457,8 @@ begin
 			bus_state_neg <= BUS_LEAVE_INTERRUPT;
 		else
 			bus_state_neg <= bus_state;
+
+		mode_neg <= mode;
 
 		case (bus_state)
 			BUS_ADDR:
@@ -506,48 +509,47 @@ begin
 
 		BUS_ARBITRATE:
 		begin
-			if (mode==MODE_TX_NON_PRIO)
+			if (mode_neg==MODE_TX_NON_PRIO)
 				DOUT = 0;
 		end
 
 		BUS_PRIO:
 		begin
-			if (mode==MODE_TX_NON_PRIO)
+			if (mode_neg==MODE_TX_NON_PRIO)
 			begin
 				if (~PRIORITY)
 					DOUT = 0;
 				else
 					DOUT = DIN;
 			end
-			else if ((mode==MODE_RX)&&(PRIORITY & TX_REQ))
+			else if ((mode_neg==MODE_RX)&&(PRIORITY & TX_REQ))
 				DOUT = 1;
 		end
 
 		BUS_ADDR:
 		begin
 			// BUS interrupt happened, forward DIN
-			if (mode==MODE_TX)
+			if (mode_neg==MODE_TX)
 				DOUT = (((~BUS_INT)&out_reg_neg) | (DIN & BUS_INT));
 		end
 
 		BUS_DATA:
 		begin
 			// BUS interrupt happened, forward DIN
-			if (mode==MODE_TX)
+			if (mode_neg==MODE_TX)
 				DOUT = (((~BUS_INT)&out_reg_neg) | (DIN & BUS_INT));
 		end
-
 
 		BUS_CONTROL0:
 		begin
 			// Fail has higher priority
 			if (req_interrupt)
-				DOUT = (out_reg_neg & DIN);
+				DOUT = out_reg_neg;
 		end
 
 		BUS_CONTROL1:
 		begin
-			if ((mode==MODE_RX)&&(~req_interrupt))
+			if ((mode_neg==MODE_RX)&&(~req_interrupt))
 				DOUT = out_reg_neg;
 		end
 

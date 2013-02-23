@@ -29,11 +29,12 @@ parameter START_CYCLES = 10;
 parameter BUS_INTERRUPT_COUNTER = 6;
 
 reg		[log2(START_CYCLES-1)-1:0] start_cycle_cnt, next_start_cycle_cnt;
-reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state;
+reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state, bus_state_neg;
 reg		clk_en, next_clk_en;
 reg		[log2(BUS_INTERRUPT_COUNTER-1)-1:0] bus_interrupt_cnt, next_bus_interrupt_cnt;
 
-reg		clkin_sampled_neg, din_sampled_neg, din_sampled_pos;
+reg		clkin_sampled_neg; 
+reg		[2:0] din_sampled_neg, din_sampled_pos;
 
 assign CLKOUT = (clk_en)? CLK_EXT : 1'b1;
 
@@ -107,7 +108,7 @@ begin
 				next_bus_interrupt_cnt = bus_interrupt_cnt - 1'b1;
 			else
 			begin
-				if ({din_sampled_neg, din_sampled_pos}==2'b10)
+				if ({din_sampled_neg, din_sampled_pos}==6'b111_000)
 				begin
 					next_bus_state = BUS_SWITCH_ROLE;
 					next_clk_en = 1;
@@ -149,12 +150,14 @@ begin
 	begin
 		clkin_sampled_neg <= 0;
 		din_sampled_neg <= 0;
+		bus_state_neg <= BUS_IDLE;
 	end
 	else
 	begin
 		clkin_sampled_neg <= CLKIN;
 		if (bus_state==BUS_INTERRUPT)
-			din_sampled_neg <= DIN;
+			din_sampled_neg <= {din_sampled_neg[1:0], DIN};
+		bus_state_neg <= bus_state;
 	end
 end
 
@@ -167,22 +170,21 @@ begin
 	else
 	begin
 		if (bus_state==BUS_INTERRUPT)
-			din_sampled_pos <= DIN;
+			din_sampled_pos <= {din_sampled_pos[1:0], DIN};
 	end
 end
-
 
 always @ *
 begin
 	DOUT = DIN;
-	case (bus_state)
+	case (bus_state_neg)
 		BUS_IDLE: begin DOUT = 1; end
 		BUS_WAIT_START: begin DOUT = 1; end
 		BUS_ARBITRATE: begin DOUT = 1; end
 		BUS_INTERRUPT: begin DOUT = CLK_EXT; end
+		BUS_BACK_TO_IDLE: begin DOUT = 1; end
 	endcase
 
 end
-
 endmodule
 

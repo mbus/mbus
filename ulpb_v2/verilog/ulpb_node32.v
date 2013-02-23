@@ -41,16 +41,15 @@ parameter BUS_PRIO = 2;
 parameter BUS_ADDR = 3;
 parameter BUS_DATA_RX_ADDI = 4;
 parameter BUS_DATA = 5;
-parameter BUS_INTERRUPT = 6;
-parameter BUS_FWD = 7;
+parameter BUS_REQ_INTERRUPT = 6;
+parameter BUS_LEAVE_INTERRUPT = 7;
 parameter BUS_CONTROL0 = 8;
 parameter BUS_CONTROL1 = 9;
-parameter BUS_CONTROL2 = 10;
 parameter BUS_BACK_TO_IDLE = 11;
 parameter BUS_DATA_RX_CHECK = 12;
 parameter NUM_OF_BUS_STATE = 13;
 
-wire [2:0] CONTROL_BITS = 3'b100;	// EOM?, ACK?, reserved
+wire [1:0] CONTROL_BITS = 2'b10;	// EOM?, ACK?, reserved
 
 // general registers
 reg		[1:0] mode, next_mode;
@@ -71,7 +70,7 @@ reg		[`DATA_WIDTH-1:0] next_rx_data;
 reg		[`DATA_WIDTH+1:0] rx_data_buf, next_rx_data_buf;
 
 // interrupt register
-reg		BUS_INT_RSTn, next_bus_int_rstn, BUS_INT_TRIGGER;
+reg		BUS_INT_RSTn;
 wire	BUS_INT_STATE, BUS_INT;
 
 // interface registers
@@ -85,31 +84,25 @@ wire	addr_bit_extract = ((ADDR  & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	data_bit_extract = ((DATA & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	address_match = (((RX_ADDR^ADDRESS)&ADDRESS_MASK)==0)? 1'b1 : 1'b0;
 
-always @ (posedge CLKIN or negedge RESETn or posedge BUS_INT)
+always @ (posedge CLKIN or negedge RESETn)
 begin
 	if (~RESETn)
 	begin
 		bus_state <= BUS_IDLE;
-	end
-	else
-	begin
-		if (BUS_INT & (~BUS_INT_TRIGGER))
-			bus_state <= BUS_INTERRUPT;
-		else
-			bus_state <= next_bus_state;
-	end
-end
-
-always @ (negedge RESETn or posedge BUS_INT or negedge BUS_INT_RSTn)
-begin
-	if ((~RESETn) | (~BUS_INT_RSTn))
-	begin
-		BUS_INT_TRIGGER <= 0;
+		BUS_INT_RSTn <= 1;
 	end
 	else
 	begin
 		if (BUS_INT)
-			BUS_INT_TRIGGER <= 1;
+		begin
+			bus_state <= BUS_LEAVE_INTERRUPT;
+			BUS_INT_RSTn <= 0;
+		end
+		else
+		begin
+			bus_state <= next_bus_state;
+			BUS_INT_RSTn <= 1;
+		end
 	end
 end
 
@@ -131,8 +124,6 @@ begin
 		RX_ADDR <= 0;
 		RX_DATA <= 0;
 		rx_data_buf <= 0;
-		// interrupt register
-		BUS_INT_RSTn <= 1;
 		// Interface registers
 		TX_ACK <= 0;
 		RX_REQ <= 0;
@@ -144,7 +135,16 @@ begin
 	begin
 		// general registers
 		mode <= next_mode;
-		bit_position <= next_bit_position;
+		if (~BUS_INT)
+		begin
+			bit_position <= next_bit_position;
+			rx_data_buf <= next_rx_data_buf;
+			// Receiver register
+			RX_ADDR <= next_rx_addr;
+			RX_DATA <= next_rx_data;
+			RX_REQ <= next_rx_req;
+			RX_PEND <= next_rx_pend;
+		end
 		req_interrupt <= next_req_interrupt;
 		out_reg_pos <= next_out_reg_pos;
 		// Transmitter registers
@@ -152,16 +152,8 @@ begin
 		DATA <= next_data;
 		tx_pend <= next_tx_pend;
 		tx_underflow <= next_tx_underflow;
-		// Receiver register
-		RX_ADDR <= next_rx_addr;
-		RX_DATA <= next_rx_data;
-		rx_data_buf <= next_rx_data_buf;
-		// interrupt register
-		BUS_INT_RSTn <= next_bus_int_rstn;
 		// Interface registers
 		TX_ACK <= next_tx_ack;
-		RX_REQ <= next_rx_req;
-		RX_PEND <= next_rx_pend;
 		TX_FAIL <= next_tx_fail;
 		TX_SUCC <= next_tx_success;
 	end
@@ -187,9 +179,6 @@ begin
 	next_rx_data = RX_DATA;
 	next_rx_data_buf = rx_data_buf;
 
-	// interrupt register
-	next_bus_int_rstn = 1;
-	
 	// Interface registers
 	next_rx_req = RX_REQ;
 	next_rx_pend = RX_PEND;
@@ -320,7 +309,7 @@ begin
 							// underflow
 							2'b10:
 							begin
-								next_bus_state = BUS_INTERRUPT;
+								next_bus_state = BUS_REQ_INTERRUPT;
 								next_tx_underflow = 1;
 								next_req_interrupt = 1;
 								next_tx_fail = 1;
@@ -328,7 +317,7 @@ begin
 
 							default:
 							begin
-								next_bus_state = BUS_INTERRUPT;
+								next_bus_state = BUS_REQ_INTERRUPT;
 								next_req_interrupt = 1;
 							end
 						endcase
@@ -345,7 +334,7 @@ begin
 						// RX overflow
 						if (RX_REQ)
 						begin
-							next_bus_state = BUS_INTERRUPT;
+							next_bus_state = BUS_REQ_INTERRUPT;
 							next_req_interrupt = 1;
 						end
 						else
@@ -369,15 +358,15 @@ begin
 			next_bus_state = BUS_DATA;
 		end
 
-		BUS_INTERRUPT:
+		BUS_REQ_INTERRUPT:
 		begin
-			if (BUS_INT)
-			begin
-				next_bus_state = BUS_CONTROL0;
-				next_bus_int_rstn = 0;
-				if ((mode==MODE_TX)&&(~req_interrupt))
-					next_tx_fail = 1;
-			end
+		end
+
+		BUS_LEAVE_INTERRUPT:
+		begin
+			next_bus_state = BUS_CONTROL0;
+			if ((mode==MODE_TX)&&(~req_interrupt))
+				next_tx_fail = 1;
 		end
 
 		BUS_CONTROL0:
@@ -386,19 +375,19 @@ begin
 			if ((mode==MODE_RX)&&(~req_interrupt))
 			begin
 				// End of Message
-				if (DIN==CONTROL_BITS[2])
+				if (DIN==CONTROL_BITS[1])
 				begin
 					// correct ending state
 					// rx above tx = 31
 					// rx below tx = 1
-					if ((bit_position==1)||(bit_position==31))
+					if ((bit_position==1)||(bit_position==(`DATA_WIDTH-1'b1)))
 					begin
 						// RX overflow
 						if (RX_REQ)
-							next_out_reg_pos = ~CONTROL_BITS[1];
+							next_out_reg_pos = ~CONTROL_BITS[0];
 						else
 						begin
-							next_out_reg_pos = CONTROL_BITS[1];
+							next_out_reg_pos = CONTROL_BITS[0];
 							next_rx_req = 1;
 							next_rx_pend = 0;
 							if (BUS_INT_STATE)
@@ -408,32 +397,29 @@ begin
 						end
 					end
 					else
-						next_out_reg_pos = ~CONTROL_BITS[1];
+						next_out_reg_pos = ~CONTROL_BITS[0];
 				end
 				else
-					next_out_reg_pos = ~CONTROL_BITS[1];
+					next_out_reg_pos = ~CONTROL_BITS[0];
 			end
+			else
+				next_out_reg_pos = ~CONTROL_BITS[0];
 		end
 
 		BUS_CONTROL1:
 		begin
-			next_bus_state = BUS_CONTROL2;
+			next_bus_state = BUS_BACK_TO_IDLE;
 			if (req_interrupt)
 			begin
 				if ((mode==MODE_TX)&&(~tx_underflow))
 				begin
 					// ACK received
-					if (DIN==CONTROL_BITS[1])
+					if (DIN==CONTROL_BITS[0])
 						next_tx_success = 1;
 					else
 						next_tx_fail = 1;
 				end
 			end
-		end
-
-		BUS_CONTROL2:
-		begin
-			next_bus_state = BUS_BACK_TO_IDLE;
 		end
 
 		BUS_BACK_TO_IDLE:
@@ -455,9 +441,8 @@ begin
 	end
 	else
 	begin
-		// clock starts, forward clock
-		if (BUS_INT)
-			bus_state_neg <= BUS_FWD;
+		if (req_interrupt & BUS_INT)
+			bus_state_neg <= BUS_LEAVE_INTERRUPT;
 		else
 			bus_state_neg <= bus_state;
 
@@ -479,24 +464,17 @@ begin
 				if ((req_interrupt)&&(mode==MODE_TX))
 				begin
 					if (tx_underflow)
-						out_reg_neg <= ~CONTROL_BITS[2];
+						out_reg_neg <= ~CONTROL_BITS[1];
 					else
-						out_reg_neg <= CONTROL_BITS[2];
+						out_reg_neg <= CONTROL_BITS[1];
 				end
 				else
-					out_reg_neg <= ~CONTROL_BITS[2];
+					out_reg_neg <= ~CONTROL_BITS[1];
 			end
 
 			BUS_CONTROL1:
 			begin
 				out_reg_neg <= out_reg_pos;
-			end
-
-			BUS_CONTROL2:
-			begin
-				// for now... might be changed
-				if (req_interrupt)
-					out_reg_neg <= CONTROL_BITS[0];
 			end
 
 		endcase
@@ -557,12 +535,6 @@ begin
 				DOUT = out_reg_neg;
 		end
 
-		BUS_CONTROL2:
-		begin
-			if (req_interrupt)
-				DOUT = out_reg_neg;
-		end
-
 		BUS_BACK_TO_IDLE:
 		begin
 			DOUT = ((~TX_REQ) & DIN);
@@ -573,10 +545,10 @@ end
 
 always @ *
 begin
-	CLKOUT = CLKIN;
-	case (bus_state_neg)
-		BUS_INTERRUPT: begin if (req_interrupt) CLKOUT = 0; end
-	endcase
+	if (bus_state_neg==BUS_REQ_INTERRUPT)
+		CLKOUT = 0;
+	else
+		CLKOUT = CLKIN;
 end
 
 ulpb_swapper swapper0(

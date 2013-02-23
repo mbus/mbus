@@ -18,11 +18,10 @@ parameter BUS_ARBITRATE = 2;
 parameter BUS_PRIO = 3;
 parameter BUS_ACTIVE = 4;
 parameter BUS_INTERRUPT = 5;
-parameter BUS_INTERRUPT_CHECK = 6;
-parameter BUS_SWITCH_ROLE = 7;
+parameter BUS_SWITCH_ROLE = 6;
+parameter BUS_LEAVE_INTERRUPT = 7;
 parameter BUS_CONTROL0 = 8;
 parameter BUS_CONTROL1 = 9;
-parameter BUS_CONTROL2 = 10;
 parameter BUS_BACK_TO_IDLE = 11;
 
 parameter NUM_OF_BUS_STATE = 12;
@@ -107,19 +106,21 @@ begin
 			if (bus_interrupt_cnt)
 				next_bus_interrupt_cnt = bus_interrupt_cnt - 1'b1;
 			else
-				next_bus_state = BUS_INTERRUPT_CHECK;
-		end
-
-		BUS_INTERRUPT_CHECK:
-		begin
-			if ({din_sampled_neg, din_sampled_pos}==2'b10)
 			begin
-				next_bus_state = BUS_SWITCH_ROLE;
-				next_clk_en = 1;
+				if ({din_sampled_neg, din_sampled_pos}==2'b10)
+				begin
+					next_bus_state = BUS_SWITCH_ROLE;
+					next_clk_en = 1;
+				end
 			end
 		end
 
 		BUS_SWITCH_ROLE:
+		begin
+			next_bus_state = BUS_LEAVE_INTERRUPT;
+		end
+
+		BUS_LEAVE_INTERRUPT:
 		begin
 			next_bus_state = BUS_CONTROL0;
 		end
@@ -130,11 +131,6 @@ begin
 		end
 
 		BUS_CONTROL1:
-		begin
-			next_bus_state = BUS_CONTROL2;
-		end
-
-		BUS_CONTROL2:
 		begin
 			next_bus_state = BUS_BACK_TO_IDLE;
 		end
@@ -157,7 +153,7 @@ begin
 	else
 	begin
 		clkin_sampled_neg <= CLKIN;
-		if ((bus_state==BUS_INTERRUPT)||(bus_state==BUS_INTERRUPT_CHECK))
+		if (bus_state==BUS_INTERRUPT)
 			din_sampled_neg <= DIN;
 	end
 end
@@ -170,7 +166,7 @@ begin
 	end
 	else
 	begin
-		if ((bus_state==BUS_INTERRUPT)||(bus_state==BUS_INTERRUPT_CHECK))
+		if (bus_state==BUS_INTERRUPT)
 			din_sampled_pos <= DIN;
 	end
 end
@@ -184,7 +180,6 @@ begin
 		BUS_WAIT_START: begin DOUT = 1; end
 		BUS_ARBITRATE: begin DOUT = 1; end
 		BUS_INTERRUPT: begin DOUT = CLK_EXT; end
-		BUS_INTERRUPT_CHECK: begin DOUT = CLK_EXT; end
 	endcase
 
 end

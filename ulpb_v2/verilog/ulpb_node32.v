@@ -63,6 +63,7 @@ reg		[`ADDR_WIDTH-1:0] ADDR, next_addr;
 reg		[`DATA_WIDTH-1:0] DATA, next_data;
 reg		tx_pend, next_tx_pend;
 reg		tx_underflow, next_tx_underflow;
+reg		ctrl_bit_buf, next_ctrl_bit_buf;
 
 // rx registers
 reg		[`ADDR_WIDTH-1:0] next_rx_addr;
@@ -137,6 +138,7 @@ begin
 		DATA <= 0;
 		tx_pend <= 0;
 		tx_underflow <= 0;
+		ctrl_bit_buf <= 0;
 		// Receiver register
 		RX_ADDR <= 0;
 		RX_DATA <= 0;
@@ -167,6 +169,7 @@ begin
 		DATA <= next_data;
 		tx_pend <= next_tx_pend;
 		tx_underflow <= next_tx_underflow;
+		ctrl_bit_buf <= next_ctrl_bit_buf;
 		// Interface registers
 		TX_ACK <= next_tx_ack;
 	end
@@ -186,6 +189,7 @@ begin
 	next_data = DATA;
 	next_tx_pend = tx_pend;
 	next_tx_underflow = tx_underflow;
+	next_ctrl_bit_buf = ctrl_bit_buf;
 
 	// Receiver register
 	next_rx_addr = RX_ADDR;
@@ -378,6 +382,9 @@ begin
 		BUS_CONTROL0:
 		begin
 			next_bus_state = BUS_CONTROL1;
+			next_ctrl_bit_buf = DIN;
+
+			// only receiver drive at BUS_CONTROL1
 			if ((mode==MODE_RX)&&(~req_interrupt))
 			begin
 				// End of Message
@@ -408,8 +415,6 @@ begin
 				else
 					next_out_reg_pos = ~CONTROL_BITS[0];
 			end
-			else
-				next_out_reg_pos = ~CONTROL_BITS[0];
 		end
 
 		BUS_CONTROL1:
@@ -420,7 +425,7 @@ begin
 				if ((mode==MODE_TX)&&(~tx_underflow))
 				begin
 					// ACK received
-					if (DIN==CONTROL_BITS[0])
+					if ({ctrl_bit_buf, DIN}==CONTROL_BITS)
 						next_tx_success = 1;
 					else
 						next_tx_fail = 1;
@@ -467,15 +472,18 @@ begin
 
 			BUS_CONTROL0:
 			begin
-				if ((req_interrupt)&&(mode==MODE_TX))
+				if (req_interrupt)
 				begin
-					if (tx_underflow)
-						out_reg_neg <= ~CONTROL_BITS[1];
+					if (mode==MODE_TX)
+					begin
+						if (tx_underflow)
+							out_reg_neg <= ~CONTROL_BITS[1];
+						else
+							out_reg_neg <= CONTROL_BITS[1];
+					end
 					else
-						out_reg_neg <= CONTROL_BITS[1];
+						out_reg_neg <= ~CONTROL_BITS[1];
 				end
-				else
-					out_reg_neg <= ~CONTROL_BITS[1];
 			end
 
 			BUS_CONTROL1:
@@ -529,10 +537,12 @@ begin
 				DOUT = (((~BUS_INT)&out_reg_neg) | (DIN & BUS_INT));
 		end
 
+
 		BUS_CONTROL0:
 		begin
+			// Fail has higher priority
 			if (req_interrupt)
-				DOUT = out_reg_neg;
+				DOUT = (out_reg_neg & DIN);
 		end
 
 		BUS_CONTROL1:

@@ -1,5 +1,5 @@
 
-`define SYNTH
+//`define SYNTH
 
 `ifdef SYNTH
 	`timescale 1ns/1ps
@@ -132,38 +132,46 @@ begin
 	@ (posedge clk)
 
 	#10000
+   	$fdisplay(handle, "TASK0, Result: N1 TX Success");
 		state = TASK0;
 	@ (posedge n1_tx_succ | n1_tx_fail)
 
 	#10000
+   	$fdisplay(handle, "TASK1, Result: N1 TX Success");
 		word_counter = 7;
 		state = TASK1;
 	@ (posedge n1_tx_succ | n1_tx_fail)
 
 	#10000
+   	$fdisplay(handle, "TASK2, Result: N1 TX Success");
 		state = TASK2;
 	@ (posedge n1_tx_succ | n1_tx_fail)
 
 	#10000
+   	$fdisplay(handle, "TASK3, Result: N1 TX Success");
 		word_counter = 7;
 		state = TASK3;
 	@ (posedge n1_tx_succ | n1_tx_fail)
 
 	#10000
+   	$fdisplay(handle, "TASK4, Result: N1 TX Fail");
 		state = TASK4;
 	@ (posedge n1_tx_succ | n1_tx_fail)
 
 	#10000
+   	$fdisplay(handle, "TASK5, Result: N1 TX Fail");
 		word_counter = 7;
 		state = TASK5;
 	@ (posedge n1_tx_succ | n1_tx_fail)
 
 	#10000
+   	$fdisplay(handle, "TASK6, Result: N1 TX Fail");
 		word_counter = 7;
 		state = TASK6;
 	@ (posedge n1_tx_succ | n1_tx_fail)
 
 	#10000
+   	$fdisplay(handle, "TASK7, Result: N1 TX Fail");
 		word_counter = 7;
 		state = TASK7;
 		n2_auto_rx_ack = 0;
@@ -171,6 +179,7 @@ begin
 		n2_auto_rx_ack = 1;
 		
 	#10000
+   	$fdisplay(handle, "TASK8, Result: N1 TX Fail");
 		word_counter = 7;
 		state = TASK8;
 		n0_auto_rx_ack = 0;
@@ -178,6 +187,7 @@ begin
 		n0_auto_rx_ack = 1;
 
 	#10000
+   	$fdisplay(handle, "TASK9, Result: N1 TX Fail");
 		word_counter = 1;
 		state = TASK9;
 		n2_auto_rx_ack = 0;
@@ -185,6 +195,7 @@ begin
 		n2_auto_rx_ack = 1;
 
 	#10000
+   	$fdisplay(handle, "TASK10, Result: N1 TX Fail");
 		word_counter = 1;
 		state = TASK10;
 		n0_auto_rx_ack = 0;
@@ -192,17 +203,20 @@ begin
 		n0_auto_rx_ack = 1;
 
 	#10000
+   	$fdisplay(handle, "TASK1l, Result: N0, N1 TX Success");
 		state = TASK11;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 	@ (posedge n1_tx_succ | n1_tx_fail)
 
 	#10000
+   	$fdisplay(handle, "TASK12, Result: N1, N0 TX Success");
 		state = TASK12;
 	@ (posedge n1_tx_succ | n1_tx_fail)
 	@ (posedge n0_tx_succ | n0_tx_fail)
 	n1_priority = 0;
 
 	#10000
+   	$fdisplay(handle, "TASK13, Result: N0, N1 TX Success");
 		state = TASK13;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 	@ (posedge n1_tx_succ | n1_tx_fail)
@@ -210,6 +224,7 @@ begin
 	n1_priority = 0;
 
 	#10000
+   	$fdisplay(handle, "TASK14, Result: N0 TX Success");
 		state = TASK14;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 	n0_priority = 0;
@@ -404,6 +419,11 @@ begin
 						state <= TX_WAIT;
 					end
 				end
+				else if (n1_tx_fail)
+				begin
+					state <= TX_WAIT;
+					n1_tx_req <= 0;
+				end
 			end
 
 			// RX buffer overflow, middle of transmission
@@ -425,6 +445,11 @@ begin
 						n1_tx_pend <= 0;
 						state <= TX_WAIT;
 					end
+				end
+				else if (n1_tx_fail)
+				begin
+					state <= TX_WAIT;
+					n1_tx_req <= 0;
 				end
 			end
 

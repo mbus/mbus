@@ -6,6 +6,9 @@ CTRL = ulpb_ctrl
 
 POST_SDF = /afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/primetime/pt_postprocessor.pl
 
+synth:
+	make synth_node;
+	make synth_ctrl
 
 synth_node:
 	dc_shell -f ${ULPB_ab}.tcl |tee ${ULPB_ab}.dc.log

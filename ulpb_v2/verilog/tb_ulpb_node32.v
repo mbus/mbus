@@ -1,5 +1,5 @@
 
-`define SYNTH
+//`define SYNTH
 
 `ifdef SYNTH
 	`timescale 1ns/1ps
@@ -36,7 +36,7 @@ wire	w_n2c0, w_c0n0, w_n0n1, w_n1n2;
 wire	w_n0_clk_out, w_n1_clk_out, w_n2_clk_out;
 
 reg		[31:0] rand_dat, rand_dat2;
-reg		[3:0] state;
+reg		[4:0] state;
 reg		[5:0] word_counter;
 integer	handle;
 
@@ -55,8 +55,10 @@ parameter TASK11=11;
 parameter TASK12=12;
 parameter TASK13=13;
 parameter TASK14=14;
+parameter TASK15=15;
+parameter TASK16=16;
 
-parameter TX_WAIT=15;
+parameter TX_WAIT=31;
 
 
 ulpb_ctrl c0(.CLK_EXT(clk), .RESETn(resetn), .CLKIN(w_n2_clk_out), .CLKOUT(SCLK), .DIN(w_n2c0), .DOUT(w_c0n0));
@@ -81,19 +83,19 @@ ulpb_node32_ef n2
 			.TX_SUCC(n2_tx_succ), .TX_FAIL(n2_tx_fail), .TX_RESP_ACK(n2_tx_resp_ack));
 
 `else
-ulpb_node32 #(.ADDRESS(8'hab)) n0
+ulpb_node32 #(.ADDRESS(8'hab), .MULTI_ADDR(1'b1), .ADDRESS2(8'ha0)) n0
 			(.CLKIN(SCLK), .CLKOUT(w_n0_clk_out), .RESETn(resetn), .DIN(w_c0n0), .DOUT(w_n0n1), 
 			.TX_ADDR(n0_tx_addr), .TX_DATA(n0_tx_data),	.TX_REQ(n0_tx_req), .TX_ACK(n0_tx_ack), .TX_PEND(n0_tx_pend), .PRIORITY(n0_priority),
 			.RX_ADDR(n0_rx_addr), .RX_DATA(n0_rx_data), .RX_REQ(n0_rx_req), .RX_ACK(n0_rx_ack), .RX_PEND(n0_rx_pend),
 			.TX_SUCC(n0_tx_succ), .TX_FAIL(n0_tx_fail), .TX_RESP_ACK(n0_tx_resp_ack));
 
-ulpb_node32 #(.ADDRESS(8'hcd)) n1
+ulpb_node32 #(.ADDRESS(8'hcd), .MULTI_ADDR(1'b1), .ADDRESS2(8'hc0)) n1
 			(.CLKIN(w_n0_clk_out), .CLKOUT(w_n1_clk_out), .RESETn(resetn), .DIN(w_n0n1), .DOUT(w_n1n2), 
 			.TX_ADDR(n1_tx_addr), .TX_DATA(n1_tx_data), .TX_REQ(n1_tx_req), .TX_ACK(n1_tx_ack), .TX_PEND(n1_tx_pend), .PRIORITY(n1_priority),
 			.RX_ADDR(n1_rx_addr), .RX_DATA(n1_rx_data), .RX_REQ(n1_rx_req), .RX_ACK(n1_rx_ack), .RX_PEND(n1_rx_pend),
 			.TX_SUCC(n1_tx_succ), .TX_FAIL(n1_tx_fail), .TX_RESP_ACK(n1_tx_resp_ack));
 
-ulpb_node32 #(.ADDRESS(8'hef)) n2
+ulpb_node32 #(.ADDRESS(8'hef), .MULTI_ADDR(1'b1), .ADDRESS2(8'he0)) n2
 			(.CLKIN(w_n1_clk_out), .CLKOUT(w_n2_clk_out), .RESETn(resetn), .DIN(w_n1n2), .DOUT(w_n2c0), 
 			.TX_ADDR(n2_tx_addr), .TX_DATA(n2_tx_data), .TX_REQ(n2_tx_req), .TX_ACK(n2_tx_ack), .TX_PEND(n2_tx_pend), .PRIORITY(n2_priority),
 			.RX_ADDR(n2_rx_addr), .RX_DATA(n2_rx_data), .RX_REQ(n2_rx_req), .RX_ACK(n2_rx_ack), .RX_PEND(n2_rx_pend),
@@ -228,6 +230,18 @@ begin
 		state = TASK14;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 	n0_priority = 0;
+
+	#10000
+   	$fdisplay(handle, "TASK15, Correct result: N0 TX Success, N1, N2 Received");
+		state = TASK15;
+	@ (posedge n0_tx_succ | n0_tx_fail)
+	n0_priority = 0;
+
+	#10000
+   	$fdisplay(handle, "TASK16, Correct result: N1 TX Success");
+		state = TASK16;
+	@ (posedge n1_tx_succ | n1_tx_fail)
+
 	#10000
 		$stop;
 end
@@ -584,6 +598,36 @@ begin
 					n0_tx_req <= 1;
 					n0_priority <= 1;
    					$fdisplay(handle, "N0 Data in =\t32'h%h", rand_dat);
+					state <= TX_WAIT;
+				end
+			end
+
+			// Broadcast test
+			TASK15:
+			begin
+				if ((~n0_tx_ack) & (~n0_tx_req))
+				begin
+					n0_tx_addr <= `BROADCAST_ADDR;
+					n0_tx_data <= rand_dat;
+					n0_tx_pend <= 0;
+					n0_tx_req <= 1;
+					n0_priority <= 1;
+   					$fdisplay(handle, "N0 Data in =\t32'h%h", rand_dat);
+					state <= TX_WAIT;
+				end
+			end
+
+			// 2nd test
+			TASK16:
+			begin
+				if ((~n1_tx_ack) & (~n1_tx_req))
+				begin
+					n1_tx_addr <= 8'ha0;
+					n1_tx_data <= rand_dat;
+					n1_tx_pend <= 0;
+					n1_tx_req <= 1;
+					n1_priority <= 1;
+   					$fdisplay(handle, "N1 Data in =\t32'h%h", rand_dat);
 					state <= TX_WAIT;
 				end
 			end

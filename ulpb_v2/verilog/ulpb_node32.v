@@ -26,7 +26,11 @@ module ulpb_node32(
 `include "include/ulpb_func.v"
 
 parameter ADDRESS = 8'hef;
-parameter ADDRESS_MASK=8'hff;
+parameter ADDRESS_MASK = 8'hff;
+// if MULTI_ADDR = 1, check additional address (ADDRESS2)
+parameter MULTI_ADDR = 0;	
+parameter ADDRESS2 = 8'hef;
+parameter ADDRESS_MASK2 = 8'hff;
 
 // Node mode
 parameter MODE_TX_NON_PRIO = 0;
@@ -49,7 +53,7 @@ parameter BUS_BACK_TO_IDLE = 11;
 parameter BUS_DATA_RX_CHECK = 12;
 parameter NUM_OF_BUS_STATE = 13;
 
-wire [1:0] CONTROL_BITS = `CONTROL_SEQ;	// EOM?, ACK?, reserved
+wire [1:0] CONTROL_BITS = `CONTROL_SEQ;	// EOM?, ~ACK?
 
 // general registers
 reg		[1:0] mode, next_mode, mode_neg;
@@ -83,7 +87,18 @@ reg		next_rx_pend;
 
 wire	addr_bit_extract = ((ADDR  & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	data_bit_extract = ((DATA & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
-wire	address_match = (((RX_ADDR^ADDRESS)&ADDRESS_MASK)==0)? 1'b1 : 1'b0;
+reg		address_match;
+always @ *
+begin
+	address_match = 0;
+	if (RX_ADDR==`BROADCAST_ADDR)
+		address_match = 1;
+	
+	if (((RX_ADDR ^ ADDRESS) & ADDRESS_MASK)==0)
+		address_match = 1;
+	else if ((MULTI_ADDR) && (((RX_ADDR ^ ADDRESS2) & ADDRESS_MASK2)==0))
+		address_match = 1;
+end
 
 always @ (posedge CLKIN or negedge RESETn)
 begin

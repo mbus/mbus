@@ -25,7 +25,7 @@ all:    simv
 #####
 
 TESTBENCH = tb_ulpb_node32.v
-SIMFILES = ulpb_node32.v ulpb_ctrl.v ulpb_swapper.v
+SIMFILES = ulpb_node32.v ulpb_ctrl.v ulpb_swapper.v ulpb_ctrl_wrapper.v
 #SYNFILES = two_bit_pred.vg /afs/umich.edu/class/eecs470/lib/verilog/lec25dscc25.v
 
 #two_bit_pred.vg:	tut_mod.v tut_synth.tcl

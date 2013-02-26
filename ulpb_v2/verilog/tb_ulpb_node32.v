@@ -15,22 +15,22 @@ module tb_ulpb_node32();
 reg		clk, resetn;
 wire	SCLK;
 
-reg		[`ADDR_WIDTH-1:0] n0_tx_addr, n1_tx_addr, n2_tx_addr;
-reg		[`DATA_WIDTH-1:0] n0_tx_data, n1_tx_data, n2_tx_data;
-reg		n0_tx_req, n1_tx_req, n2_tx_req;
-reg		n0_priority, n1_priority, n2_priority;
-wire	n0_tx_ack, n1_tx_ack, n2_tx_ack;
-reg		n0_tx_pend, n1_tx_pend, n2_tx_pend;
+reg		[`ADDR_WIDTH-1:0] n0_tx_addr, n1_tx_addr, n2_tx_addr, c0_tx_addr;
+reg		[`DATA_WIDTH-1:0] n0_tx_data, n1_tx_data, n2_tx_data, c0_tx_data;
+reg		n0_tx_req, n1_tx_req, n2_tx_req, c0_tx_req;
+reg		n0_priority, n1_priority, n2_priority, c0_priority;
+wire	n0_tx_ack, n1_tx_ack, n2_tx_ack, c0_tx_ack;
+reg		n0_tx_pend, n1_tx_pend, n2_tx_pend, c0_tx_pend;
 
-wire	[`ADDR_WIDTH-1:0] n0_rx_addr, n1_rx_addr, n2_rx_addr;
-wire	[`DATA_WIDTH-1:0] n0_rx_data, n1_rx_data, n2_rx_data;
-wire	n0_rx_req, n1_rx_req, n2_rx_req;
-reg		n0_rx_ack, n1_rx_ack, n2_rx_ack;
-wire	n0_rx_pend, n1_rx_pend, n2_rx_pend;
+wire	[`ADDR_WIDTH-1:0] n0_rx_addr, n1_rx_addr, n2_rx_addr, c0_rx_addr;
+wire	[`DATA_WIDTH-1:0] n0_rx_data, n1_rx_data, n2_rx_data, c0_rx_data;
+wire	n0_rx_req, n1_rx_req, n2_rx_req, c0_rx_req;
+reg		n0_rx_ack, n1_rx_ack, n2_rx_ack, c0_rx_ack;
+wire	n0_rx_pend, n1_rx_pend, n2_rx_pend, c0_rx_pend;
 
-wire	n0_tx_succ, n1_tx_succ, n2_tx_succ;
-wire	n0_tx_fail, n1_tx_fail, n2_tx_fail;
-reg		n0_tx_resp_ack, n1_tx_resp_ack, n2_tx_resp_ack;
+wire	n0_tx_succ, n1_tx_succ, n2_tx_succ, c0_tx_succ;
+wire	n0_tx_fail, n1_tx_fail, n2_tx_fail, c0_tx_fail;
+reg		n0_tx_resp_ack, n1_tx_resp_ack, n2_tx_resp_ack, c0_tx_resp_ack;
 
 wire	w_n2c0, w_c0n0, w_n0n1, w_n1n2;
 wire	w_n0_clk_out, w_n1_clk_out, w_n2_clk_out;
@@ -57,11 +57,13 @@ parameter TASK13=13;
 parameter TASK14=14;
 parameter TASK15=15;
 parameter TASK16=16;
+parameter TASK17=17;
+parameter TASK18=18;
 
 parameter TX_WAIT=31;
 
 
-ulpb_ctrl c0(.CLK_EXT(clk), .RESETn(resetn), .CLKIN(w_n2_clk_out), .CLKOUT(SCLK), .DIN(w_n2c0), .DOUT(w_c0n0));
+//ulpb_ctrl c0(.CLK_EXT(clk), .RESETn(resetn), .CLKIN(w_n2_clk_out), .CLKOUT(SCLK), .DIN(w_n2c0), .DOUT(w_c0n0));
 
 `ifdef SYNTH
 ulpb_node32_ab n0
@@ -82,6 +84,12 @@ ulpb_node32_ef n2
 			.RX_ADDR(n2_rx_addr), .RX_DATA(n2_rx_data), .RX_REQ(n2_rx_req), .RX_ACK(n2_rx_ack), .RX_PEND(n2_rx_pend),
 			.TX_SUCC(n2_tx_succ), .TX_FAIL(n2_tx_fail), .TX_RESP_ACK(n2_tx_resp_ack));
 
+ulpb_ctrl_wrapper c0 
+			(.CLK_EXT(clk), .CLKIN(w_n2_clk_out), .CLKOUT(SCLK), .RESETn(resetn), .DIN(w_n2c0), .DOUT(w_c0n0), 
+			.TX_ADDR(c0_tx_addr), .TX_DATA(c0_tx_data), .TX_REQ(c0_tx_req), .TX_ACK(c0_tx_ack), .TX_PEND(c0_tx_pend), .PRIORITY(c0_priority),
+			.RX_ADDR(c0_rx_addr), .RX_DATA(c0_rx_data), .RX_REQ(c0_rx_req), .RX_ACK(c0_rx_ack), .RX_PEND(c0_rx_pend),
+			.TX_SUCC(c0_tx_succ), .TX_FAIL(c0_tx_fail), .TX_RESP_ACK(c0_tx_resp_ack));
+
 `else
 ulpb_node32 #(.ADDRESS(8'hab), .MULTI_ADDR(1'b1), .ADDRESS2(8'ha0)) n0
 			(.CLKIN(SCLK), .CLKOUT(w_n0_clk_out), .RESETn(resetn), .DIN(w_c0n0), .DOUT(w_n0n1), 
@@ -100,12 +108,18 @@ ulpb_node32 #(.ADDRESS(8'hef), .MULTI_ADDR(1'b1), .ADDRESS2(8'he0)) n2
 			.TX_ADDR(n2_tx_addr), .TX_DATA(n2_tx_data), .TX_REQ(n2_tx_req), .TX_ACK(n2_tx_ack), .TX_PEND(n2_tx_pend), .PRIORITY(n2_priority),
 			.RX_ADDR(n2_rx_addr), .RX_DATA(n2_rx_data), .RX_REQ(n2_rx_req), .RX_ACK(n2_rx_ack), .RX_PEND(n2_rx_pend),
 			.TX_SUCC(n2_tx_succ), .TX_FAIL(n2_tx_fail), .TX_RESP_ACK(n2_tx_resp_ack));
+
+ulpb_ctrl_wrapper #(.CTRL_ADDRESS(8'h01), .NODE_ADDRESS(8'haa)) c0 
+			(.CLK_EXT(clk), .CLKIN(w_n2_clk_out), .CLKOUT(SCLK), .RESETn(resetn), .DIN(w_n2c0), .DOUT(w_c0n0), 
+			.TX_ADDR(c0_tx_addr), .TX_DATA(c0_tx_data), .TX_REQ(c0_tx_req), .TX_ACK(c0_tx_ack), .TX_PEND(c0_tx_pend), .PRIORITY(c0_priority),
+			.RX_ADDR(c0_rx_addr), .RX_DATA(c0_rx_data), .RX_REQ(c0_rx_req), .RX_ACK(c0_rx_ack), .RX_PEND(c0_rx_pend),
+			.TX_SUCC(c0_tx_succ), .TX_FAIL(c0_tx_fail), .TX_RESP_ACK(c0_tx_resp_ack));
 `endif
 
 always #100 clk = ~clk;
 
 `define SD #1
-reg	n0_auto_rx_ack, n1_auto_rx_ack, n2_auto_rx_ack;
+reg	n0_auto_rx_ack, n1_auto_rx_ack, n2_auto_rx_ack, c0_auto_rx_ack;
 
 initial
 begin
@@ -120,6 +134,7 @@ begin
 	n0_auto_rx_ack = 1;
 	n1_auto_rx_ack = 1;
 	n2_auto_rx_ack = 1;
+	c0_auto_rx_ack = 1;
    	handle=$fopen("node_tb.txt");
 
 
@@ -237,9 +252,21 @@ begin
 	@ (posedge n0_tx_succ | n0_tx_fail)
 	n0_priority = 0;
 
+	/*
 	#10000
    	$fdisplay(handle, "TASK16, Correct result: N1 TX Success");
 		state = TASK16;
+	@ (posedge n1_tx_succ | n1_tx_fail)
+	*/
+
+	#10000
+   	$fdisplay(handle, "TASK17, Correct result: N1 TX Success");
+		state = TASK17;
+	@ (posedge n1_tx_succ | n1_tx_fail)
+
+	#10000
+   	$fdisplay(handle, "TASK18, Correct result: N1 TX Success");
+		state = TASK18;
 	@ (posedge n1_tx_succ | n1_tx_fail)
 
 	#10000
@@ -268,6 +295,12 @@ begin
 		n2_tx_req <= 0;
 		n2_priority <= 0;
 
+		c0_tx_addr <= 0;
+		c0_tx_data <= 0;
+		c0_tx_pend <= 0;
+		c0_tx_req <= 0;
+		c0_priority <= 0;
+
 		word_counter <= 0;
 	end
 	else
@@ -281,6 +314,8 @@ begin
 		if (n2_tx_ack)
 			n2_tx_req <= 0;
 
+		if (c0_tx_ack)
+			c0_tx_req <= 0;
 
 		case (state)
 			// simple transmission
@@ -617,12 +652,42 @@ begin
 				end
 			end
 
-			// 2nd test
+			// 2nd address test
 			TASK16:
 			begin
 				if ((~n1_tx_ack) & (~n1_tx_req))
 				begin
 					n1_tx_addr <= 8'ha0;
+					n1_tx_data <= rand_dat;
+					n1_tx_pend <= 0;
+					n1_tx_req <= 1;
+					n1_priority <= 1;
+   					$fdisplay(handle, "N1 Data in =\t32'h%h", rand_dat);
+					state <= TX_WAIT;
+				end
+			end
+
+			// control test, rx_req should not assert
+			TASK17:
+			begin
+				if ((~n1_tx_ack) & (~n1_tx_req))
+				begin
+					n1_tx_addr <= 8'h01;
+					n1_tx_data <= rand_dat;
+					n1_tx_pend <= 0;
+					n1_tx_req <= 1;
+					n1_priority <= 1;
+   					$fdisplay(handle, "N1 Data in =\t32'h%h", rand_dat);
+					state <= TX_WAIT;
+				end
+			end
+
+			// control test, rx_req should not assert
+			TASK18:
+			begin
+				if ((~n1_tx_ack) & (~n1_tx_req))
+				begin
+					n1_tx_addr <= 8'haa;
 					n1_tx_data <= rand_dat;
 					n1_tx_pend <= 0;
 					n1_tx_req <= 1;
@@ -642,6 +707,7 @@ begin
 		n0_rx_ack <= 0;
 		n1_rx_ack <= 0;
 		n2_rx_ack <= 0;
+		c0_rx_ack <= 0;
 	end
 	else
 	begin
@@ -680,6 +746,18 @@ begin
 			if ((n2_rx_req==0)&&(n2_rx_ack==1))
 				n2_rx_ack <= 0;
 		end
+
+		if (c0_auto_rx_ack)
+		begin
+			if ((c0_rx_req==1)&&(c0_rx_ack==0))
+			begin
+				c0_rx_ack <= 1;
+   				$fdisplay(handle, "C0 Data out =\t32'h%h", c0_rx_data);
+			end
+			
+			if ((c0_rx_req==0)&&(c0_rx_ack==1))
+				c0_rx_ack <= 0;
+		end
 	end
 end
 
@@ -691,6 +769,7 @@ begin
 		n0_tx_resp_ack <= 0;
 		n1_tx_resp_ack <= 0;
 		n2_tx_resp_ack <= 0;
+		c0_tx_resp_ack <= 0;
 	end
 	else
 	begin
@@ -721,6 +800,15 @@ begin
    				$fdisplay(handle, "N2 TX FAIL\n");
 		end
 		
+		if ((c0_tx_succ | c0_tx_fail)&(~c0_tx_resp_ack))
+		begin
+			c0_tx_resp_ack <= 1;
+			if (c0_tx_succ)
+   				$fdisplay(handle, "C0 TX SUCCESS\n");
+			else
+   				$fdisplay(handle, "C0 TX FAIL\n");
+		end
+
 		if ((~(n0_tx_succ | n0_tx_fail))&(n0_tx_resp_ack))
 			n0_tx_resp_ack <= 0;
 
@@ -729,6 +817,9 @@ begin
 
 		if ((~(n2_tx_succ | n2_tx_fail))&(n2_tx_resp_ack))
 			n2_tx_resp_ack <= 0;
+
+		if ((~(c0_tx_succ | c0_tx_fail))&(c0_tx_resp_ack))
+			c0_tx_resp_ack <= 0;
 	end
 end
 

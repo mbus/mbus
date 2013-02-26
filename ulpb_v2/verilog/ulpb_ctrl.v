@@ -14,7 +14,6 @@ module ulpb_ctrl(
 
 parameter BUS_IDLE = 0;
 parameter BUS_WAIT_START = 1;
-parameter BUS_IDLE_ARBI = 12;
 parameter BUS_ARBITRATE = 2;
 parameter BUS_PRIO = 3;
 parameter BUS_ACTIVE = 4;
@@ -83,11 +82,6 @@ begin
 			end
 		end
 
-		BUS_IDLE_ARBI:
-		begin
-			next_bus_state = BUS_ARBITRATE;
-		end
-
 		BUS_ARBITRATE:
 		begin
 			next_bus_state = BUS_PRIO;
@@ -146,13 +140,14 @@ begin
 		begin
 			if (~DIN)
 			begin
-				next_bus_state = BUS_IDLE_ARBI;
+				next_bus_state = BUS_WAIT_START;
+				next_start_cycle_cnt = 1;
 			end
 			else
 			begin
 				next_bus_state = BUS_IDLE;
-				next_clk_en = 0;
 			end
+			next_clk_en = 0;
 		end
 	endcase
 end
@@ -193,7 +188,6 @@ begin
 	case (bus_state_neg)
 		BUS_IDLE: begin DOUT = 1; end
 		BUS_WAIT_START: begin DOUT = 1; end
-		BUS_IDLE_ARBI: begin DOUT = 1; end
 		BUS_ARBITRATE: begin DOUT = 1; end
 		BUS_INTERRUPT: begin DOUT = CLK_EXT; end
 		BUS_BACK_TO_IDLE: begin DOUT = 1; end

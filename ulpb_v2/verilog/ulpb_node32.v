@@ -28,7 +28,7 @@ module ulpb_node32(
 parameter ADDRESS = 8'hef;
 parameter ADDRESS_MASK = 8'hff;
 // if MULTI_ADDR = 1, check additional address (ADDRESS2)
-parameter MULTI_ADDR = 1'b1;	
+parameter MULTI_ADDR_EN = 1'b0;	
 parameter ADDRESS2 = 8'hef;
 parameter ADDRESS_MASK2 = 8'hff;
 
@@ -102,7 +102,7 @@ begin
 	else
 		addr_match_temp[1] = 0;
 	
-	if (MULTI_ADDR==1'b1)
+	if (MULTI_ADDR_EN==1'b1)
 	begin
 		if (((RX_ADDR ^ ADDRESS2) & ADDRESS_MASK2)==0)
 			addr_match_temp[0] = 1;

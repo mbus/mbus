@@ -576,8 +576,7 @@ begin
 
 		BUS_BACK_TO_IDLE:
 		begin
-			if (CLKIN)
-				DOUT = ((~TX_REQ) & DIN);
+			DOUT = ((~TX_REQ) & DIN);
 		end
 
 	endcase

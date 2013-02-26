@@ -4,11 +4,11 @@
 source -verbose "common.tcl"
 
 # Set top level name
-set top_level "ulpb_ctrl"
+set top_level "ulpb_ctrl_wrapper"
 
 # Read verilog files
-read_verilog "../verilog/ulpb_ctrl.v"
-analyze -format verilog "../verilog/ulpb_ctrl.v"
+read_verilog "../verilog/ulpb_ctrl.v ../verilog/ulpb_swapper.v ../verilog/ulpb_node32.v ../verilog/ulpb_ctrl_wrapper.v"
+analyze -format verilog "../verilog/ulpb_ctrl.v ../verilog/ulpb_swapper.v ../verilog/ulpb_node32.v ../verilog/ulpb_ctrl_wrapper.v"
 elaborate $top_level 
 #current_design $top_level
 

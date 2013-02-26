@@ -87,17 +87,30 @@ reg		next_rx_pend;
 
 wire	addr_bit_extract = ((ADDR  & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	data_bit_extract = ((DATA & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
-reg		address_match;
+reg		[2:0] addr_match_temp;
+wire	address_match = (addr_match_temp[2] | addr_match_temp[1] | addr_match_temp[0]);
+
 always @ *
 begin
-	address_match = 0;
 	if (RX_ADDR==`BROADCAST_ADDR)
-		address_match = 1;
-	
+		addr_match_temp[2] = 1;
+	else
+		addr_match_temp[2] = 0;
+
 	if (((RX_ADDR ^ ADDRESS) & ADDRESS_MASK)==0)
-		address_match = 1;
-	else if ((MULTI_ADDR==1'b1) && (((RX_ADDR ^ ADDRESS2) & ADDRESS_MASK2)==0))
-		address_match = 1;
+		addr_match_temp[1] = 1;
+	else
+		addr_match_temp[1] = 0;
+	
+	if (MULTI_ADDR==1'b1)
+	begin
+		if (((RX_ADDR ^ ADDRESS2) & ADDRESS_MASK2)==0)
+			addr_match_temp[0] = 1;
+		else
+			addr_match_temp[0] = 0;
+	end
+	else
+		addr_match_temp[0] = 0;
 end
 
 always @ (posedge CLKIN or negedge RESETn)

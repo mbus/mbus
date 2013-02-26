@@ -2,7 +2,7 @@
 ULPB_ab = ulpb_node32_ab
 ULPB_cd = ulpb_node32_cd
 ULPB_ef = ulpb_node32_ef
-CTRL = ulpb_ctrl
+CTRL = ulpb_ctrl_wrapper
 
 POST_SDF = /afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/primetime/pt_postprocessor.pl
 

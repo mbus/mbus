@@ -244,7 +244,7 @@ begin
 	n0_priority = 0;
 
 	#10000
-   	$fdisplay(handle, "TASK15, Correct result: N0 TX Success, N1, N2 Received");
+   	$fdisplay(handle, "TASK15, Correct result: N0 TX Success, N1, N2, C0 Received");
 		state = TASK15;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 	n0_priority = 0;

@@ -16,6 +16,8 @@
 # added "SW_VCS=2011.03 and "-full64" option -- awdeorio fall 2011
 VCS = SW_VCS=2011.03 vcs +v2k +vc -Mupdate -line -full64
 INTFLAGS = -I +memcbk
+VFLAGSnl  = +v2k +vc -sverilog +lint=all,noVCDE +warn=all -timescale=1ns/1ps +vcs+lic+wait +multisource_int_delays +plusarg_save +overlap -full64 -Mupdate -line -debug -cc gcc +libext+.v+.vlib+.vh +prof +neg_tchk +memopt -negdelay
+
 
 all:    simv
 #	./simv | tee program.out
@@ -44,12 +46,12 @@ int:	$(SIMFILES) $(TESTBENCH)
 # updated interactive debugger "DVE", using the latest version of VCS
 # awdeorio fall 2011
 dve:	$(SIMFILES) $(TESTBENCH) 
-	$(VCS) +memcbk $(TESTBENCH) $(SIMFILES) -o dve -R -gui
+	$(VCS) +memcbk $(VFLAGSnl) $(TESTBENCH) $(SIMFILES) -o dve -R -gui
 
-.PHONY: dve
+.PHONY: dve syn_simv
 
 syn_simv:	$(SYNFILES) $(TESTBENCH)
-	$(VCS) $(TESTBENCH) $(SYNFILES) -o syn_simv -R | tee syn_program.out 
+	$(VCS) $(VFLAGSnl) $(TESTBENCH) $(SYNFILES) -o syn_simv -R | tee syn_program.out 
 
 syn_dve:	$(SYNFILES) $(TESTBENCH)
 	$(VCS) +memcbk $(TESTBENCH) $(SYNFILES) -o dve -R -gui

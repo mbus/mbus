@@ -1,4 +1,48 @@
 
+/* Verilog implementation of MBUS
+ *
+ * This block is the new bus controller, maintaining the same interface
+ * of previous I2C controller. However, the current version of MBUS has
+ * certain assumption of the transmissions
+ * 
+ * 1. The transmission each round is always 32-bits, i.e. TX_DATA is 32-bit
+ * wide, this could be changed by the definition file at include/ulpb_def.v
+ *
+ * In addition, MBUS adds new feature
+ *
+ * 1. The additional PRIORITY input, this input sets the transmission
+ * priority. If the PRIORITY input has been asserted, it gives additional
+ * flexibility for lower layer to win the arbitration.
+ *
+ * 2. TX_PEND, RX_PEND. These inputs indicates up coming data after further
+ * transmission. i.e. TX_REQ and TX_PEND are asserted at the same time, the
+ * MBUS controller latched the input and BUS controller assuming more data 
+ * to the same destination is following. If the next TX_REQ never asserts, the
+ * bus controller experiences a TX_FAIL (tx buffer underflow).
+ * The same as RX_PEND, if RX_REQ is asserted, layer controller should also
+ * monitoring the RX_PEND signal, which indicates the next data is coming or
+ * not.
+ *
+ * 3. The broadcast message, every layers in MBUS will respond to broadcast
+ * messages. the destination address of broadcast message is 0x00
+ *
+ * A short node to wire up to an old layer controller which generates data
+ * every 32-bit at once.
+ *
+ * 1. connect all interface,
+ * 2. connect TX_PEND to 0, every transmit is 32-bit wide
+ * 3. float RX_PEND, old layer controller doesn't support this
+ * 4. connect PRIORITU to 0, every transmission is a regular transmission
+ * 5. set corresponding address and address mask by parameter, the address
+ * mask indicates which bits are comparing to.
+ * i.e. ADDRESS_MASK = 8'hff, all 8-bit address has to match.
+ * i.e. ADDRESS_MASK = 8'hf0, compare only upper 4-bit of address (from MSB)
+ * 
+ *
+ * Last modify date: 2/27 '13
+ * Last modify by: Ye-sheng Kuo
+ * */
+
 `include "include/ulpb_def.v"
 
 module ulpb_node32(

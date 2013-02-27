@@ -18,7 +18,6 @@ VCS = SW_VCS=2011.03 vcs +v2k +vc -Mupdate -line -full64
 INTFLAGS = -I +memcbk
 
 all:    simv
-#	./simv | tee program.out
 
 ##### 
 # Modify starting here
@@ -26,10 +25,6 @@ all:    simv
 
 TESTBENCH = tb_ulpb_node32.v
 SIMFILES = ulpb_node32.v ulpb_ctrl.v ulpb_swapper.v ulpb_ctrl_wrapper.v
-#SYNFILES = two_bit_pred.vg /afs/umich.edu/class/eecs470/lib/verilog/lec25dscc25.v
-
-#two_bit_pred.vg:	tut_mod.v tut_synth.tcl
-#	dc_shell-t -f tut_synth.tcl | tee synth.out
 
 
 #####
@@ -38,24 +33,12 @@ SIMFILES = ulpb_node32.v ulpb_ctrl.v ulpb_swapper.v ulpb_ctrl_wrapper.v
 simv:	$(SIMFILES) $(TESTBENCH)
 	$(VCS) $(TESTBENCH) $(SIMFILES)	-o simv -R | tee program.out
 
-int:	$(SIMFILES) $(TESTBENCH) 
-	$(VCS) $(INTFLAGS) $(TESTBENCH) $(SIMFILES) -o int_simv -RI
-
 # updated interactive debugger "DVE", using the latest version of VCS
 # awdeorio fall 2011
 dve:	$(SIMFILES) $(TESTBENCH) 
 	$(VCS) +memcbk $(TESTBENCH) $(SIMFILES) -o dve -R -gui
 
 .PHONY: dve
-
-syn_simv:	$(SYNFILES) $(TESTBENCH)
-	$(VCS) $(TESTBENCH) $(SYNFILES) -o syn_simv -R | tee syn_program.out 
-
-syn:	syn_simv
-	./syn_simv | tee syn_program.out
-
-syn_int:	$(SYNFILES) $(TESTBENCH)
-	$(VCS) $(INTFLAGS) $(TESTBENCH) $(SYNFILES) -o syn_int_simv -RI
 
 clean:
 	rm -rvf simv *.daidir csrc vcs.key program.out \

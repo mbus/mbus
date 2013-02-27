@@ -27,26 +27,11 @@ all:    simv
 #####
 
 TESTBENCH = tb_ulpb_node32.v
-SIMFILES = ulpb_node32.v ulpb_ctrl.v ulpb_swapper.v
 SYNFILES = ulpb_node32_ab.nl.v ulpb_node32_cd.nl.v ulpb_node32_ef.nl.v ulpb_ctrl_wrapper.nl.v
 
 #two_bit_pred.vg:	tut_mod.v tut_synth.tcl
 #	dc_shell-t -f tut_synth.tcl | tee synth.out
 
-
-#####
-# Should be no need to modify after here
-#####
-simv:	$(SIMFILES) $(TESTBENCH)
-	$(VCS) $(TESTBENCH) $(SIMFILES)	-o simv -R | tee program.out
-
-int:	$(SIMFILES) $(TESTBENCH) 
-	$(VCS) $(INTFLAGS) $(TESTBENCH) $(SIMFILES) -o int_simv -RI
-
-# updated interactive debugger "DVE", using the latest version of VCS
-# awdeorio fall 2011
-dve:	$(SIMFILES) $(TESTBENCH) 
-	$(VCS) +memcbk $(VFLAGSnl) $(TESTBENCH) $(SIMFILES) -o dve -R -gui
 
 .PHONY: dve syn_simv
 
@@ -55,12 +40,6 @@ syn_simv:	$(SYNFILES) $(TESTBENCH)
 
 syn_dve:	$(SYNFILES) $(TESTBENCH)
 	$(VCS) +memcbk $(TESTBENCH) $(SYNFILES) -o dve -R -gui
-
-syn:	syn_simv
-	./syn_simv | tee syn_program.out
-
-syn_int:	$(SYNFILES) $(TESTBENCH)
-	$(VCS) $(INTFLAGS) $(TESTBENCH) $(SYNFILES) -o syn_int_simv -RI
 
 clean:
 	rm -rvf simv *.daidir csrc vcs.key program.out \

@@ -45,13 +45,13 @@ parameter BUS_PRIO = 2;
 parameter BUS_ADDR = 3;
 parameter BUS_DATA_RX_ADDI = 4;
 parameter BUS_DATA = 5;
-parameter BUS_REQ_INTERRUPT = 6;
-parameter BUS_LEAVE_INTERRUPT = 7;
-parameter BUS_CONTROL0 = 8;
-parameter BUS_CONTROL1 = 9;
+parameter BUS_DATA_RX_CHECK = 6;
+parameter BUS_REQ_INTERRUPT = 7;
+parameter BUS_LEAVE_INTERRUPT = 8;
+parameter BUS_CONTROL0 = 9;
+parameter BUS_CONTROL1 = 10;
 parameter BUS_BACK_TO_IDLE = 11;
-parameter BUS_DATA_RX_CHECK = 12;
-parameter NUM_OF_BUS_STATE = 13;
+parameter NUM_OF_BUS_STATE = 12;
 
 wire [1:0] CONTROL_BITS = `CONTROL_SEQ;	// EOM?, ~ACK?
 

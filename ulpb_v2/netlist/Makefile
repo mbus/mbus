@@ -26,7 +26,7 @@ all:    simv
 
 TESTBENCH = tb_ulpb_node32.v
 SIMFILES = ulpb_node32.v ulpb_ctrl.v ulpb_swapper.v
-SYNFILES = ulpb_node32_ab.nl.v ulpb_node32_cd.nl.v ulpb_node32_ef.nl.v ulpb_ctrl_wrapper.v ulpb_node32.v ulpb_ctrl.v ulpb_swapper.v
+SYNFILES = ulpb_node32_ab.nl.v ulpb_node32_cd.nl.v ulpb_node32_ef.nl.v ulpb_ctrl_wrapper.nl.v
 
 #two_bit_pred.vg:	tut_mod.v tut_synth.tcl
 #	dc_shell-t -f tut_synth.tcl | tee synth.out

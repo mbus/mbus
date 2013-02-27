@@ -13,18 +13,19 @@ module ulpb_ctrl(
 `include "include/ulpb_func.v"
 
 parameter BUS_IDLE = 0;
-parameter BUS_WAIT_START = 1;
-parameter BUS_ARBITRATE = 2;
-parameter BUS_PRIO = 3;
-parameter BUS_ACTIVE = 4;
-parameter BUS_INTERRUPT = 5;
+parameter BUS_WAIT_START = 3;
+parameter BUS_START = 4;
+parameter BUS_ARBITRATE = 1;
+parameter BUS_PRIO = 2;
+parameter BUS_ACTIVE = 5;
+parameter BUS_INTERRUPT = 7;
 parameter BUS_SWITCH_ROLE = 6;
-parameter BUS_LEAVE_INTERRUPT = 7;
-parameter BUS_CONTROL0 = 8;
-parameter BUS_CONTROL1 = 9;
+parameter BUS_LEAVE_INTERRUPT = 8;
+parameter BUS_CONTROL0 = 9;
+parameter BUS_CONTROL1 = 10;
 parameter BUS_BACK_TO_IDLE = 11;
 
-parameter NUM_OF_BUS_STATE = 13;
+parameter NUM_OF_BUS_STATE = 12;
 parameter START_CYCLES = 10;
 parameter BUS_INTERRUPT_COUNTER = 6;
 
@@ -78,8 +79,13 @@ begin
 			else
 			begin
 				next_clk_en = 1;
-				next_bus_state = BUS_ARBITRATE;
+				next_bus_state = BUS_START;
 			end
+		end
+
+		BUS_START:
+		begin
+			next_bus_state = BUS_ARBITRATE;
 		end
 
 		BUS_ARBITRATE:
@@ -188,7 +194,7 @@ begin
 	case (bus_state_neg)
 		BUS_IDLE: begin DOUT = 1; end
 		BUS_WAIT_START: begin DOUT = 1; end
-		BUS_ARBITRATE: begin DOUT = 1; end
+		BUS_START : begin DOUT = 1; end
 		BUS_INTERRUPT: begin DOUT = CLK_EXT; end
 		BUS_BACK_TO_IDLE: begin DOUT = 1; end
 	endcase

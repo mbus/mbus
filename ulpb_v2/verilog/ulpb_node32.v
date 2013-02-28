@@ -306,15 +306,13 @@ begin
 
 		BUS_PRIO:
 		begin
-			// Won Initial Arbitration (Not fowarding Data)
 			if (mode==MODE_TX_NON_PRIO)
 			begin
-				// Lose Arbitration to Priority Req
-				if (DIN^DOUT)
+				// Other node request priority,
+				if (DIN & (~PRIORITY))
 				begin
 					next_mode = MODE_RX;
 				end
-				// No Priority Req, Win Arbitration
 				else
 				begin
 					next_addr = TX_ADDR;
@@ -324,11 +322,10 @@ begin
 					next_tx_pend = TX_PEND;
 				end
 			end
-			// Lost Initial Arbitration (Forwarding Data)
 			else
 			begin
-				// Win Priority Arbitration
-				if (DIN^DOUT)
+				// the node won first trial doesn't request priority
+				if (TX_REQ & PRIORITY & (~DIN))
 				begin
 					next_addr = TX_ADDR;
 					next_data = TX_DATA;
@@ -336,7 +333,6 @@ begin
 					next_tx_ack = 1;
 					next_tx_pend = TX_PEND;
 				end
-				// Lost Priority Arbitration or Didn't Try
 				else
 				begin
 					next_mode = MODE_RX;
@@ -599,10 +595,10 @@ begin
 		begin
 			if (mode_neg==MODE_TX_NON_PRIO)
 			begin
-				if (~PRIORITY)
-					DOUT = 0;
+				if (PRIORITY)
+					DOUT = 1;
 				else
-					DOUT = DIN;
+					DOUT = 0;
 			end
 			else if ((mode_neg==MODE_RX)&&(PRIORITY & TX_REQ))
 				DOUT = 1;
@@ -610,16 +606,16 @@ begin
 
 		BUS_ADDR:
 		begin
-			// BUS interrupt happened, forward DIN
-			if (mode_neg==MODE_TX)
-				DOUT = (((~BUS_INT)&out_reg_neg) | (DIN & BUS_INT));
+			// Drive value only if interrupt is low
+			if (~BUS_INT &(mode_neg==MODE_TX))
+				DOUT = out_reg_neg;
 		end
 
 		BUS_DATA:
 		begin
-			// BUS interrupt happened, forward DIN
-			if (mode_neg==MODE_TX)
-				DOUT = (((~BUS_INT)&out_reg_neg) | (DIN & BUS_INT));
+			// Drive value only if interrupt is low
+			if (~BUS_INT &(mode_neg==MODE_TX))
+				DOUT = out_reg_neg;
 		end
 
 		BUS_CONTROL0:

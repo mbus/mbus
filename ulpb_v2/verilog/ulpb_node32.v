@@ -2,45 +2,47 @@
 /* Verilog implementation of MBUS
  *
  * This block is the new bus controller, maintaining the same interface
- * of previous I2C controller. However, the current version of MBUS has
- * certain assumption of the transmissions
- * 
+ * as the previous I2C controller. However, the current implementation of
+ * MBUS makes certain assumptions about the transmissions:
+ *
  * 1. The transmission each round is always 32-bits, i.e. TX_DATA is 32-bit
- * wide, this could be changed by the definition file at include/ulpb_def.v
+ * wide. This could be changed in the definitions file include/ulpb_def.v
  *
- * In addition, MBUS adds new feature
+ * 2. Transmissions only use short (8-bit) addresses.
  *
- * 1. The additional PRIORITY input, this input sets the transmission
+ * In addition, MBUS adds new features:
+ *
+ * 1. The additional PRIORITY input. This input sets the transmission
  * priority. If the PRIORITY input has been asserted, it gives additional
- * flexibility for lower layer to win the arbitration.
+ * flexibility for the lower layer to win bus arbitration.
  *
- * 2. TX_PEND, RX_PEND. These inputs indicates up coming data after further
- * transmission. i.e. TX_REQ and TX_PEND are asserted at the same time, the
- * MBUS controller latched the input and BUS controller assuming more data 
- * to the same destination is following. If the next TX_REQ never asserts, the
- * bus controller experiences a TX_FAIL (tx buffer underflow).
- * The same as RX_PEND, if RX_REQ is asserted, layer controller should also
- * monitoring the RX_PEND signal, which indicates the next data is coming or
- * not.
+ * 2. TX_PEND, RX_PEND. These inputs indicate more data coming after first
+ * transmission, i.e. if TX_REQ and TX_PEND are asserted at the same time,
+ * when the MBUS controller latches the inputs the BUS controller knows more
+ * data to the same destination will follow. If the next TX_REQ does not assert
+ * in time, the bus controller experiences a TX_FAIL (tx buffer underflow).
+ * Similarly for RX_PEND, if RX_REQ is asserted the layer controller must also
+ * monitorthe RX_PEND signal, which indicates more data for the same message
+ * follows.
  *
- * 3. The broadcast message, every layers in MBUS will respond to broadcast
- * messages. the destination address of broadcast message is 0x00
+ * 3. The broadcast message. Every layer in MBUS will receive and acknowledge
+ * broadcast messages. The destination address of broadcast message is 0x00.
  *
- * A short node to wire up to an old layer controller which generates data
- * every 32-bit at once.
+ * To create a simple node that wires up to an old layer controller that
+ * generates data in 32-bit segments:
  *
- * 1. connect all interface,
- * 2. connect TX_PEND to 0, every transmit is 32-bit wide
+ * 1. connect all interfaces,
+ * 2. connect TX_PEND to 0, every transmit is 32-bits wide
  * 3. float RX_PEND, old layer controller doesn't support this
  * 4. connect PRIORITU to 0, every transmission is a regular transmission
  * 5. set corresponding address and address mask by parameter, the address
- * mask indicates which bits are comparing to.
- * i.e. ADDRESS_MASK = 8'hff, all 8-bit address has to match.
+ *    mask indicates which bits are comparing to:
+ * i.e. ADDRESS_MASK = 8'hff, all 8-bits of address must match.
  * i.e. ADDRESS_MASK = 8'hf0, compare only upper 4-bit of address (from MSB)
  * 
  *
- * Last modify date: 2/27 '13
- * Last modify by: Ye-sheng Kuo
+ * Last modified date: 2/27 '13
+ * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  * */
 
 `include "include/ulpb_def.v"
@@ -304,14 +306,15 @@ begin
 
 		BUS_PRIO:
 		begin
+			// Won Initial Arbitration (Not fowarding Data)
 			if (mode==MODE_TX_NON_PRIO)
 			begin
-				// Lose Priority
+				// Lose Arbitration to Priority Req
 				if (DIN^DOUT)
 				begin
 					next_mode = MODE_RX;
 				end
-				// Remain Arbitration
+				// No Priority Req, Win Arbitration
 				else
 				begin
 					next_addr = TX_ADDR;
@@ -321,9 +324,10 @@ begin
 					next_tx_pend = TX_PEND;
 				end
 			end
+			// Lost Initial Arbitration (Forwarding Data)
 			else
 			begin
-				// Win Priority
+				// Win Priority Arbitration
 				if (DIN^DOUT)
 				begin
 					next_addr = TX_ADDR;
@@ -332,6 +336,7 @@ begin
 					next_tx_ack = 1;
 					next_tx_pend = TX_PEND;
 				end
+				// Lost Priority Arbitration or Didn't Try
 				else
 				begin
 					next_mode = MODE_RX;
@@ -413,9 +418,9 @@ begin
 						next_bit_position = bit_position - 1'b1;
 					else
 					begin
-						// RX overflow
 						if (RX_REQ)
 						begin
+							// RX overflow
 							next_bus_state = BUS_REQ_INTERRUPT;
 							next_req_interrupt = 1;
 						end

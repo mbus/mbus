@@ -93,11 +93,10 @@ parameter BUS_DATA_RX_ADDI = 4;
 parameter BUS_DATA = 5;
 parameter BUS_DATA_RX_CHECK = 6;
 parameter BUS_REQ_INTERRUPT = 7;
-parameter BUS_LEAVE_INTERRUPT = 8;
-parameter BUS_CONTROL0 = 9;
-parameter BUS_CONTROL1 = 10;
-parameter BUS_BACK_TO_IDLE = 11;
-parameter NUM_OF_BUS_STATE = 12;
+parameter BUS_CONTROL0 = 8;
+parameter BUS_CONTROL1 = 9;
+parameter BUS_BACK_TO_IDLE = 10;
+parameter NUM_OF_BUS_STATE = 11;
 
 wire [1:0] CONTROL_BITS = `CONTROL_SEQ;	// EOM?, ~ACK?
 
@@ -170,7 +169,7 @@ begin
 	begin
 		if (BUS_INT)
 		begin
-			bus_state <= BUS_LEAVE_INTERRUPT;
+			bus_state <= BUS_CONTROL0;
 			BUS_INT_RSTn <= 0;
 		end
 		else
@@ -445,15 +444,12 @@ begin
 		begin
 		end
 
-		BUS_LEAVE_INTERRUPT:
+		BUS_CONTROL0:
 		begin
 			next_bus_state = BUS_CONTROL0;
 			if ((mode==MODE_TX)&&(~req_interrupt))
 				next_tx_fail = 1;
-		end
 
-		BUS_CONTROL0:
-		begin
 			next_bus_state = BUS_CONTROL1;
 			next_ctrl_bit_buf = DIN;
 
@@ -532,7 +528,7 @@ begin
 	else
 	begin
 		if (req_interrupt & BUS_INT)
-			bus_state_neg <= BUS_LEAVE_INTERRUPT;
+			bus_state_neg <= BUS_CONTROL0;
 		else
 			bus_state_neg <= bus_state;
 

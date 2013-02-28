@@ -20,12 +20,11 @@ parameter BUS_PRIO = 2;
 parameter BUS_ACTIVE = 5;
 parameter BUS_INTERRUPT = 7;
 parameter BUS_SWITCH_ROLE = 6;
-parameter BUS_LEAVE_INTERRUPT = 8;
-parameter BUS_CONTROL0 = 9;
-parameter BUS_CONTROL1 = 10;
-parameter BUS_BACK_TO_IDLE = 11;
+parameter BUS_CONTROL0 = 8;
+parameter BUS_CONTROL1 = 9;
+parameter BUS_BACK_TO_IDLE = 10;
 
-parameter NUM_OF_BUS_STATE = 12;
+parameter NUM_OF_BUS_STATE = 11;
 parameter START_CYCLES = 10;
 parameter BUS_INTERRUPT_COUNTER = 6;
 
@@ -123,11 +122,6 @@ begin
 		end
 
 		BUS_SWITCH_ROLE:
-		begin
-			next_bus_state = BUS_LEAVE_INTERRUPT;
-		end
-
-		BUS_LEAVE_INTERRUPT:
 		begin
 			next_bus_state = BUS_CONTROL0;
 		end

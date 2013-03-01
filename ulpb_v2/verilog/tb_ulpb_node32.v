@@ -1,5 +1,5 @@
 
-`define SYNTH
+//`define SYNTH
 
 `ifdef SYNTH
 	`timescale 1ns/1ps

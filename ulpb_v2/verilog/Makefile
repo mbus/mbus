@@ -14,7 +14,7 @@
 #
 
 # added "SW_VCS=2011.03 and "-full64" option -- awdeorio fall 2011
-VCS = SW_VCS=2011.03 vcs +v2k +vc -Mupdate -line -full64
+VCS = SW_VCS=2011.03 vcs +v2k +vc -Mupdate -line -full64 -cm line+cond+fsm+tgl
 INTFLAGS = -I +memcbk
 
 all:    simv
@@ -31,7 +31,8 @@ SIMFILES = ulpb_node32.v ulpb_ctrl.v ulpb_swapper.v ulpb_ctrl_wrapper.v
 # Should be no need to modify after here
 #####
 simv:	$(SIMFILES) $(TESTBENCH)
-	$(VCS) $(TESTBENCH) $(SIMFILES)	-o simv -R | tee program.out
+	$(VCS) $(TESTBENCH) $(SIMFILES)	-o simv -cm line+cond+fsm+tgl -R | tee program.out
+	urg -dir simv.vdb -report ./REPORTS
 
 # updated interactive debugger "DVE", using the latest version of VCS
 # awdeorio fall 2011

@@ -59,6 +59,13 @@ parameter TASK15=15;
 parameter TASK16=16;
 parameter TASK17=17;
 parameter TASK18=18;
+parameter TASK19=19;
+parameter TASK20=20;
+parameter TASK21=21;
+parameter TASK22=22;
+parameter TASK23=23;
+parameter TASK24=24;
+parameter TASK25=25;
 
 parameter TX_WAIT=31;
 
@@ -258,6 +265,58 @@ begin
    	$fdisplay(handle, "TASK17, Correct result: N1 TX Success");
 		state = TASK17;
 	@ (posedge n1_tx_succ | n1_tx_fail)
+
+	#10000
+   	$fdisplay(handle, "TASK18, Correct result: N0 TX Success");
+		state = TASK18;
+	@ (posedge n0_tx_succ | n0_tx_fail)
+
+	#10000
+   	$fdisplay(handle, "TASK19, Correct result: N2 TX Success");
+		state = TASK19;
+	@ (posedge n2_tx_succ | n2_tx_fail)
+
+	#10000
+   	$fdisplay(handle, "TASK20, Correct result: N0 TX Success");
+		state = TASK20;
+	@ (posedge n0_tx_succ | n0_tx_fail)
+
+	#10000
+   	$fdisplay(handle, "TASK21, Correct result: N2 TX Success");
+		state = TASK21;
+	@ (posedge n2_tx_succ | n2_tx_fail)
+
+	#10000
+   	$fdisplay(handle, "TASK22, Correct result: N0 TX Fail");
+		word_counter = 7;
+		state = TASK22;
+		n1_auto_rx_ack = 0;
+	@ (posedge n0_tx_succ | n0_tx_fail)
+		n1_auto_rx_ack = 1;
+
+	#10000
+   	$fdisplay(handle, "TASK23, Correct result: N2 TX Fail");
+		word_counter = 7;
+		state = TASK23;
+		n1_auto_rx_ack = 0;
+	@ (posedge n2_tx_succ | n2_tx_fail)
+		n1_auto_rx_ack = 1;
+
+	#10000
+   	$fdisplay(handle, "TASK24, Correct result: N0 TX Fail");
+		word_counter = 1;
+		state = TASK24;
+		n1_auto_rx_ack = 0;
+	@ (posedge n0_tx_succ | n0_tx_fail)
+		n1_auto_rx_ack = 1;
+
+	#10000
+   	$fdisplay(handle, "TASK25, Correct result: N2 TX Fail");
+		word_counter = 1;
+		state = TASK25;
+		n1_auto_rx_ack = 0;
+	@ (posedge n2_tx_succ | n2_tx_fail)
+		n1_auto_rx_ack = 1;
 
 	#10000
 		$stop;
@@ -669,6 +728,174 @@ begin
 					n1_priority <= 1;
    					$fdisplay(handle, "N1 Data in =\t32'h%h", rand_dat);
 					state <= TX_WAIT;
+				end
+			end
+
+			// simple transmission
+			TASK18:
+			begin
+				if ((~n0_tx_ack) & (~n0_tx_req))
+				begin
+					n0_tx_addr <= 8'hcd;
+					n0_tx_data <= rand_dat;
+					n0_tx_pend <= 0;
+					n0_tx_req <= 1;
+   					$fdisplay(handle, "N0 Data in =\t32'h%h", rand_dat);
+					state <= TX_WAIT;
+				end
+			end
+
+			// simple transmission, RX above TX
+			TASK19:
+			begin
+				if ((~n2_tx_ack) & (~n2_tx_req))
+				begin
+					n2_tx_addr <= 8'hcd;
+					n2_tx_data <= rand_dat;
+					n2_tx_pend <= 0;
+					n2_tx_req <= 1;
+   					$fdisplay(handle, "N2 Data in =\t32'h%h", rand_dat);
+					state <= TX_WAIT;
+				end
+			end
+
+			// streaming down
+			TASK20:
+			begin
+				if ((~n0_tx_ack) & (~n0_tx_req))
+				begin
+					n0_tx_addr <= 8'hcd;
+					n0_tx_data <= rand_dat;
+					n0_tx_req <= 1;
+   					$fdisplay(handle, "N0 Data in =\t32'h%h", rand_dat);
+					if (word_counter)
+					begin
+						word_counter <= word_counter - 1;
+						n0_tx_pend <= 1;
+					end
+					else
+					begin
+						n0_tx_pend <= 0;
+						state <= TX_WAIT;
+					end
+				end
+			end
+
+			// streaming up 
+			TASK21:
+			begin
+				if ((~n2_tx_ack) & (~n2_tx_req))
+				begin
+					n2_tx_addr <= 8'hcd;
+					n2_tx_data <= rand_dat;
+					n2_tx_req <= 1;
+   					$fdisplay(handle, "N2 Data in =\t32'h%h", rand_dat);
+					if (word_counter)
+					begin
+						word_counter <= word_counter - 1;
+						n2_tx_pend <= 1;
+					end
+					else
+					begin
+						n2_tx_pend <= 0;
+						state <= TX_WAIT;
+					end
+				end
+			end
+
+			// RX buffer overflow, middle of transmission
+			TASK22:
+			begin
+				if ((~n0_tx_ack) & (~n0_tx_req))
+				begin
+					n0_tx_addr <= 8'hcd;
+					n0_tx_data <= rand_dat;
+					n0_tx_req <= 1;
+   					$fdisplay(handle, "N0 Data in =\t32'h%h", rand_dat);
+					if (word_counter)
+					begin
+						word_counter <= word_counter - 1;
+						n0_tx_pend <= 1;
+					end
+					else
+					begin
+						n0_tx_pend <= 0;
+						state <= TX_WAIT;
+					end
+				end
+				else if (n0_tx_fail)
+				begin
+					state <= TX_WAIT;
+					n0_tx_req <= 0;
+				end
+			end
+
+			TASK23:
+			begin
+				if ((~n2_tx_ack) & (~n2_tx_req))
+				begin
+					n2_tx_addr <= 8'hcd;
+					n2_tx_data <= rand_dat;
+					n2_tx_req <= 1;
+   					$fdisplay(handle, "N2 Data in =\t32'h%h", rand_dat);
+					if (word_counter)
+					begin
+						word_counter <= word_counter - 1;
+						n2_tx_pend <= 1;
+					end
+					else
+					begin
+						n2_tx_pend <= 0;
+						state <= TX_WAIT;
+					end
+				end
+				else if (n2_tx_fail)
+				begin
+					state <= TX_WAIT;
+					n2_tx_req <= 0;
+				end
+			end
+
+			// RX buffer overflow, last word
+			TASK24:
+			begin
+				if ((~n0_tx_ack) & (~n0_tx_req))
+				begin
+					n0_tx_addr <= 8'hcd;
+					n0_tx_data <= rand_dat;
+					n0_tx_req <= 1;
+   					$fdisplay(handle, "N0 Data in =\t32'h%h", rand_dat);
+					if (word_counter)
+					begin
+						word_counter <= word_counter - 1;
+						n0_tx_pend <= 1;
+					end
+					else
+					begin
+						n0_tx_pend <= 0;
+						state <= TX_WAIT;
+					end
+				end
+			end
+
+			TASK25:
+			begin
+				if ((~n2_tx_ack) & (~n2_tx_req))
+				begin
+					n2_tx_addr <= 8'hcd;
+					n2_tx_data <= rand_dat;
+					n2_tx_req <= 1;
+   					$fdisplay(handle, "N2 Data in =\t32'h%h", rand_dat);
+					if (word_counter)
+					begin
+						word_counter <= word_counter - 1;
+						n2_tx_pend <= 1;
+					end
+					else
+					begin
+						n2_tx_pend <= 0;
+						state <= TX_WAIT;
+					end
 				end
 			end
 		endcase

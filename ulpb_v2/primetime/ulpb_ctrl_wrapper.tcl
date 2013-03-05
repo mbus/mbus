@@ -29,7 +29,7 @@ update_power
 #create_power_waveforms -output foo -format out
 
 report_power -verbose -include_estimated_clock_network  > "${top_level}.power.rpt"
-report_power -clocks CLKIN  >> "${top_level}.power.rpt"
-report_power -cell -clocks CLKIN  >> "${top_level}.power.rpt"
+report_power -clocks CLK_EXT > "${top_level}.power.rpt"
+report_power -cell -clocks CLK_EXT > "${top_level}.power.rpt"
 
 #exit

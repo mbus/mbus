@@ -39,6 +39,7 @@ wire	w_n0_clk_out, w_n1_clk_out, w_n2_clk_out;
 reg		[31:0] rand_dat, rand_dat2;
 reg		[4:0] state;
 reg		[5:0] word_counter;
+reg		clk_en;
 integer	handle;
 
 parameter TASK0=0;
@@ -121,7 +122,6 @@ ulpb_ctrl_wrapper #(.CTRL_ADDRESS(8'h01), .NODE_ADDRESS(8'haa)) c0
 			.TX_SUCC(c0_tx_succ), .TX_FAIL(c0_tx_fail), .TX_RESP_ACK(c0_tx_resp_ack));
 `endif
 
-always #50 clk = ~clk;
 
 `define SD #1
 reg	n0_auto_rx_ack, n1_auto_rx_ack, n2_auto_rx_ack, c0_auto_rx_ack;
@@ -142,6 +142,7 @@ begin
 	n1_auto_rx_ack = 1;
 	n2_auto_rx_ack = 1;
 	c0_auto_rx_ack = 1;
+	clk_en = 1;
    	handle=$fopen("node_tb.txt");
 
 
@@ -154,172 +155,355 @@ begin
 		`SD resetn = 1;
 	@ (posedge clk)
 	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK0, Correct result: N1 TX Success");
 		state = TASK0;
 	@ (posedge n1_tx_succ | n1_tx_fail)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK1, Correct result: N1 TX Success");
 		word_counter = 7;
 		state = TASK1;
 	@ (posedge n1_tx_succ | n1_tx_fail)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK2, Correct result: N1 TX Success");
 		state = TASK2;
 	@ (posedge n1_tx_succ | n1_tx_fail)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK3, Correct result: N1 TX Success");
 		word_counter = 7;
 		state = TASK3;
 	@ (posedge n1_tx_succ | n1_tx_fail)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK4, Correct result: N1 TX Fail");
 		state = TASK4;
 	@ (posedge n1_tx_succ | n1_tx_fail)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK5, Correct result: N1 TX Fail");
 		word_counter = 7;
 		state = TASK5;
 	@ (posedge n1_tx_succ | n1_tx_fail)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK6, Correct result: N1 TX Fail");
 		word_counter = 7;
 		state = TASK6;
 	@ (posedge n1_tx_succ | n1_tx_fail)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK7, Correct result: N1 TX Fail");
 		word_counter = 7;
 		state = TASK7;
 		n2_auto_rx_ack = 0;
 	@ (posedge n1_tx_succ | n1_tx_fail)
 		n2_auto_rx_ack = 1;
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 		
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK8, Correct result: N1 TX Fail");
 		word_counter = 7;
 		state = TASK8;
 		n0_auto_rx_ack = 0;
 	@ (posedge n1_tx_succ | n1_tx_fail)
 		n0_auto_rx_ack = 1;
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK9, Correct result: N1 TX Fail");
 		word_counter = 1;
 		state = TASK9;
 		n2_auto_rx_ack = 0;
 	@ (posedge n1_tx_succ | n1_tx_fail)
 		n2_auto_rx_ack = 1;
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK10, Correct result: N1 TX Fail");
 		word_counter = 1;
 		state = TASK10;
 		n0_auto_rx_ack = 0;
 	@ (posedge n1_tx_succ | n1_tx_fail)
 		n0_auto_rx_ack = 1;
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK1l, Correct result: N0, N1 TX Success");
 		state = TASK11;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 	@ (posedge n1_tx_succ | n1_tx_fail)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK12, Correct result: N1, N0 TX Success");
 		state = TASK12;
 	@ (posedge n1_tx_succ | n1_tx_fail)
 	@ (posedge n0_tx_succ | n0_tx_fail)
 	n1_priority = 0;
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK13, Correct result: N0, N1 TX Success");
 		state = TASK13;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 	@ (posedge n1_tx_succ | n1_tx_fail)
 	n0_priority = 0;
 	n1_priority = 0;
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK14, Correct result: N0 TX Success");
 		state = TASK14;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 	n0_priority = 0;
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK15, Correct result: N0 TX Success, N1, N2, C0 Received");
 		state = TASK15;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 	n0_priority = 0;
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK16, Correct result: N1 TX Success");
 		state = TASK16;
 	@ (posedge n1_tx_succ | n1_tx_fail)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK17, Correct result: N1 TX Success");
 		state = TASK17;
 	@ (posedge n1_tx_succ | n1_tx_fail)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK18, Correct result: N0 TX Success");
 		state = TASK18;
 	@ (posedge n0_tx_succ | n0_tx_fail)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK19, Correct result: N2 TX Success");
 		state = TASK19;
 	@ (posedge n2_tx_succ | n2_tx_fail)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK20, Correct result: N0 TX Success");
 		state = TASK20;
 	@ (posedge n0_tx_succ | n0_tx_fail)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK21, Correct result: N2 TX Success");
 		state = TASK21;
 	@ (posedge n2_tx_succ | n2_tx_fail)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK22, Correct result: N0 TX Fail");
 		word_counter = 7;
 		state = TASK22;
 		n1_auto_rx_ack = 0;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 		n1_auto_rx_ack = 1;
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK23, Correct result: N2 TX Fail");
 		word_counter = 7;
 		state = TASK23;
 		n1_auto_rx_ack = 0;
 	@ (posedge n2_tx_succ | n2_tx_fail)
 		n1_auto_rx_ack = 1;
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK24, Correct result: N0 TX Fail");
 		word_counter = 1;
 		state = TASK24;
 		n1_auto_rx_ack = 0;
 	@ (posedge n0_tx_succ | n0_tx_fail)
 		n1_auto_rx_ack = 1;
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
+	clk_en = 1;
    	$fdisplay(handle, "TASK25, Correct result: N2 TX Fail");
 		word_counter = 1;
 		state = TASK25;
 		n1_auto_rx_ack = 0;
 	@ (posedge n2_tx_succ | n2_tx_fail)
 		n1_auto_rx_ack = 1;
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	@ (posedge clk)
+	clk_en = 0;
 
 	#10000
 	  $display("done");
@@ -1081,5 +1265,6 @@ begin
 	end
 end
 
+always #50 if (clk_en) clk = ~clk; else clk = 1;
 
 endmodule

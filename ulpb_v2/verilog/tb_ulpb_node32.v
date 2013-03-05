@@ -1,5 +1,5 @@
 
-//`define SYNTH
+`define SYNTH
 
 `ifdef SYNTH
 	`timescale 1ns/1ps
@@ -128,6 +128,8 @@ reg	n0_auto_rx_ack, n1_auto_rx_ack, n2_auto_rx_ack, c0_auto_rx_ack;
 
 initial
 begin
+	$dumpvars;
+	$dumpfile("test.vpd");
 	`ifdef SYNTH
 		$sdf_annotate("ulpb_ctrl_wrapper.dc.sdf", c0);
 		$sdf_annotate("ulpb_node32_ab.dc.sdf", n0);

@@ -31,4 +31,5 @@ clean:
 	rm -f *.log; rm -f *.rpt; rm -f *.nl.v; rm -f *.sdf; rm -f *.svf; rm -f *.key; rm -rf INCA_libs; rm -rf *.log; rm -rf waves.shm; rm -rf .nclaunch*; rm -rf .simvision*;
 	rm -f *.pvl *.syn *.mr
 	rm -f ../netlist/*.nl.v ../netlist/*.dc.sdf
+	rm -rf alib*
 	cd ../netlist; make clean

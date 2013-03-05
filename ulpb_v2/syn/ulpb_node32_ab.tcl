@@ -34,6 +34,8 @@ write -hierarchy -format verilog -output "${current_design}.nl.v"
 
 # Generate Standard Delay Format (SDF) file
 write_sdf -context verilog "${current_design}.dc.sdf"
+#Write SDC file
+write_sdc "${current_design}.sdc"
 
 # Generate report file
 set maxpaths 20
@@ -42,6 +44,7 @@ set rpt_file "${current_design}.dc.rpt"
 check_design > $rpt_file
 report_area  >> ${rpt_file}
 report_power -hier -analysis_effort medium >> ${rpt_file}
+report_power -verbose >> ${rpt_file}
 report_design >> ${rpt_file}
 report_cell >> ${rpt_file}
 report_port -verbose >> ${rpt_file}

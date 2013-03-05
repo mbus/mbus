@@ -2,7 +2,7 @@
 source -verbose "./common.tcl"
 
 # Set top level name
-set top_level "ulpb_node32_ab"
+set top_level "ulpb_ctrl_wrapper"
 
 # Read verilog files
 read_verilog ../netlist/${top_level}.nl.v
@@ -18,7 +18,7 @@ set power_enable_analysis true
 set power_ui_backward_compatibility true
 
 #read_vcd -time {0 20 50 -1} ../waves.vcd
-read_vcd ../netlist/tb_ulpb_node32.vcd -strip_path tb_ulpb_node32/n0/
+read_vcd ../netlist/tb_ulpb_node32.vcd -strip_path tb_ulpb_node32/c0/
 
 update_power
 

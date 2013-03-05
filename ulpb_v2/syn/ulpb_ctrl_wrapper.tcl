@@ -35,6 +35,8 @@ write -hierarchy -format verilog -output "${current_design}.nl.v"
 
 # Generate Standard Delay Format (SDF) file
 write_sdf -context verilog "${top_level}.dc.sdf"
+#Write SDC file
+write_sdc "${current_design}.sdc"
 
 # Generate report file
 set maxpaths 20
@@ -53,4 +55,4 @@ report_constraint -all_violators -verbose >> ${rpt_file}
 report_timing -path full -delay max -max_paths $maxpaths -nworst 100 >> ${rpt_file}
 
 #Exit dc_shell
-#quit
+quit

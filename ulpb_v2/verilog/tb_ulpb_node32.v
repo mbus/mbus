@@ -121,15 +121,15 @@ ulpb_ctrl_wrapper #(.CTRL_ADDRESS(8'h01), .NODE_ADDRESS(8'haa)) c0
 			.TX_SUCC(c0_tx_succ), .TX_FAIL(c0_tx_fail), .TX_RESP_ACK(c0_tx_resp_ack));
 `endif
 
-always #400 clk = ~clk;
+always #50 clk = ~clk;
 
 `define SD #1
 reg	n0_auto_rx_ack, n1_auto_rx_ack, n2_auto_rx_ack, c0_auto_rx_ack;
 
 initial
 begin
-	$dumpvars;
-	$dumpfile("test.vpd");
+	$dumpfile("tb_ulpb_node32.vcd");
+	$dumpvars(0, tb_ulpb_node32);
 	`ifdef SYNTH
 		$sdf_annotate("ulpb_ctrl_wrapper.dc.sdf", c0);
 		$sdf_annotate("ulpb_node32_ab.dc.sdf", n0);
@@ -322,7 +322,9 @@ begin
 		n1_auto_rx_ack = 1;
 
 	#10000
-		$stop;
+	  $display("done");
+//   $stop;
+   $finish;
 end
 
 always @ (posedge clk or negedge resetn)

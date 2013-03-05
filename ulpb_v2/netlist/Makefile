@@ -46,7 +46,7 @@ clean:
 	  syn_simv syn_simv.daidir syn_program.out \
 	  int_simv int_simv.daidir syn_int_simv syn_int_simv.daidir \
 	  DVEfiles\
-          dve *.vpd *.vcd *.dump ucli.key *.txt vcs.prof
+          dve *.vpd *.vcd *.dump ucli.key *.txt vcs.prof .restart* .synopsys* .saveDVE*
 
 nuke:	clean
 	rm -rvf *.vg *.rep *.db *.chk *.log *.out DVEfiles/

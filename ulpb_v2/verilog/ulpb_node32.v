@@ -41,8 +41,9 @@
  * i.e. ADDRESS_MASK = 8'hf0, compare only upper 4-bit of address (from MSB)
  * 
  *
- * Last modified date: 2/27 '13
+ * Last modified date: 03/04 '13
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
+ * Last modified content: Adding RX_FAIL to signal Layer Controller
  * */
 
 `include "include/ulpb_def.v"
@@ -63,6 +64,7 @@ module ulpb_node32(
 	output reg [`DATA_WIDTH-1:0] RX_DATA, 
 	output reg RX_REQ, 
 	input RX_ACK, 
+	output reg RX_FAIL,
 	output reg RX_PEND, 
 	output reg TX_FAIL, 
 	output reg TX_SUCC, 
@@ -118,6 +120,7 @@ reg		ctrl_bit_buf, next_ctrl_bit_buf;
 reg		[`ADDR_WIDTH-1:0] next_rx_addr;
 reg		[`DATA_WIDTH-1:0] next_rx_data; 
 reg		[`DATA_WIDTH+1:0] rx_data_buf, next_rx_data_buf;
+reg		next_rx_fail;
 
 // interrupt register
 reg		BUS_INT_RSTn;
@@ -220,6 +223,7 @@ begin
 		TX_ACK <= 0;
 		RX_REQ <= 0;
 		RX_PEND <= 0;
+		RX_FAIL <= 0;
 	end
 	else
 	begin
@@ -234,6 +238,7 @@ begin
 			RX_DATA <= next_rx_data;
 			RX_REQ <= next_rx_req;
 			RX_PEND <= next_rx_pend;
+			RX_FAIL <= next_rx_fail;
 		end
 		req_interrupt <= next_req_interrupt;
 		out_reg_pos <= next_out_reg_pos;
@@ -267,6 +272,7 @@ begin
 	// Receiver register
 	next_rx_addr = RX_ADDR;
 	next_rx_data = RX_DATA;
+	next_rx_fail = RX_FAIL;
 	next_rx_data_buf = rx_data_buf;
 
 	// Interface registers
@@ -284,6 +290,11 @@ begin
 	begin
 		next_rx_req = 0;
 		next_rx_pend = 0;
+	end
+
+	if (RX_FAIL & RX_ACK)
+	begin
+		next_rx_fail = 0;
 	end
 
 	case (bus_state)
@@ -418,6 +429,7 @@ begin
 							// RX overflow
 							next_bus_state = BUS_REQ_INTERRUPT;
 							next_req_interrupt = 1;
+							next_rx_fail = 1;
 						end
 						else
 						begin
@@ -470,7 +482,10 @@ begin
 						begin
 							// RX overflow
 							if (RX_REQ)
+							begin
 								next_out_reg_pos = ~CONTROL_BITS[0];
+								next_rx_fail = 1;
+							end
 							else
 							begin
 								next_out_reg_pos = CONTROL_BITS[0];
@@ -483,7 +498,10 @@ begin
 							end
 						end
 						else
+						begin
 							next_out_reg_pos = ~CONTROL_BITS[0];
+							next_rx_fail = 1;
+						end
 					end
 					else
 						next_out_reg_pos = ~CONTROL_BITS[0];

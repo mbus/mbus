@@ -10,3 +10,6 @@ set target_library "typical.db"
 
 # set_dont_use any *XL* cell
 #set_dont_use { typical/*XLTR }
+
+#Warning Suppression
+suppress_message UID-401

@@ -31,4 +31,3 @@ set_wire_load_mode "segmented"
 set typical_input_delay 0.100
 set typical_output_delay 0.100
 set typical_wire_load 0.010 
-set typical_pad_load 2

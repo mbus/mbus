@@ -14,12 +14,12 @@ synth_node:
 	dc_shell -f ${ULPB_ab}.tcl |tee ${ULPB_ab}.dc.log
 	-perl ${POST_SDF} -s ${ULPB_ab}.dc.sdf -o ../netlist/${ULPB_ab}.dc.sdf
 	mv *.nl.v ../netlist
-	dc_shell -f ${ULPB_cd}.tcl |tee ${ULPB_cd}.dc.log
-	-perl ${POST_SDF} -s ${ULPB_cd}.dc.sdf -o ../netlist/${ULPB_cd}.dc.sdf
-	mv *.nl.v ../netlist
-	dc_shell -f ${ULPB_ef}.tcl |tee ${ULPB_ef}.dc.log
-	-perl ${POST_SDF} -s ${ULPB_ef}.dc.sdf -o ../netlist/${ULPB_ef}.dc.sdf
-	mv *.nl.v ../netlist
+# 	dc_shell -f ${ULPB_cd}.tcl |tee ${ULPB_cd}.dc.log
+# 	-perl ${POST_SDF} -s ${ULPB_cd}.dc.sdf -o ../netlist/${ULPB_cd}.dc.sdf
+# 	mv *.nl.v ../netlist
+# 	dc_shell -f ${ULPB_ef}.tcl |tee ${ULPB_ef}.dc.log
+# 	-perl ${POST_SDF} -s ${ULPB_ef}.dc.sdf -o ../netlist/${ULPB_ef}.dc.sdf
+# 	mv *.nl.v ../netlist
 
 
 synth_ctrl:

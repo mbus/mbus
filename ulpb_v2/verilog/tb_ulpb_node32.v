@@ -128,8 +128,10 @@ reg	n0_auto_rx_ack, n1_auto_rx_ack, n2_auto_rx_ack, c0_auto_rx_ack;
 
 initial
 begin
+/* -----\/----- EXCLUDED -----\/-----
 	$dumpfile("tb_ulpb_node32.vcd");
 	$dumpvars(0, tb_ulpb_node32);
+ -----/\----- EXCLUDED -----/\----- */
 	`ifdef SYNTH
 		$sdf_annotate("ulpb_ctrl_wrapper.dc.sdf", c0);
 		$sdf_annotate("ulpb_node32_ab.dc.sdf", n0);

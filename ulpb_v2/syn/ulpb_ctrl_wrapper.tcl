@@ -43,16 +43,20 @@ set maxpaths 20
 set rpt_file "${current_design}.dc.rpt"
 
 check_design > $rpt_file
-report_area  >> ${rpt_file}
+#report_area  >> ${rpt_file}
 report_power -hier -analysis_effort medium >> ${rpt_file}
 report_power -verbose >> ${rpt_file}
 report_power -net -include_input_power
 report_design >> ${rpt_file}
-report_cell >> ${rpt_file}
+#report_cell >> ${rpt_file}
 report_port -verbose >> ${rpt_file}
 report_compile_options >> ${rpt_file}
 report_constraint -all_violators -verbose >> ${rpt_file}
 report_timing -path full -delay max -max_paths $maxpaths -nworst 100 >> ${rpt_file}
+#Ungroup Hierarchy and report area & cell
+ungroup -all
+report_area  >> ${rpt_file}
+report_cell >> ${rpt_file}
 
 #Exit dc_shell
-quit
+#quit

@@ -41,9 +41,11 @@
  * i.e. ADDRESS_MASK = 8'hf0, compare only upper 4-bit of address (from MSB)
  * 
  *
- * Last modified date: 03/04 '13
+ * Last modified date: 03/06 '13
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
- * Last modified content: Adding RX_FAIL to signal Layer Controller
+ * Last modified content: switch clock mux to posedge edge trigger, clock
+ * holds at high if a node request interrupt, bypass clock once interrupt
+ * occurred
  * */
 
 `include "include/ulpb_def.v"
@@ -124,7 +126,7 @@ reg		next_rx_fail;
 
 // interrupt register
 reg		BUS_INT_RSTn;
-wire	BUS_INT_STATE, BUS_INT;
+wire	BUS_INT;
 
 // interface registers
 reg		next_tx_ack;
@@ -491,10 +493,10 @@ begin
 								next_out_reg_pos = CONTROL_BITS[0];
 								next_rx_req = 1;
 								next_rx_pend = 0;
-								if (BUS_INT_STATE)
-									next_rx_data = rx_data_buf[`DATA_WIDTH+1:2];
-								else
+								if (bit_position==1)
 									next_rx_data = rx_data_buf[`DATA_WIDTH-1:0];
+								else
+									next_rx_data = rx_data_buf[`DATA_WIDTH+1:2];
 							end
 						end
 						else
@@ -656,10 +658,10 @@ end
 
 always @ *
 begin
-	if (bus_state_neg==BUS_REQ_INTERRUPT)
-		CLKOUT = 0;
-	else
-		CLKOUT = CLKIN;
+	// forward clock once interrupt occurred
+	CLKOUT = CLKIN;
+	if ((bus_state==BUS_REQ_INTERRUPT)&&(~BUS_INT))
+		CLKOUT = 1;
 end
 
 ulpb_swapper swapper0(
@@ -669,8 +671,7 @@ ulpb_swapper swapper0(
     .DATA(DIN),
     .INT_FLAG_RESETn(BUS_INT_RSTn),
    	//Outputs
-    .INT(),
-    .LAST_CLK(BUS_INT_STATE),
+    .LAST_CLK(),
     .INT_FLAG(BUS_INT));
 
 endmodule

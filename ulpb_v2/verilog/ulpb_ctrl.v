@@ -1,4 +1,9 @@
 
+/*
+ * Last modified date: 03/06 '13
+ * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
+ * Last modified content: sample CLKIN at posedge,
+ * */
 `include "include/ulpb_def.v"
 
 module ulpb_ctrl(
@@ -33,7 +38,7 @@ reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state, bus_state_neg;
 reg		clk_en, next_clk_en;
 reg		[log2(BUS_INTERRUPT_COUNTER-1)-1:0] bus_interrupt_cnt, next_bus_interrupt_cnt;
 
-reg		clkin_sampled_neg; 
+reg		clkin_sampled; 
 reg		[2:0] din_sampled_neg, din_sampled_pos;
 
 assign CLKOUT = (clk_en)? CLK_EXT : 1'b1;
@@ -99,7 +104,7 @@ begin
 
 		BUS_ACTIVE:
 		begin
-			if (~clkin_sampled_neg)
+			if (clkin_sampled)
 			begin
 				next_clk_en = 0;
 				next_bus_state = BUS_INTERRUPT;
@@ -156,13 +161,11 @@ always @ (negedge CLK_EXT or negedge RESETn)
 begin
 	if (~RESETn)
 	begin
-		clkin_sampled_neg <= 0;
 		din_sampled_neg <= 0;
 		bus_state_neg <= BUS_IDLE;
 	end
 	else
 	begin
-		clkin_sampled_neg <= CLKIN;
 		if (bus_state==BUS_INTERRUPT)
 			din_sampled_neg <= {din_sampled_neg[1:0], DIN};
 		bus_state_neg <= bus_state;
@@ -174,11 +177,13 @@ begin
 	if (~RESETn)
 	begin
 		din_sampled_pos <= 0;
+		clkin_sampled <= 0;
 	end
 	else
 	begin
 		if (bus_state==BUS_INTERRUPT)
 			din_sampled_pos <= {din_sampled_pos[1:0], DIN};
+		clkin_sampled <= CLKIN;
 	end
 end
 

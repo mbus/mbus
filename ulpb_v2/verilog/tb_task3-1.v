@@ -1,5 +1,5 @@
 
-//`define SYNTH
+`define SYNTH
 //`define APR
 
 `ifdef SYNTH

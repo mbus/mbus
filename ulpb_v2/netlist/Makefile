@@ -27,6 +27,10 @@ all:    simv
 #####
 
 TESTBENCH = tb_ulpb_node32.v
+TASK1_TB = ../verilog/tb_task1.v
+TASK2_TB = ../verilog/tb_task2.v
+TASK3_1_TB = ../verilog/tb_task3-1.v
+TASK3_2_TB = ../verilog/tb_task3-2.v
 SYNFILES = ulpb_node32_ab.nl.v ulpb_node32_cd.nl.v ulpb_node32_ef.nl.v ulpb_ctrl_wrapper.nl.v
 APRFILES = 	../apr/ulpb_node32_ab/ulpb_node32_ab.apr.v \
 		../apr/ulpb_node32_cd/ulpb_node32_cd.apr.v \
@@ -47,6 +51,13 @@ syn_simv:	$(SYNFILES) $(TESTBENCH)
 
 syn_dve:	$(SYNFILES) $(TESTBENCH)
 	$(VCS) +memcbk $(TESTBENCH) $(SYNFILES) -o dve -R -gui
+
+syn_vcd: $(SYNFILES) $(TASK1_TB) $(TASK2_TB) $(TASK3_1_TB) $(TASK3_2_TB)
+	$(VCS) $(VFLAGSnl) $(TASK1_TB) $(SYNFILES) -o syn_simv -R | tee syn_program.out 
+	$(VCS) $(VFLAGSnl) $(TASK2_TB) $(SYNFILES) -o syn_simv -R | tee syn_program.out 
+	$(VCS) $(VFLAGSnl) $(TASK3_1_TB) $(SYNFILES) -o syn_simv -R | tee syn_program.out 
+	$(VCS) $(VFLAGSnl) $(TASK3_2_TB) $(SYNFILES) -o syn_simv -R | tee syn_program.out 
+
 
 clean:
 	rm -rvf simv *.daidir csrc vcs.key program.out \

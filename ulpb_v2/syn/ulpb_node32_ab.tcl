@@ -23,7 +23,8 @@ source -verbose "ulpb_node_common_settings.tcl"
 
 # Synthesize the design
 #compile -map_effort medium
-compile_ultra
+compile_ultra 
+#compile_ultra -gate_clock
 
 # Rename modules, signals according to the naming rules
 # Used for tool exchange
@@ -41,4 +42,4 @@ write_sdc "${current_design}.sdc"
 source -verbose "common_report.tcl"
 
 #Exit dc_shell
-#quit
+quit

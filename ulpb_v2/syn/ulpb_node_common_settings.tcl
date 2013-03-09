@@ -22,7 +22,7 @@ set_load $typical_wire_load [all_outputs]
 set_load 2 {DOUT CLKOUT}
 
 # Set clock
-set_ideal_network $clk_name 
+# set_ideal_network $clk_name 
 
 # Verify the design
 check_design

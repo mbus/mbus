@@ -1,7 +1,7 @@
 # Timing setup for synthesis
 
 # Clock period
-set clk_period 18
+set clk_period 2500
 set clk_uncertainty 1
 set clk_transition 1
 

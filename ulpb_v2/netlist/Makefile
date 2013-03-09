@@ -28,12 +28,19 @@ all:    simv
 
 TESTBENCH = tb_ulpb_node32.v
 SYNFILES = ulpb_node32_ab.nl.v ulpb_node32_cd.nl.v ulpb_node32_ef.nl.v ulpb_ctrl_wrapper.nl.v
+APRFILES = 	../apr/ulpb_node32_ab/ulpb_node32_ab.apr.v \
+		../apr/ulpb_node32_cd/ulpb_node32_cd.apr.v \
+		../apr/ulpb_node32_ef/ulpb_node32_ef.apr.v \
+		../apr/ulpb_ctrl_wrapper/ulpb_ctrl_wrapper.apr.v
 
 #two_bit_pred.vg:	tut_mod.v tut_synth.tcl
 #	dc_shell-t -f tut_synth.tcl | tee synth.out
 
 
-.PHONY: dve syn_simv
+.PHONY: dve syn_simv apr_simv
+
+apr_simv:	$(APRFILES) $(TESTBENCH)
+	$(VCS) $(VFLAGSnl) $(TESTBENCH) $(APRFILES) -o apr_simv -R | tee apr_program.out 
 
 syn_simv:	$(SYNFILES) $(TESTBENCH)
 	$(VCS) $(VFLAGSnl) $(TESTBENCH) $(SYNFILES) -o syn_simv -R | tee syn_program.out 

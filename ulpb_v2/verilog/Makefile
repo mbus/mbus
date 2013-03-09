@@ -23,7 +23,11 @@ all:    simv
 # Modify starting here
 #####
 
-TESTBENCH = tb_ulpb_node32.v
+#TESTBENCH = tb_task1.v
+#TESTBENCH = tb_task2.v
+#TESTBENCH = tb_task3-1.v
+TESTBENCH = tb_task3-2.v
+#TESTBENCH = tb_ulpb_node32.v
 SIMFILES = ulpb_node32.v ulpb_ctrl.v ulpb_swapper.v ulpb_ctrl_wrapper.v
 
 

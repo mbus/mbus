@@ -161,7 +161,7 @@ begin
 	@ (posedge clk)
 	@ (posedge clk)
 
-   #10000;
+   #500000;
    $display("done");
 //   $stop;
    $finish;

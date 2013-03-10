@@ -1,6 +1,7 @@
 
 //`define SYNTH
-`define APR
+
+//`define APR
 
 `ifdef SYNTH
 	`timescale 1ns/1ps
@@ -939,7 +940,7 @@ begin
 				end
 			end
 
-			// control test, rx_req should not assert
+			// control test 
 			TASK17:
 			begin
 				if ((~n1_tx_ack) & (~n1_tx_req))

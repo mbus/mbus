@@ -212,7 +212,7 @@ end // initial begin
       `include "task2.v"
 `elsif TASK3_1
       `include "task3_1.v"
-`elsif TASK3_1
+`elsif TASK3_2
       `include "task3_2.v"
 `endif
 

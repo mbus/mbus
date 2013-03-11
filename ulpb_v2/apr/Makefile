@@ -10,4 +10,4 @@ apr:
 
 clean:
 	rm -rf */*enc*; rm -rf */timingReports
-	rm -f */*.spf; rm -f */*.spef; rm -f */*.lef; rm -f */*.gds; rm -f */*.apr*; rm -f */*.rpt; rm -f */*cts*; rm -rf */*rcdb*; rm -f */*.old;
+	rm -f */*.spf; rm -f */*.spef; rm -f */*.lef; rm -f */*.gds; rm -f */*.apr*; rm -f */*.rpt; rm -f */*cts*; rm -rf */*rcdb*; rm -f */*.old; rm -f */*.sdc;

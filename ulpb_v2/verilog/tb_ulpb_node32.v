@@ -1,6 +1,6 @@
 `define SD #1
 
-`ifdef SYNTH
+`ifdef SYN
 	`timescale 1ns/1ps
 	`include "/afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/verilog/tsmc18_neg.v"
 `elsif APR
@@ -75,7 +75,7 @@ module tb_ulpb_node32();
 
    reg 			  n0_auto_rx_ack, n1_auto_rx_ack, n2_auto_rx_ack, c0_auto_rx_ack;
    
-`ifdef SYNTH
+`ifdef SYN
    ulpb_node32_ab n0
      (.CLKIN(SCLK), .CLKOUT(w_n0_clk_out), .RESETn(resetn), .DIN(w_c0n0), .DOUT(w_n0n1), 
       .TX_ADDR(n0_tx_addr), .TX_DATA(n0_tx_data),	.TX_REQ(n0_tx_req), .TX_ACK(n0_tx_ack), .TX_PEND(n0_tx_pend), .PRIORITY(n0_priority),
@@ -151,21 +151,23 @@ module tb_ulpb_node32();
 
    initial begin
       //VCD DUMP SECTION
-`ifdef TASK1
-      $dumpfile("tb_task1.vcd");
-`elsif TASK2
-      $dumpfile("tb_task2.vcd");
-`elsif TASK3_1
-      $dumpfile("tb_task3_1.vcd");
-`elsif TASK3_2
-      $dumpfile("tb_task3_2.vcd");
-`else
-      $dumpfile("tb_ulpb_node32.vcd");
+`ifdef APR
+   `ifdef TASK0
+      $dumpfile("task0.vcd");
+   `elsif TASK1
+      $dumpfile("task1.vcd");
+   `elsif TASK2
+      $dumpfile("task2.vcd");
+   `elsif TASK3_1
+      $dumpfile("task3_1.vcd");
+   `elsif TASK3_2
+      $dumpfile("task3_2.vcd");
+   `endif
+   $dumpvars(0, tb_ulpb_node32);
 `endif
-      $dumpvars(0, tb_ulpb_node32);
       
       //SDF ANNOTATION
- `ifdef SYNTH
+ `ifdef SYN
       $sdf_annotate("ulpb_ctrl_wrapper.dc.sdf", c0);
       $sdf_annotate("ulpb_node32_ab.dc.sdf", n0);
       $sdf_annotate("ulpb_node32_cd.dc.sdf", n1);
@@ -181,22 +183,24 @@ module tb_ulpb_node32();
       //TESTBENCH BEGINS
       //Calls Tasks from tasks.v
       //***********************
-      
-`ifdef TASK1
+
+`ifdef TASK0
+      task0();
+`elsif TASK1
       task1();
 `elsif TASK2
       task2();
 `elsif TASK3_1
       task3_1();
-`elsif TASK3_1
+`elsif TASK3_2
       task3_2();
-`else
-      task0();
 `endif
    
 end // initial begin
    
-`ifdef TASK1
+`ifdef TASK0
+      `include "task0.v"
+`elsif TASK1
       `include "task1.v"
 `elsif TASK2
       `include "task2.v"
@@ -204,8 +208,6 @@ end // initial begin
       `include "task3_1.v"
 `elsif TASK3_1
       `include "task3_2.v"
-`else
-      `include "task0.v"
 `endif
 
   always @ (posedge clk or negedge resetn) begin

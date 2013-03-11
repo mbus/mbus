@@ -1,8 +1,0 @@
-################################################
-#                                              #
-# Silicon Perspective, A Cadence Company       #
-# FirstEncounter Design Restore script         #
-#    for design session: ulpb_node32_ab.power.enc                     
-#                                              #
-################################################
-restoreDesign ulpb_node32_ab.power.enc.dat ulpb_node32_ab

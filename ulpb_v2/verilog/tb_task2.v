@@ -1,6 +1,6 @@
 
-`define SYNTH
-//`define APR
+//`define SYNTH
+`define APR
 
 `ifdef SYNTH
 	`timescale 1ns/1ps

@@ -21,8 +21,11 @@ read_sdf ../apr/${top_level}/${top_level}.apr.sdf
 set power_enable_analysis true
 set power_ui_backward_compatibility true
 
-#read_vcd -time {0 20 50 -1} ../waves.vcd
-read_vcd ../netlist/tb_ulpb_node32.vcd -strip_path tb_ulpb_node32/c0/
+#read_vcd ../netlist/tb_ulpb_node32.vcd -strip_path tb_ulpb_node32/c0/
+#read_vcd ../netlist/tb_task1.vcd -strip_path tb_ulpb_node32/c0/
+#read_vcd ../netlist/tb_task2.vcd -strip_path tb_ulpb_node32/c0/
+#read_vcd ../netlist/tb_task3-1.vcd -strip_path tb_ulpb_node32/c0/
+read_vcd ../netlist/tb_task3-2.vcd -strip_path tb_ulpb_node32/c0/
 update_power
 
 #Reporting
@@ -47,4 +50,4 @@ estimate_clock_network_power typical/BUFX2
 update_power
 report_power -include_boundary_nets -include_estimated_clock_network >> "${top_level}.power.rpt"
 
-#exit
+exit

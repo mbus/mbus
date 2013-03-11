@@ -14,14 +14,19 @@ current_design $top_level
 # Set clock names, ports
 #read_sdc ../syn/${top_level}.sdc
 #read_sdf ../syn/${top_level}.dc.sdf
+read_parasitic -pin_cap_included ../apr/${top_level}/${top_level}.spef
 read_sdc ../apr/${top_level}/${top_level}.sdc
-read_sdf ../apr/${top_level}/${top_level}.dc.sdf
+read_sdf ../apr/${top_level}/${top_level}.apr.sdf
 
 set power_enable_analysis true
 set power_ui_backward_compatibility true
 
 #read_vcd -time {0 20 50 -1} ../waves.vcd
-read_vcd ../netlist/tb_ulpb_node32.vcd -strip_path tb_ulpb_node32/n2/
+#read_vcd ../netlist/tb_ulpb_node32.vcd -strip_path tb_ulpb_node32/n2/
+#read_vcd ../netlist/tb_task1.vcd -strip_path tb_ulpb_node32/n2/
+#read_vcd ../netlist/tb_task2.vcd -strip_path tb_ulpb_node32/n2/
+#read_vcd ../netlist/tb_task3-1.vcd -strip_path tb_ulpb_node32/n2/
+read_vcd ../netlist/tb_task3-2.vcd -strip_path tb_ulpb_node32/n2/
 
 update_power
 

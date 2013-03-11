@@ -35,7 +35,7 @@ source -verbose "namingrules.tcl"
 write -hierarchy -format verilog -output "${current_design}.nl.v"
 
 # Generate Standard Delay Format (SDF) file
-write_sdf -context verilog "${top_level}.dc.sdf"
+write_sdf -context verilog "${top_level}.pt.sdf"
 #Write SDC file
 write_sdc "${current_design}.sdc"
 

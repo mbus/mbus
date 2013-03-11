@@ -1,1 +1,0 @@
-../verilog/tb_ulpb_node32.v

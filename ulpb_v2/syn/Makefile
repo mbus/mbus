@@ -12,20 +12,15 @@ synth:
 
 synth_node:
 	dc_shell -f ${ULPB_ab}.tcl |tee ${ULPB_ab}.dc.log
-	-perl ${POST_SDF} -s ${ULPB_ab}.dc.sdf -o ../netlist/${ULPB_ab}.dc.sdf
-	mv *.nl.v ../netlist
+	-perl ${POST_SDF} -s ${ULPB_ab}.pt.sdf -o ${ULPB_ab}.dc.sdf
 	dc_shell -f ${ULPB_cd}.tcl |tee ${ULPB_cd}.dc.log
-	-perl ${POST_SDF} -s ${ULPB_cd}.dc.sdf -o ../netlist/${ULPB_cd}.dc.sdf
-	mv *.nl.v ../netlist
+	-perl ${POST_SDF} -s ${ULPB_cd}.pt.sdf -o ${ULPB_cd}.dc.sdf
 	dc_shell -f ${ULPB_ef}.tcl |tee ${ULPB_ef}.dc.log
-	-perl ${POST_SDF} -s ${ULPB_ef}.dc.sdf -o ../netlist/${ULPB_ef}.dc.sdf
-	mv *.nl.v ../netlist
-
+	-perl ${POST_SDF} -s ${ULPB_ef}.pt.sdf -o ${ULPB_ef}.dc.sdf
 
 synth_ctrl:
 	dc_shell -f ${CTRL}.tcl |tee ${CTRL}.dc.log
-	-perl ${POST_SDF} -s ${CTRL}.dc.sdf -o ../netlist/${CTRL}.dc.sdf
-	mv *.nl.v ../netlist
+	-perl ${POST_SDF} -s ${CTRL}.pt.sdf -o ${CTRL}.dc.sdf
 
 clean:
 	rm -f *.log; rm -f *.rpt; rm -f *.nl.v; rm -f *.sdf; rm -f *.svf; rm -f *.key; rm -rf INCA_libs; rm -rf *.log; rm -rf waves.shm; rm -rf .nclaunch*; rm -rf .simvision*;

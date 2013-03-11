@@ -1,3 +1,6 @@
+//****************************************
+//Task 0 testbench: Comprehensive testbench
+//****************************************
 task task0;
    begin
       clk = 0;
@@ -70,7 +73,7 @@ task task0;
       @ (posedge clk);
       clk_en = 0;
 
-      #10000;			// 
+      #10000;
       clk_en = 1;
       $fdisplay(handle, "TASK4, Correct result: N1 TX Fail");
       state = TASK4;
@@ -376,6 +379,9 @@ task task0;
    end
 endtask // task0
 
+//****************************************
+//Task 1: Only CLK_EXT is being toggled
+//****************************************
 task task1;
    begin
       clk = 0;
@@ -403,6 +409,9 @@ task task1;
    end
 endtask // task1
 
+//****************************************
+//Task 2: ctrl_wrapper transmits word to node_ab
+//****************************************
 task task2;
    begin
       clk = 0;
@@ -438,6 +447,9 @@ task task2;
    end
 endtask // task2
 
+//****************************************
+//Task 3_1: node_cd transmit word to node_ef
+//****************************************
 task task3_1;
    begin
       clk = 0;
@@ -473,6 +485,9 @@ task task3_1;
    end
 endtask // task3_1
 
+//****************************************
+//Task 3_1: node_cd transmit 256 words to node_ef
+//****************************************
 task task3_2;
    begin
       clk = 0;

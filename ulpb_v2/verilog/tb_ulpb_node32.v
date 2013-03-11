@@ -168,10 +168,10 @@ module tb_ulpb_node32();
       
       //SDF ANNOTATION
  `ifdef SYN
-      $sdf_annotate("ulpb_ctrl_wrapper.dc.sdf", c0);
-      $sdf_annotate("ulpb_node32_ab.dc.sdf", n0);
-      $sdf_annotate("ulpb_node32_cd.dc.sdf", n1);
-      $sdf_annotate("ulpb_node32_ef.dc.sdf", n2);
+      $sdf_annotate("../syn/ulpb_ctrl_wrapper.dc.sdf", c0);
+      $sdf_annotate("../syn/ulpb_node32_ab.dc.sdf", n0);
+      $sdf_annotate("../syn/ulpb_node32_cd.dc.sdf", n1);
+      $sdf_annotate("../syn/ulpb_node32_ef.dc.sdf", n2);
 `elsif APR
       $sdf_annotate("../apr/ulpb_ctrl_wrapper/ulpb_ctrl_wrapper.apr.sdf", c0);
       $sdf_annotate("../apr/ulpb_node32_ab/ulpb_node32_ab.apr.sdf", n0);
@@ -194,6 +194,12 @@ module tb_ulpb_node32();
       task3_1();
 `elsif TASK3_2
       task3_2();
+`else
+      $display("**************************************");
+      $display("************NO TASKS SUPPLIED*********");
+      $display("****************FAILURE***************");
+      $display("**************************************");
+      $finish;
 `endif
    
 end // initial begin

@@ -27,4 +27,3 @@ clean:
 	rm -f *.pvl *.syn *.mr *.sdc
 	rm -f ../netlist/*.nl.v ../netlist/*.dc.sdf
 	rm -rf alib*
-	cd ../netlist; make clean

@@ -22,7 +22,8 @@ module ulpb_ctrl_wrapper(
 	output 	RX_PEND, 
 	output 	TX_FAIL, 
 	output 	TX_SUCC, 
-	input 	TX_RESP_ACK
+	input 	TX_RESP_ACK,
+	input	[31:0] THRESHOLD
 );
 
 parameter CTRL_ADDRESS = 8'h01;
@@ -36,7 +37,6 @@ wire	NODE_RX_REQ;
 wire	NODE_RX_ACK;
 reg		ctrl_addr_match, ctrl_rx_ack;
 
-wire	[31:0] THRESHOLD = 32'h00005fff;
 
 always @ *
 begin

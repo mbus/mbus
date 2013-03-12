@@ -1,8 +1,8 @@
 
 /*
- * Last modified date: 03/06 '13
+ * Last modified date: 03/12 '13
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
- * Last modified content: sample CLKIN at posedge,
+ * Last modified content: Adding maximum number of transmission
  * */
 `include "include/ulpb_def.v"
 
@@ -12,7 +12,8 @@ module ulpb_ctrl(
 	input CLKIN,
 	output CLKOUT,
 	input DIN,
-	output reg DOUT
+	output reg DOUT,
+	input [31:0] THRESHOLD
 );
 
 `include "include/ulpb_func.v"
@@ -41,6 +42,8 @@ reg		[log2(BUS_INTERRUPT_COUNTER-1)-1:0] bus_interrupt_cnt, next_bus_interrupt_c
 reg		clkin_sampled; 
 reg		[2:0] din_sampled_neg, din_sampled_pos;
 
+reg		[31:0] threshold_cnt, next_threshold_cnt;
+
 assign CLKOUT = (clk_en)? CLK_EXT : 1'b1;
 
 always @ (posedge CLK_EXT or negedge RESETn)
@@ -51,6 +54,7 @@ begin
 		start_cycle_cnt <= START_CYCLES - 1'b1;
 		clk_en <= 0;
 		bus_interrupt_cnt <= BUS_INTERRUPT_COUNTER - 1'b1;
+		threshold_cnt <= 0;
 	end
 	else
 	begin
@@ -58,6 +62,7 @@ begin
 		start_cycle_cnt <= next_start_cycle_cnt;
 		clk_en <= next_clk_en;
 		bus_interrupt_cnt <= next_bus_interrupt_cnt;
+		threshold_cnt <= next_threshold_cnt;
 	end
 end
 
@@ -67,6 +72,7 @@ begin
 	next_start_cycle_cnt = start_cycle_cnt;
 	next_clk_en = clk_en;
 	next_bus_interrupt_cnt = bus_interrupt_cnt;
+	next_threshold_cnt = threshold_cnt;
 
 	case (bus_state)
 		BUS_IDLE:
@@ -74,6 +80,7 @@ begin
 			if (~DIN)
 				next_bus_state = BUS_WAIT_START;	
 			next_start_cycle_cnt = START_CYCLES - 1'b1;
+			next_threshold_cnt = 0;
 		end
 
 		BUS_WAIT_START:
@@ -104,11 +111,14 @@ begin
 
 		BUS_ACTIVE:
 		begin
-			if (clkin_sampled)
+			if ((threshold_cnt<THRESHOLD)&&(~clkin_sampled))
+				next_threshold_cnt = threshold_cnt + 1'b1;
+			else
 			begin
 				next_clk_en = 0;
 				next_bus_state = BUS_INTERRUPT;
 			end
+
 			next_bus_interrupt_cnt = BUS_INTERRUPT_COUNTER - 1'b1;
 		end
 

@@ -36,6 +36,8 @@ wire	NODE_RX_REQ;
 wire	NODE_RX_ACK;
 reg		ctrl_addr_match, ctrl_rx_ack;
 
+wire	[31:0] THRESHOLD = 32'h00005fff;
+
 always @ *
 begin
 	ctrl_addr_match = 0;
@@ -43,7 +45,7 @@ begin
 	if (((RX_ADDR ^ CTRL_ADDRESS) & CTRL_ADDR_MASK)==0)
 		ctrl_addr_match = 1;
 end
-assign RX_REQ = (ctrl_addr_match)? 0 : NODE_RX_REQ;
+assign RX_REQ = (ctrl_addr_match)? 1'b0 : NODE_RX_REQ;
 
 always @ (posedge CLK_EXT or negedge RESETn)
 begin
@@ -71,7 +73,8 @@ ulpb_ctrl ctrl0(
 	.CLKIN(CLKIN),
 	.CLKOUT(CLK_CTRL_TO_NODE),
 	.DIN(DIN),
-	.DOUT(DOUT_CTRL_TO_NODE)
+	.DOUT(DOUT_CTRL_TO_NODE),
+	.THRESHOLD(THRESHOLD)
 );
 
 ulpb_node32 #(.ADDRESS(NODE_ADDRESS), .ADDRESS_MASK(NODE_ADDR_MASK), .MULTI_ADDR_EN(1'b1), 

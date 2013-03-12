@@ -474,6 +474,31 @@ always @ (posedge clk or negedge resetn) begin
 	      end
 	   end
 	end
+
+	// infinitely long message test
+	TASK26: begin
+	   if ((~n1_tx_ack) & (~n1_tx_req)) begin
+	   		n1_tx_addr <= 8'hab;
+	   		n1_tx_data <= rand_dat;
+	   		n1_tx_req <= 1;
+   	   		$fdisplay(handle, "N1 Data in =\t32'h%h", rand_dat);
+			n1_tx_pend <= 1;
+	     end
+		 if (n1_tx_fail) begin
+		 	n1_tx_req <= 0;
+			state <= TX_WAIT;
+		 end
+	end
+
+	TASK27: begin
+	   if ((~c0_tx_ack) & (~c0_tx_req)) begin
+	   		c0_tx_addr <= 8'h01;
+	   		c0_tx_data <= rand_dat;
+	   		c0_tx_req <= 1;
+   	   		$fdisplay(handle, "C0 Data in =\t32'h%h", rand_dat);
+		 	state <= TX_WAIT;
+	     end
+	end
       endcase // case (state)
    end
 end // always @ (posedge clk or negedge resetn)

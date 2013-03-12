@@ -372,6 +372,30 @@ task task0;
       clk_en = 0;
 
       #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK26, Correct result: N1 TX Fail");
+      state = TASK26;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK27, Correct result: C0 TX Fail");
+      state = TASK27;
+      @ (posedge c0_tx_succ | c0_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
       $display("*************************************");
       $display("************TASK0 Complete***********");
       $display("*************************************");

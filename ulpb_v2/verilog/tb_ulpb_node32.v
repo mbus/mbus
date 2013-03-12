@@ -70,6 +70,8 @@ module tb_ulpb_node32();
    parameter 		  TASK23=23;
    parameter 		  TASK24=24;
    parameter 		  TASK25=25;
+   parameter 		  TASK26=26;
+   parameter 		  TASK27=27;
    
    parameter 		  TX_WAIT=31;
 

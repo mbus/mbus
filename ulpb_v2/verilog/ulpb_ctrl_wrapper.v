@@ -23,7 +23,7 @@ module ulpb_ctrl_wrapper(
 	output 	TX_FAIL, 
 	output 	TX_SUCC, 
 	input 	TX_RESP_ACK,
-	input	[31:0] THRESHOLD
+	input 	[`WATCH_DOG_WIDTH-1:0] THRESHOLD
 );
 
 parameter CTRL_ADDRESS = 8'h01;

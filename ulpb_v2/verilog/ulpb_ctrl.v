@@ -13,7 +13,7 @@ module ulpb_ctrl(
 	output CLKOUT,
 	input DIN,
 	output reg DOUT,
-	input [31:0] THRESHOLD
+	input [`WATCH_DOG_WIDTH-1:0] THRESHOLD
 );
 
 `include "include/ulpb_func.v"
@@ -34,8 +34,6 @@ parameter NUM_OF_BUS_STATE = 11;
 parameter START_CYCLES = 10;
 parameter BUS_INTERRUPT_COUNTER = 6;
 
-parameter NUM_BITS_WATCH_DOG_CMP = 16;	// upper 16 bits
-
 reg		[log2(START_CYCLES-1)-1:0] start_cycle_cnt, next_start_cycle_cnt;
 reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state, bus_state_neg;
 reg		clk_en, next_clk_en;
@@ -44,7 +42,7 @@ reg		[log2(BUS_INTERRUPT_COUNTER-1)-1:0] bus_interrupt_cnt, next_bus_interrupt_c
 reg		clkin_sampled; 
 reg		[2:0] din_sampled_neg, din_sampled_pos;
 
-reg		[31:0] threshold_cnt, next_threshold_cnt;
+reg		[`WATCH_DOG_WIDTH-1:0] threshold_cnt, next_threshold_cnt;
 
 assign CLKOUT = (clk_en)? CLK_EXT : 1'b1;
 
@@ -113,7 +111,7 @@ begin
 
 		BUS_ACTIVE:
 		begin
-			if ((threshold_cnt[31:(32-NUM_BITS_WATCH_DOG_CMP)]<THRESHOLD[31:(32-NUM_BITS_WATCH_DOG_CMP)])&&(~clkin_sampled))
+			if ((threshold_cnt<THRESHOLD)&&(~clkin_sampled))
 				next_threshold_cnt = threshold_cnt + 1'b1;
 			else
 			begin

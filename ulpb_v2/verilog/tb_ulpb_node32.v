@@ -77,7 +77,7 @@ module tb_ulpb_node32();
 
    reg 			  n0_auto_rx_ack, n1_auto_rx_ack, n2_auto_rx_ack, c0_auto_rx_ack;
 
-wire	[`WATCH_DOG_WIDTH-1:0] THRESHOLD = 24'h005fff;
+wire	[`WATCH_DOG_WIDTH-1:0] THRESHOLD = 20'h05fff;
    
 `ifdef SYN
    ulpb_node32_ab n0

@@ -77,7 +77,7 @@ module tb_ulpb_node32();
 
    reg 			  n0_auto_rx_ack, n1_auto_rx_ack, n2_auto_rx_ack, c0_auto_rx_ack;
 
-wire	[31:0] THRESHOLD = 32'h00005fff;
+wire	[31:0] THRESHOLD = 32'h00010000;
    
 `ifdef SYN
    ulpb_node32_ab n0

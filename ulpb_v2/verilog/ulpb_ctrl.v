@@ -34,6 +34,8 @@ parameter NUM_OF_BUS_STATE = 11;
 parameter START_CYCLES = 10;
 parameter BUS_INTERRUPT_COUNTER = 6;
 
+parameter NUM_BITS_WATCH_DOG_CMP = 16;	// upper 16 bits
+
 reg		[log2(START_CYCLES-1)-1:0] start_cycle_cnt, next_start_cycle_cnt;
 reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state, bus_state_neg;
 reg		clk_en, next_clk_en;
@@ -111,7 +113,7 @@ begin
 
 		BUS_ACTIVE:
 		begin
-			if ((threshold_cnt<THRESHOLD)&&(~clkin_sampled))
+			if ((threshold_cnt[31:(32-NUM_BITS_WATCH_DOG_CMP)]<THRESHOLD[31:(32-NUM_BITS_WATCH_DOG_CMP)])&&(~clkin_sampled))
 				next_threshold_cnt = threshold_cnt + 1'b1;
 			else
 			begin

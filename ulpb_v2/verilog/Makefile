@@ -55,7 +55,7 @@ apr_simv:	$(APRFILES) $(TESTBENCH)
 # updated interactive debugger "DVE", using the latest version of VCS
 # awdeorio fall 2011
 dve:	$(SIMFILES) $(TESTBENCH) 
-	$(VCS) +memcbk $(TESTBENCH) $(SIMFILES) -o dve -R -gui
+	$(VCS) $(VCSFLAGS) +memcbk $(TESTBENCH) $(SIMFILES) -o dve -R -gui
 
 .PHONY: simv syn_simv apr_simv dve
 

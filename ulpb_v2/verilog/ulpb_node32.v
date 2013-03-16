@@ -41,11 +41,17 @@
  * i.e. ADDRESS_MASK = 8'hf0, compare only upper 4-bit of address (from MSB)
  * 
  *
- * Last modified date: 03/06 '13
+ * Last modified date: 03/16 '13
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
- * Last modified content: switch clock mux to posedge edge trigger, clock
- * holds at high if a node request interrupt, bypass clock once interrupt
- * occurred
+ * --------------------------------------------------------------------------
+ * IMPORTANT: This module only works for RX only layers, not able to transmit.
+ * --------------------------------------------------------------------------
+ * Update log:
+ * 3/16 '13
+ * Add power gated signals, move reset state to RX_ADDR
+ * 3/6 '13
+ * switch clock mux to posedge edge trigger, clock holds at high if a node request 
+ * interrupt, bypass clock once interrupt occurred
  * */
 
 `include "include/ulpb_def.v"
@@ -70,7 +76,16 @@ module ulpb_node32(
 	output reg RX_PEND, 
 	output reg TX_FAIL, 
 	output reg TX_SUCC, 
-	input TX_RESP_ACK
+	input TX_RESP_ACK,
+	// power gated signals from sleep controller
+	input RELEASE_RST_FROM_SLEEP_CTRL,
+	// power gated signals to layer controller
+	output reg POWER_ON_TO_LAYER_CTRL,
+	output reg RELEASE_CLK_TO_LAYER_CTRL,
+	output reg RELEASE_RST_TO_LAYER_CTRL,
+	output reg RELEASE_ISO_TO_LAYER_CTRL,
+	// power gated signal to sleep controller
+	output reg SLEEP_REQUEST_TO_SLEEP_CTRL
 );
 
 `include "include/ulpb_func.v"
@@ -140,6 +155,13 @@ wire	data_bit_extract = ((DATA & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 reg		[2:0] addr_match_temp;
 wire	address_match = (addr_match_temp[2] | addr_match_temp[1] | addr_match_temp[0]);
 
+// Power gating related signals
+wire RESETn_local = (RESETn & (~RELEASE_RST));
+reg		[1:0] powerup_seq_fsm, next_powerup_seq_fsm;
+
+parameter HOLD = `IO_HOLD;			// During sleep
+parameter RELEASE = `IO_RELEASE;	// During wake-up
+
 always @ *
 begin
 	if (RX_ADDR==`BROADCAST_ADDR)
@@ -163,11 +185,11 @@ begin
 		addr_match_temp[0] = 0;
 end
 
-always @ (posedge CLKIN or negedge RESETn)
+always @ (posedge CLKIN or negedge RESETn_local)
 begin
-	if (~RESETn)
+	if (~RESETn_local)
 	begin
-		bus_state <= BUS_IDLE;
+		bus_state <= BUS_ADDR;
 		BUS_INT_RSTn <= 1;
 	end
 	else
@@ -185,7 +207,7 @@ begin
 	end
 end
 
-wire TX_RESP_RSTn = RESETn & (~TX_RESP_ACK);
+wire TX_RESP_RSTn = RESETn_local & (~TX_RESP_ACK);
 
 always @ (posedge CLKIN or negedge TX_RESP_RSTn)
 begin
@@ -202,9 +224,9 @@ begin
 end
 
 
-always @ (posedge CLKIN or negedge RESETn)
+always @ (posedge CLKIN or negedge RESETn_local)
 begin
-	if (~RESETn)
+	if (~RESETn_local)
 	begin
 		// general registers
 		mode <= MODE_RX;
@@ -540,12 +562,67 @@ begin
 	endcase
 end
 
-always @ (negedge CLKIN or negedge RESETn)
+always @ (negedge CLKIN or negedge RESETn_local)
 begin
-	if (~RESETn)
+	if (~RESETn_local)
+	begin
+		powerup_seq_fsm <= 0;
+		POWER_ON_TO_LAYER_CTRL <= HOLD;
+		RELEASE_CLK_TO_LAYER_CTRL <= HOLD;
+		RELEASE_RST_TO_LAYER_CTRL <= HOLD;
+		RELEASE_ISO_TO_LAYER_CTRL <= HOLD;
+	end
+	else
+	begin
+		case (bus_state)
+			BUS_ADDR:
+			begin
+				power_seq_fsm <= 0;
+			end
+
+			BUS_DATA_RX_ADDI:
+			begin
+				if (address_match)
+				begin
+					POWER_ON_TO_LAYER_CTRL <= RELEASE;
+					power_seq_fsm <= 1;
+				end
+			end
+
+			BUS_DATA:
+			begin
+				case (power_seq_fsm)
+					1:
+					begin
+						RELEASE_CLK_TO_LAYER_CTRL <= RELEASE;
+						power_seq_fsm <= 2;
+					end
+
+					2:
+					begin
+						RELEASE_RST_TO_LAYER_CTRL <= RELEASE;
+						power_seq_fsm <= 3;
+					end
+
+					3:
+					begin
+						RELEASE_ISO_TO_LAYER_CTRL <= RELEASE;
+						power_seq_fsm <= 0;
+					end
+
+					default: begin end
+				endcase
+			end
+		endcase
+	end
+end
+
+always @ (negedge CLKIN or negedge RESETn_local)
+begin
+	if (~RESETn_local)
 	begin
 		out_reg_neg <= 1;
-		bus_state_neg <= BUS_IDLE;
+		bus_state_neg <= BUS_ADDR;
 		mode_neg <= MODE_RX;
 	end
 	else
@@ -670,7 +747,7 @@ end
 ulpb_swapper swapper0(
 	// inputs
 	.CLK(CLKIN),
-    .RESETn(RESETn),
+    .RESETn(RESETn_local),
     .DATA(DIN),
     .INT_FLAG_RESETn(BUS_INT_RSTn),
    	//Outputs

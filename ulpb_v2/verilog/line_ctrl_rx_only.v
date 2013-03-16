@@ -17,8 +17,8 @@ module line_controller_rx_only(
 	input DOUT_FROM_BUS,
 	input CLKOUT_FROM_BUS,
 	input RELEASE_ISO,
-	output DOUT,
-	output CLKOUT
+	output reg DOUT,
+	output reg CLKOUT
 );
 
 parameter HOLD = `IO_HOLD;			// During sleep

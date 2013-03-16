@@ -46,6 +46,8 @@ reg		[`WATCH_DOG_WIDTH-1:0] threshold_cnt, next_threshold_cnt;
 
 assign CLKOUT = (clk_en)? CLK_EXT : 1'b1;
 
+wire [1:0] CONTROL_BITS = `CONTROL_SEQ;	// EOM?, ~ACK?
+
 always @ (posedge CLK_EXT or negedge RESETn)
 begin
 	if (~RESETn)
@@ -205,6 +207,7 @@ begin
 		BUS_WAIT_START: begin DOUT = 1; end
 		BUS_START : begin DOUT = 1; end
 		BUS_INTERRUPT: begin DOUT = CLK_EXT; end
+		BUS_CONTROL0: begin if (threshold_cnt==THRESHOLD) DOUT = (~CONTROL_BITS[1]); end
 		BUS_BACK_TO_IDLE: begin DOUT = 1; end
 	endcase
 

@@ -506,7 +506,10 @@ begin
 						end
 					end
 					else
+					begin
 						next_out_reg_pos = ~CONTROL_BITS[0];
+						next_rx_fail = 1;
+					end
 				end
 			end
 		end

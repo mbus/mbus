@@ -54,6 +54,8 @@ module ulpb_node32_isolation(
 	input	RELEASE_CLK_FROM_BC,
 	input	RELEASE_RST_FROM_BC,
 	input 	RELEASE_ISO_FROM_BC,
+	// use this to isolate signals between layer controller and CPU/MEM etc.
+	output 	reg RELEASE_ISO_FROM_BC_MASKED,
 	output	reg POWER_ON_TO_LC,
 	output	reg RELEASE_CLK_TO_LC,
 	output	reg RELEASE_RST_TO_LC
@@ -91,6 +93,7 @@ begin
 		RX_PEND_TO_LC 	= 0;
 		TX_FAIL_TO_LC 	= 0;
 		TX_SUCC_TO_LC 	= 0;
+		RELEASED_ISO_FROM_BC_MASKED = HOLD;
 	end
 	else
 	begin
@@ -102,12 +105,13 @@ begin
 		RX_PEND_TO_LC 	= RX_PEND_FROM_BC;
 		TX_FAIL_TO_LC 	= TX_FAIL_FROM_BC;
 		TX_SUCC_TO_LC 	= TX_SUCC_FROM_BC;
+		RELEASED_ISO_FROM_BC_MASKED = RELEASE_ISO_FROM_BC;
 	end
 end
 
 always @ *
 begin
-	if ((RELEASE_ISO_FROM_BC==HOLD)||(RELEASE_ISO_FROM_SLEEP_CTRL==HOLD))
+	if (RELEASE_ISO_FROM_BC_MASKED==HOLD)
 	begin
 		TX_ADDR_TO_BC 	= 0;
 		TX_DATA_TO_BC	= 0;

@@ -83,6 +83,8 @@ begin
 			3:
 			begin
 				fsm_pos <= 0;
+				RELEASE_RST_POS <= HOLD;
+				POWER_ON_POS <= HOLD;
 			end
 
 		endcase

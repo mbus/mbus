@@ -163,7 +163,7 @@ reg		shutdown, next_shutdown;
 
 parameter HOLD = `IO_HOLD;			// During sleep
 parameter RELEASE = `IO_RELEASE;	// During wake-up
-parameter LAYER_ID = 5;				// From 0 ~ 23
+parameter LAYER_ID = 24'd5;				// From 0 ~ 23
 
 wire	[23:0] layer_slot = (1'b1<<LAYER_ID);
 
@@ -521,6 +521,7 @@ begin
 								if ((rx_data_buf[`DATA_WIDTH-1:`DATA_WIDTH-8]==`GLOBAL_SHUTDOWN_MSG) || ((rx_data_buf[`DATA_WIDTH-1:`DATA_WIDTH-8]==`LOCAL_SHUTDOWN_MSG)&&((rx_data_buf[`DATA_WIDTH-9:0]&layer_slot)>0)))
 								begin
 									next_shutdown = 1;
+									next_out_reg_pos = CONTROL_BITS[0];
 								end
 								else
 								begin
@@ -544,6 +545,7 @@ begin
 								if ((rx_data_buf[`DATA_WIDTH+1:`DATA_WIDTH-6]==`GLOBAL_SHUTDOWN_MSG) || ((rx_data_buf[`DATA_WIDTH+1:`DATA_WIDTH-6]==`LOCAL_SHUTDOWN_MSG)&&((rx_data_buf[`DATA_WIDTH-7:2]&layer_slot)>0)))
 								begin
 									next_shutdown = 1;
+									next_out_reg_pos = CONTROL_BITS[0];
 								end
 								else
 								begin

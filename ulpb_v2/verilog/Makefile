@@ -26,8 +26,8 @@ all:    simv
 # Modify starting here
 #####
 
-TESTBENCH = tb_ulpb_node32.v
-SIMFILES = ulpb_node32.v ulpb_ctrl.v ulpb_swapper.v ulpb_ctrl_wrapper.v
+TESTBENCH = tb_ulpb_node32_rx_only.v
+SIMFILES = ulpb_node32.v ulpb_ctrl.v ulpb_swapper.v ulpb_ctrl_wrapper.v ulpb_node32_wo_pwr_gated.v ulpb_node32_isolation.v sleep_ctrl.v line_ctrl_rx_only.v ulpb_layer_wrapper.v
 SYNFILES = 	../syn/ulpb_node32_ab.nl.v \
 		../syn/ulpb_node32_cd.nl.v \
 		../syn/ulpb_node32_ef.nl.v \

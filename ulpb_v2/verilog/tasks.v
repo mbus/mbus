@@ -547,3 +547,219 @@ task task3_2;
       $finish;
    end
 endtask // task3_2
+
+//****************************************
+//Task 4: test power gated layer (RX only)
+//****************************************
+task task4;
+   begin
+      clk = 0;
+      resetn = 1;
+      n0_auto_rx_ack = 1;
+      n1_auto_rx_ack = 1;
+      n2_auto_rx_ack = 1;
+      c0_auto_rx_ack = 1;
+      clk_en = 1;
+      handle=$fopen("task4_tb.txt");
+
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      `SD resetn = 0;
+      @ (posedge clk);
+      @ (posedge clk);
+      `SD resetn = 1;
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK0, Correct result: N1 TX Success");
+      state = TASK0;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK1, Correct result: N1 TX Success");
+      word_counter = 7;
+      state = TASK1;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK2, Correct result: N1 TX Success");
+      state = TASK2;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK3, Correct result: N1 TX Success");
+      word_counter = 7;
+      state = TASK3;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK4, Correct result: N1 TX Fail");
+      state = TASK4;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK5, Correct result: N1 TX Fail");
+      word_counter = 7;
+      state = TASK5;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK6, Correct result: N1 TX Fail");
+      word_counter = 7;
+      state = TASK6;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK7, Correct result: N1 TX Fail");
+      word_counter = 7;
+      state = TASK7;
+      n2_auto_rx_ack = 0;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      n2_auto_rx_ack = 1;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+      
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK8, Correct result: N1 TX Fail");
+      word_counter = 7;
+      state = TASK8;
+      n0_auto_rx_ack = 0;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      n0_auto_rx_ack = 1;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK9, Correct result: N1 TX Fail");
+      word_counter = 1;
+      state = TASK9;
+      n2_auto_rx_ack = 0;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      n2_auto_rx_ack = 1;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK10, Correct result: N1 TX Fail");
+      word_counter = 1;
+      state = TASK10;
+      n0_auto_rx_ack = 0;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      n0_auto_rx_ack = 1;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK11, Correct result: N0 Sleep");
+      state = TASK11;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK12, Correct result: N1 Sleep");
+      state = TASK12;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK13, Correct result: N0, N1 Sleep");
+      state = TASK13;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      $display("*************************************");
+      $display("**********TASK4 Complete***********");
+      $display("*************************************");
+      $finish;
+   end
+endtask // task4

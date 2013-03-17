@@ -16,7 +16,7 @@ module line_controller_rx_only(
 	input CLKIN,
 	input DOUT_FROM_BUS,
 	input CLKOUT_FROM_BUS,
-	input RELEASE_ISO,
+	input RELEASE_ISO_FROM_SLEEP_CTRL,
 	output reg DOUT,
 	output reg CLKOUT
 );
@@ -26,9 +26,9 @@ parameter RELEASE = `IO_RELEASE;	// During wake-up
 
 always @ *
 begin
-	if (RELEASE_ISO==HOLD)
+	if (RELEASE_ISO_FROM_SLEEP_CTRL==HOLD)
 	begin
-		DOUT = 1;
+		DOUT = DIN;
 		CLKOUT = CLKIN;
 	end
 	else

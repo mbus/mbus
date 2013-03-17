@@ -44,7 +44,8 @@
  * Last modified date: 03/16 '13
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  * --------------------------------------------------------------------------
- * IMPORTANT: This module only works for RX only layers, not able to transmit.
+ * IMPORTANT: This module only works for RX only layers, not able to transmit
+ * 			at this point.
  * --------------------------------------------------------------------------
  * Update log:
  * 3/16 '13
@@ -64,8 +65,8 @@ module ulpb_node32(
 	output reg DOUT, 
 	input [`ADDR_WIDTH-1:0] TX_ADDR, 
 	input [`DATA_WIDTH-1:0] TX_DATA, 
-	input TX_PEND, 
 	input TX_REQ, 
+	input TX_PEND, 
 	input PRIORITY,
 	output reg TX_ACK, 
 	output reg [`ADDR_WIDTH-1:0] RX_ADDR, 
@@ -156,11 +157,15 @@ reg		[2:0] addr_match_temp;
 wire	address_match = (addr_match_temp[2] | addr_match_temp[1] | addr_match_temp[0]);
 
 // Power gating related signals
-wire RESETn_local = (RESETn & (~RELEASE_RST));
-reg		[1:0] powerup_seq_fsm, next_powerup_seq_fsm;
+wire 	RESETn_local = (RESETn & (~RELEASE_RST_FROM_SLEEP_CTRL));
+reg		[1:0] powerup_seq_fsm;
+reg		shutdown, next_shutdown;
 
 parameter HOLD = `IO_HOLD;			// During sleep
 parameter RELEASE = `IO_RELEASE;	// During wake-up
+parameter LAYER_ID = 5;				// From 0 ~ 23
+
+wire	[23:0] layer_slot = (1'b1<<LAYER_ID);
 
 always @ *
 begin
@@ -189,7 +194,7 @@ always @ (posedge CLKIN or negedge RESETn_local)
 begin
 	if (~RESETn_local)
 	begin
-		bus_state <= BUS_ADDR;
+		bus_state <= BUS_PRIO;
 		BUS_INT_RSTn <= 1;
 	end
 	else
@@ -248,6 +253,8 @@ begin
 		RX_REQ <= 0;
 		RX_PEND <= 0;
 		RX_FAIL <= 0;
+		// power gated related signal
+		shutdown <= 0;
 	end
 	else
 	begin
@@ -274,6 +281,8 @@ begin
 		ctrl_bit_buf <= next_ctrl_bit_buf;
 		// Interface registers
 		TX_ACK <= next_tx_ack;
+		// power gated related signal
+		shutdown <= next_shutdown;
 	end
 end
 
@@ -320,6 +329,9 @@ begin
 	begin
 		next_rx_fail = 0;
 	end
+
+	// power gating signals
+	next_shutdown = shutdown;
 
 	case (bus_state)
 		BUS_IDLE:
@@ -395,6 +407,7 @@ begin
 		begin
 			next_rx_data_buf = {rx_data_buf[`DATA_WIDTH:0], DIN};
 			next_bit_position = bit_position - 1'b1;
+			next_shutdown = 0;
 			if (bit_position==(`DATA_WIDTH-2'b10))
 			begin
 				next_bus_state = BUS_DATA;
@@ -502,30 +515,59 @@ begin
 						// correct ending state
 						// rx above tx = 31
 						// rx below tx = 1
-						if ((bit_position==1)||(bit_position==(`DATA_WIDTH-1'b1)))
-						begin
-							// RX overflow
-							if (RX_REQ)
+						case (bit_position)
+							1:
+							begin
+								if ((rx_data_buf[`DATA_WIDTH-1:`DATA_WIDTH-8]==`GLOBAL_SHUTDOWN_MSG) || ((rx_data_buf[`DATA_WIDTH-1:`DATA_WIDTH-8]==`LOCAL_SHUTDOWN_MSG)&&((rx_data_buf[`DATA_WIDTH-9:0]&layer_slot)>0)))
+								begin
+									next_shutdown = 1;
+								end
+								else
+								begin
+									if (RX_REQ)
+									begin
+										next_out_reg_pos = ~CONTROL_BITS[0];
+										next_rx_fail = 1;
+									end
+									else
+									begin
+										next_rx_data = rx_data_buf[`DATA_WIDTH-1:0];
+										next_out_reg_pos = CONTROL_BITS[0];
+										next_rx_req = 1;
+										next_rx_pend = 0;
+									end
+								end
+							end
+
+							(`DATA_WIDTH-1'b1):
+							begin
+								if ((rx_data_buf[`DATA_WIDTH+1:`DATA_WIDTH-6]==`GLOBAL_SHUTDOWN_MSG) || ((rx_data_buf[`DATA_WIDTH+1:`DATA_WIDTH-6]==`LOCAL_SHUTDOWN_MSG)&&((rx_data_buf[`DATA_WIDTH-7:2]&layer_slot)>0)))
+								begin
+									next_shutdown = 1;
+								end
+								else
+								begin
+									if (RX_REQ)
+									begin
+										next_out_reg_pos = ~CONTROL_BITS[0];
+										next_rx_fail = 1;
+									end
+									else
+									begin
+										next_rx_data = rx_data_buf[`DATA_WIDTH+1:2];
+										next_out_reg_pos = CONTROL_BITS[0];
+										next_rx_req = 1;
+										next_rx_pend = 0;
+									end
+								end
+							end
+
+							default:
 							begin
 								next_out_reg_pos = ~CONTROL_BITS[0];
 								next_rx_fail = 1;
 							end
-							else
-							begin
-								next_out_reg_pos = CONTROL_BITS[0];
-								next_rx_req = 1;
-								next_rx_pend = 0;
-								if (bit_position==1)
-									next_rx_data = rx_data_buf[`DATA_WIDTH-1:0];
-								else
-									next_rx_data = rx_data_buf[`DATA_WIDTH+1:2];
-							end
-						end
-						else
-						begin
-							next_out_reg_pos = ~CONTROL_BITS[0];
-							next_rx_fail = 1;
-						end
+						endcase
 					end
 					else
 					begin
@@ -571,13 +613,14 @@ begin
 		RELEASE_CLK_TO_LAYER_CTRL <= HOLD;
 		RELEASE_RST_TO_LAYER_CTRL <= HOLD;
 		RELEASE_ISO_TO_LAYER_CTRL <= HOLD;
+		SLEEP_REQUEST_TO_SLEEP_CTRL <= 0;
 	end
 	else
 	begin
 		case (bus_state)
 			BUS_ADDR:
 			begin
-				power_seq_fsm <= 0;
+				powerup_seq_fsm <= 0;
 			end
 
 			BUS_DATA_RX_ADDI:
@@ -585,33 +628,42 @@ begin
 				if (address_match)
 				begin
 					POWER_ON_TO_LAYER_CTRL <= RELEASE;
-					power_seq_fsm <= 1;
+					powerup_seq_fsm <= 1;
 				end
 			end
 
 			BUS_DATA:
 			begin
-				case (power_seq_fsm)
+				case (powerup_seq_fsm)
 					1:
 					begin
 						RELEASE_CLK_TO_LAYER_CTRL <= RELEASE;
-						power_seq_fsm <= 2;
+						powerup_seq_fsm <= 2;
 					end
 
 					2:
 					begin
 						RELEASE_RST_TO_LAYER_CTRL <= RELEASE;
-						power_seq_fsm <= 3;
+						powerup_seq_fsm <= 3;
 					end
 
 					3:
 					begin
 						RELEASE_ISO_TO_LAYER_CTRL <= RELEASE;
-						power_seq_fsm <= 0;
+						powerup_seq_fsm <= 0;
 					end
 
 					default: begin end
 				endcase
+			end
+
+			BUS_CONTROL1:
+			begin
+				if (shutdown)
+				begin
+					SLEEP_REQUEST_TO_SLEEP_CTRL <= 1;
+					RELEASE_ISO_TO_LAYER_CTRL <= HOLD;
+				end
 			end
 		endcase
 	end
@@ -622,7 +674,7 @@ begin
 	if (~RESETn_local)
 	begin
 		out_reg_neg <= 1;
-		bus_state_neg <= BUS_ADDR;
+		bus_state_neg <= BUS_PRIO;
 		mode_neg <= MODE_RX;
 	end
 	else

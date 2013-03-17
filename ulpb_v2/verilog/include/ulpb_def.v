@@ -8,3 +8,6 @@
 
 `define IO_HOLD 1'b1
 `define IO_RELEASE 1'b0
+
+`define GLOBAL_SHUTDOWN_MSG 8'hff
+`define LOCAL_SHUTDOWN_MSG 8'hfe

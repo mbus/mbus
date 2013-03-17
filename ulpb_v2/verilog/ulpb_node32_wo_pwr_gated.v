@@ -50,7 +50,7 @@
 
 `include "include/ulpb_def.v"
 
-module ulpb_node32(
+module ulpb_node32_wo_pwr_gated(
 	input CLKIN, 
 	input RESETn, 
 	input DIN, 

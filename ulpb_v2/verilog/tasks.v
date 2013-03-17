@@ -735,7 +735,19 @@ task task4;
 
       #10000;
       clk_en = 1;
-      $fdisplay(handle, "TASK12, Correct result: N1 Sleep");
+      $fdisplay(handle, "TASK0, Correct result: N1 TX Success");
+      state = TASK0;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK12, Correct result: N2 Sleep");
       state = TASK12;
       @ (posedge n1_tx_succ | n1_tx_fail);
       @ (posedge clk);
@@ -747,7 +759,7 @@ task task4;
 
       #10000;
       clk_en = 1;
-      $fdisplay(handle, "TASK13, Correct result: N0, N1 Sleep");
+      $fdisplay(handle, "TASK13, Correct result: N0, N2 Sleep");
       state = TASK13;
       @ (posedge n1_tx_succ | n1_tx_fail);
       @ (posedge clk);

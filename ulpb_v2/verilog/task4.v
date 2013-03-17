@@ -254,6 +254,28 @@ always @ (posedge clk or negedge resetn) begin
 	   end
 	end
 
+	// broadcast, all node should wake-up
+	TASK14: begin
+	   if ((~n1_tx_ack) & (~n1_tx_req)) begin
+	      n1_tx_addr <= 8'h00;
+	      n1_tx_data <= (rand_dat & 32'h00ffffff);
+	      n1_tx_pend <= 0;
+	      n1_tx_req <= 1;
+	      state <= TX_WAIT;
+	   end
+	end
+
+	// using layer-id to put multiple layer into sleep
+	TASK15: begin
+	   if ((~n1_tx_ack) & (~n1_tx_req)) begin
+	      n1_tx_addr <= 8'h00;
+	      n1_tx_data <= (8'hfe<<24) | (1'b1<<5) | (1'b1<<7);
+	      n1_tx_pend <= 0;
+	      n1_tx_req <= 1;
+	      state <= TX_WAIT;
+	   end
+	end
+
       endcase // case (state)
    end
 end // always @ (posedge clk or negedge resetn)

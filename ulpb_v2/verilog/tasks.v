@@ -769,6 +769,30 @@ task task4;
       @ (posedge clk);
       clk_en = 0;
 
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK14, Correct result: N1 TX Success, N0, N2 received");
+      state = TASK14;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK15, Correct result: N0, N2 Sleep");
+      state = TASK15;
+      @ (posedge n1_tx_succ | n1_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
       $display("*************************************");
       $display("**********TASK4 Complete***********");
       $display("*************************************");

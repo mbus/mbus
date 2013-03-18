@@ -12,8 +12,6 @@
 
 module tb_ulpb_node32();
 
-`include "include/ulpb_func.v"
-
    reg		         clk, resetn;
    wire 		 SCLK;
    

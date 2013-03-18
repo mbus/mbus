@@ -224,8 +224,8 @@ always @ (posedge clk or negedge resetn) begin
 	// Sleep N0
 	TASK11: begin
 	   if ((~n1_tx_ack) & (~n1_tx_req)) begin
-	      n1_tx_addr <= 8'h00;
-	      n1_tx_data <= (8'hfb<<24) | (1'b1<<5);
+	      n1_tx_addr <= `BROADCAST_ADDR;
+	      n1_tx_data <= (`LOCAL_SHUTDOWN_MSG<<24) | (1'b1<<5);
 	      n1_tx_pend <= 0;
 	      n1_tx_req <= 1;
 	      state <= TX_WAIT;
@@ -235,8 +235,8 @@ always @ (posedge clk or negedge resetn) begin
 	// Sleep N2
 	TASK12: begin
 	   if ((~n1_tx_ack) & (~n1_tx_req)) begin
-	      n1_tx_addr <= 8'h00;
-	      n1_tx_data <= (8'hfb<<24) | (1'b1<<7);
+	      n1_tx_addr <= `BROADCAST_ADDR;
+	      n1_tx_data <= (`LOCAL_SHUTDOWN_MSG<<24) | (1'b1<<7);
 	      n1_tx_pend <= 0;
 	      n1_tx_req <= 1;
 	      state <= TX_WAIT;
@@ -246,8 +246,8 @@ always @ (posedge clk or negedge resetn) begin
 	// Sleep all layers
 	TASK13: begin
 	   if ((~n1_tx_ack) & (~n1_tx_req)) begin
-	      n1_tx_addr <= 8'h00;
-	      n1_tx_data <= (8'hff<<24);
+	      n1_tx_addr <= `BROADCAST_ADDR;
+	      n1_tx_data <= (`GLOBAL_SHUTDOWN_MSG<<24);
 	      n1_tx_pend <= 0;
 	      n1_tx_req <= 1;
 	      state <= TX_WAIT;
@@ -257,7 +257,7 @@ always @ (posedge clk or negedge resetn) begin
 	// broadcast, all node should wake-up
 	TASK14: begin
 	   if ((~n1_tx_ack) & (~n1_tx_req)) begin
-	      n1_tx_addr <= 8'h00;
+	      n1_tx_addr <= `BROADCAST_ADDR;
 	      n1_tx_data <= (rand_dat & 32'h00ffffff);
 	      n1_tx_pend <= 0;
 	      n1_tx_req <= 1;
@@ -268,8 +268,8 @@ always @ (posedge clk or negedge resetn) begin
 	// using layer-id to put multiple layer into sleep
 	TASK15: begin
 	   if ((~n1_tx_ack) & (~n1_tx_req)) begin
-	      n1_tx_addr <= 8'h00;
-	      n1_tx_data <= (8'hfb<<24) | (1'b1<<5) | (1'b1<<7);
+	      n1_tx_addr <= `BROADCAST_ADDR;
+	      n1_tx_data <= (`LOCAL_SHUTDOWN_MSG<<24) | (1'b1<<5) | (1'b1<<7);
 	      n1_tx_pend <= 0;
 	      n1_tx_req <= 1;
 	      state <= TX_WAIT;

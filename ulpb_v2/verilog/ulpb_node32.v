@@ -163,7 +163,20 @@ reg		shutdown, next_shutdown;
 
 parameter HOLD = `IO_HOLD;			// During sleep
 parameter RELEASE = `IO_RELEASE;	// During wake-up
-parameter LAYER_ID = 24'd5;				// From 0 ~ 23
+
+`ifdef M3	// M3 specific layer ID assignment
+	`ifdef CPU
+		parameter LAYER_ID = 24'd0;
+	`elsif IMAGER
+		parameter LAYER_ID = 24'd1;
+	`elsif RADIO
+		parameter LAYER_ID = 24'd2;
+	`else
+		parameter LAYER_ID = 24'd5;
+	`endif
+`else
+	parameter LAYER_ID = 24'd5;			// From 0 ~ 23
+`endif
 
 wire	[23:0] layer_slot = (1'b1<<LAYER_ID);
 

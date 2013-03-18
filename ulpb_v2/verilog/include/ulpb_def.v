@@ -10,4 +10,4 @@
 `define IO_RELEASE 1'b0
 
 `define GLOBAL_SHUTDOWN_MSG 8'hff
-`define LOCAL_SHUTDOWN_MSG 8'hfe
+`define LOCAL_SHUTDOWN_MSG 8'hfb

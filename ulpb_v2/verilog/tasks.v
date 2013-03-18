@@ -560,7 +560,7 @@ task task4;
       n2_auto_rx_ack = 1;
       c0_auto_rx_ack = 1;
       clk_en = 1;
-      handle=$fopen("task4_tb.txt");
+      handle=$fopen("result_task4.txt");
 
       @ (posedge clk);
       @ (posedge clk);

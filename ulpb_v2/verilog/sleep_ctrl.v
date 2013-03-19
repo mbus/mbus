@@ -51,8 +51,8 @@ begin
 		fsm_pos <= 0;
 		POWER_ON_POS <= HOLD;
 		RELEASE_CLK_POS <= RELEASE;
-		RELEASE_RST_POS <= HOLD;
-		RELEASE_ISO_POS <= RELEASE;
+		RELEASE_ISO_POS <= HOLD;
+		RELEASE_RST_POS <= RELEASE;
 	end
 	else
 	begin
@@ -61,12 +61,12 @@ begin
 			begin
 				POWER_ON_POS <= RELEASE;
 				RELEASE_CLK_POS <= RELEASE;
-				RELEASE_ISO_POS <= RELEASE;
 				fsm_pos <= 1;
 			end
 
 			1:
 			begin
+				RELEASE_ISO_POS <= RELEASE;
 				RELEASE_RST_POS <= RELEASE;
 				fsm_pos <= 2;
 			end
@@ -85,6 +85,7 @@ begin
 				fsm_pos <= 0;
 				RELEASE_RST_POS <= HOLD;
 				POWER_ON_POS <= HOLD;
+				RELEASE_CLK_POS <= HOLD;
 			end
 
 		endcase
@@ -98,8 +99,8 @@ begin
 		fsm_neg <= 0;
 		POWER_ON_NEG <= RELEASE;
 		RELEASE_CLK_NEG <= HOLD;
-		RELEASE_RST_NEG <= RELEASE;
-		RELEASE_ISO_NEG <= HOLD;
+		RELEASE_ISO_NEG <= RELEASE;
+		RELEASE_RST_NEG <= HOLD;
 	end
 	else
 	begin
@@ -115,14 +116,14 @@ begin
 				begin
 					POWER_ON_NEG <= RELEASE;
 					RELEASE_CLK_NEG <= HOLD;
-					RELEASE_RST_NEG <= RELEASE;
-					RELEASE_ISO_NEG <= HOLD;
+					RELEASE_ISO_NEG <= RELEASE;
+					RELEASE_RST_NEG <= HOLD;
 				end
 			end
 
 			1:
 			begin
-				RELEASE_ISO_NEG <= RELEASE;
+				RELEASE_RST_NEG <= RELEASE;
 				fsm_neg <= 2;
 			end
 

@@ -658,13 +658,13 @@ begin
 
 					2:
 					begin
-						RELEASE_RST_TO_LAYER_CTRL <= RELEASE;
+						RELEASE_ISO_TO_LAYER_CTRL <= RELEASE;
 						powerup_seq_fsm <= 3;
 					end
 
 					3:
 					begin
-						RELEASE_ISO_TO_LAYER_CTRL <= RELEASE;
+						RELEASE_RST_TO_LAYER_CTRL <= RELEASE;
 						powerup_seq_fsm <= 0;
 					end
 

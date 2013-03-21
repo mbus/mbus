@@ -92,7 +92,7 @@ module ulpb_node32(
 `include "include/ulpb_func.v"
 
 parameter ADDRESS = 8'hef;
-parameter ADDRESS_MASK = 8'hff;
+parameter ADDRESS_MASK = 8'hf0;
 // if MULTI_ADDR = 1, check additional address (ADDRESS2)
 parameter MULTI_ADDR_EN = 1'b0;	
 parameter ADDRESS2 = 8'hef;
@@ -169,8 +169,8 @@ parameter RELEASE = `IO_RELEASE;	// During wake-up
 		parameter LAYER_ID = 24'd0;
 	`elsif IMAGER
 		parameter LAYER_ID = 24'd1;
-	`elsif RADIO
-		parameter LAYER_ID = 24'd2;
+	`elsif UWB 
+		parameter LAYER_ID = 24'd11;
 	`else
 		parameter LAYER_ID = 24'd5;
 	`endif

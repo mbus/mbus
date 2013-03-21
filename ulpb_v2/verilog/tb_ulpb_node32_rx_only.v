@@ -116,14 +116,14 @@ ulpb_layer_wrapper #(.ADDRESS(8'hef), .LAYER_ID(24'd7)) n2
    initial begin
       //VCD DUMP SECTION
 
-`ifdef APR
+//`ifdef APR
 	`ifdef TASK4
 		$dumpfile("task4.vcd");
 	`elsif TASK5
 		$dumpfile("task5.vcd");
 	`endif
 	$dumpvars(0, tb_ulpb_node32);
-`endif
+//`endif
       
 	  /*
       //SDF ANNOTATION

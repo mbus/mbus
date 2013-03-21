@@ -799,3 +799,83 @@ task task4;
       $finish;
    end
 endtask // task4
+
+//****************************************
+//Task 5: test power gated layer UWB specific (RX only)
+//****************************************
+task task5;
+   begin
+      clk = 0;
+      resetn = 1;
+      n0_auto_rx_ack = 1;
+      n1_auto_rx_ack = 1;
+      n2_auto_rx_ack = 1;
+      c0_auto_rx_ack = 1;
+      clk_en = 1;
+      handle=$fopen("result_task5.txt");
+
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      `SD resetn = 0;
+      @ (posedge clk);
+      @ (posedge clk);
+      `SD resetn = 1;
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "CMD0: Update config value");
+      state = TASK0;
+      @ (posedge c0_tx_succ | c0_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "CMD1: Memory Address setup");
+      state = TASK1;
+      @ (posedge c0_tx_succ | c0_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "CMD2: Memory Write");
+      state = TASK2;
+      @ (posedge c0_tx_succ | c0_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "CMD3: Read status");
+      state = TASK3;
+      @ (posedge c0_tx_succ | c0_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
+      $display("*************************************");
+      $display("**********TASK5 Complete***********");
+      $display("*************************************");
+      $finish;
+   end
+endtask // task5

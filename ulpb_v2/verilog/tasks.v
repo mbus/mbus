@@ -873,6 +873,18 @@ task task5;
       @ (posedge clk);
       clk_en = 0;
 
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "CMD4: Sleep N0, N2");
+      state = TASK4;
+      @ (posedge c0_tx_succ | c0_tx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
       $display("*************************************");
       $display("**********TASK5 Complete***********");
       $display("*************************************");

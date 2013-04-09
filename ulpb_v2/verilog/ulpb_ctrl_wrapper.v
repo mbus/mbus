@@ -23,7 +23,20 @@ module ulpb_ctrl_wrapper(
 	output 	TX_FAIL, 
 	output 	TX_SUCC, 
 	input 	TX_RESP_ACK,
-	input 	[`WATCH_DOG_WIDTH-1:0] THRESHOLD
+	input 	[`WATCH_DOG_WIDTH-1:0] THRESHOLD,
+	// power gated signals from sleep controller
+	input 	RELEASE_RST_FROM_SLEEP_CTRL,
+	// power gated signals to layer controller
+	output 	POWER_ON_TO_LAYER_CTRL,
+	output 	RELEASE_CLK_TO_LAYER_CTRL,
+	output 	RELEASE_RST_TO_LAYER_CTRL,
+	output 	RELEASE_ISO_TO_LAYER_CTRL,
+	// wake up bus controller
+	input 	EXTERNAL_INT,
+	output	CLR_EXT_INT,
+	// wake up processor
+	input	WAKEUP_PROC,
+	output	reg WAKEUP_PROC_CLR
 );
 
 parameter CTRL_ADDRESS = 8'h01;
@@ -37,6 +50,23 @@ wire	NODE_RX_REQ;
 wire	NODE_RX_ACK;
 reg		ctrl_addr_match, ctrl_rx_ack;
 
+wire 	RESETn_local = (RESETn & (~RELEASE_RST_FROM_SLEEP_CTRL));
+
+reg 	powerup_seq;
+reg		POWER_ON_TO_PROC;
+reg		RELEASE_CLK_TO_PROC;
+reg 	RELEASE_RST_TO_PROC;
+reg 	RELEASE_ISO_TO_PROC;
+
+wire	POWER_ON_FROM_BUS;
+wire	RELEASE_CLK_FROM_BUS;
+wire	RELEASE_RST_FROM_BUS;
+wire	RELEASE_ISO_FROM_BUS;
+
+assign 	POWER_ON_TO_LAYER_CTRL 	  = (POWER_ON_TO_PROC | POWER_ON_FROM_BUS);
+assign 	RELEASE_CLK_TO_LAYER_CTRL = (RELEASE_CLK_TO_PROC | RELEASE_CLK_FROM_BUS);
+assign 	RELEASE_RST_TO_LAYER_CTRL = (RELEASE_RST_TO_PROC | RELEASE_RST_FROM_BUS);
+assign 	RELEASE_ISO_TO_LAYER_CTRL = (RELEASE_ISO_TO_PROC | RELEASE_ISO_FROM_BUS);
 
 always @ *
 begin
@@ -47,9 +77,9 @@ begin
 end
 assign RX_REQ = (ctrl_addr_match)? 1'b0 : NODE_RX_REQ;
 
-always @ (posedge CLK_EXT or negedge RESETn)
+always @ (posedge CLK_EXT or negedge RESETn_local)
 begin
-	if (~RESETn)
+	if (~RESETn_local)
 	begin
 		ctrl_rx_ack <= 0;
 	end
@@ -66,10 +96,60 @@ begin
 end
 assign NODE_RX_ACK = (RX_ACK | ctrl_rx_ack);
 
+always @ (negedge CLK_EXT or negedge RESETn_local)
+begin
+	if (~RESETn_local)
+	begin
+		POWER_ON_TO_PROC <= `IO_HOLD;
+		RELEASE_CLK_TO_PROC <= `IO_HOLD;
+		RELEASE_ISO_TO_PROC <= `IO_HOLD;
+		RELEASE_RST_TO_PROC <= `IO_HOLD;
+		powerup_seq <= 0;
+		WAKEUP_PROC_CLR <= 0;
+	end
+	else
+	begin
+		if ((~WAKEUP_PROC) & WAKEUP_PROC_CLR)
+		begin
+			WAKEUP_PROC_CLR <= 0;
+			powerup_seq <= 0;
+		end
+
+		case (powerup_seq)
+			0:
+			begin
+				if (WAKEUP_PROC)
+				begin
+					powerup_seq <= powerup_seq + 1'b1;
+					POWER_ON_TO_PROC <= `IO_RELEASE;
+					WAKEUP_PROC_CLR <= 1;
+				end
+			end
+
+			1: 
+			begin
+				RELEASE_CLK_TO_PROC <= `IO_RELEASE;
+				powerup_seq <= powerup_seq + 1'b1;
+			end
+
+			2:
+			begin
+				RELEASE_ISO_TO_PROC <= `IO_RELEASE;
+				powerup_seq <= powerup_seq + 1'b1;
+			end
+
+			3:
+			begin
+				RELEASE_RST_TO_PROC <= `IO_RELEASE;
+			end
+		endcase
+	end
+end
+
 
 ulpb_ctrl ctrl0(
 	.CLK_EXT(CLK_EXT),
-	.RESETn(RESETn),
+	.RESETn(RESETn_local),
 	.CLKIN(CLKIN),
 	.CLKOUT(CLK_CTRL_TO_NODE),
 	.DIN(DIN),
@@ -77,7 +157,7 @@ ulpb_ctrl ctrl0(
 	.THRESHOLD(THRESHOLD)
 );
 
-ulpb_node32_wo_pwr_gated #(.ADDRESS(NODE_ADDRESS), .ADDRESS_MASK(NODE_ADDR_MASK), .MULTI_ADDR_EN(1'b1), 
+ulpb_node32 #(.ADDRESS(NODE_ADDRESS), .ADDRESS_MASK(NODE_ADDR_MASK), .MULTI_ADDR_EN(1'b1), 
 			.ADDRESS2(CTRL_ADDRESS), .ADDRESS_MASK2(NODE_ADDR_MASK)) node0(
 	.CLKIN(CLK_CTRL_TO_NODE), 
 	.RESETn(RESETn), 
@@ -98,7 +178,15 @@ ulpb_node32_wo_pwr_gated #(.ADDRESS(NODE_ADDRESS), .ADDRESS_MASK(NODE_ADDR_MASK)
 	.RX_PEND(RX_PEND), 
 	.TX_FAIL(TX_FAIL), 
 	.TX_SUCC(TX_SUCC), 
-	.TX_RESP_ACK(TX_RESP_ACK)
+	.TX_RESP_ACK(TX_RESP_ACK),
+	.RELEASE_RST_FROM_SLEEP_CTRL(RELEASE_RST_FROM_SLEEP_CTRL),
+	.POWER_ON_TO_LAYER_CTRL(POWER_ON_FROM_BUS),
+	.RELEASE_CLK_TO_LAYER_CTRL(RELEASE_CLK_FROM_BUS),
+	.RELEASE_RST_TO_LAYER_CTRL(RELEASE_RST_FROM_BUS),
+	.RELEASE_ISO_TO_LAYER_CTRL(RELEASE_ISO_FROM_BUS),
+	.SLEEP_REQUEST_TO_SLEEP_CTRL(),
+	.EXTERNAL_INT(EXTERNAL_INT),
+	.CLR_EXT_INT(CLR_EXT_INT)
 );
 
 endmodule

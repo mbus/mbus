@@ -793,6 +793,20 @@ task task4;
       @ (posedge clk);
       clk_en = 0;
 
+      #10000;
+      clk_en = 1;
+      $fdisplay(handle, "TASK16, Glitch testing");
+	  n1_tx_req <= 1;
+      @ (posedge clk);
+	  n1_tx_req <= 0;
+      @ (posedge n0_rx_fail | n1_rx_fail | n2_rx_fail);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      clk_en = 0;
+
       $display("*************************************");
       $display("**********TASK4 Complete***********");
       $display("*************************************");

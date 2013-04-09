@@ -1,5 +1,5 @@
 
-module sleep_ctrl(
+module ulpb_sleep_ctrl(
 	input	CLKIN,
 	input	RESETn,
 	input	SLEEP_REQ,

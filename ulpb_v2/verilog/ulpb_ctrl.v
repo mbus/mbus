@@ -1,8 +1,8 @@
 
 /*
- * Last modified date: 03/12 '13
+ * Last modified date: 04/08 '13
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
- * Last modified content: Adding maximum number of transmission
+ * Last modified content: Added glitch reset
  * */
 `include "include/ulpb_def.v"
 
@@ -104,6 +104,9 @@ begin
 		BUS_ARBITRATE:
 		begin
 			next_bus_state = BUS_PRIO;
+			// Glitch, reset bus immediately
+			if (DIN)
+				next_threshold_cnt = THRESHOLD;
 		end
 
 		BUS_PRIO:

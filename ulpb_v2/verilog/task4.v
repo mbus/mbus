@@ -276,6 +276,14 @@ always @ (posedge clk or negedge resetn) begin
 	   end
 	end
 
+	// glitch wake up
+	TASK16: begin
+		n0_req_int <= 1;
+		@ (posedge clk)
+		n0_req_int <= 0;
+	    state <= TX_WAIT;
+	end
+
       endcase // case (state)
    end
 end // always @ (posedge clk or negedge resetn)

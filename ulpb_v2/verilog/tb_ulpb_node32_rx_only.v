@@ -39,6 +39,8 @@ module tb_ulpb_node32();
    wire				n2_lc_pwr_on, n2_lc_release_clk, n2_lc_release_rst, n2_lc_release_iso;
    wire				n0_lc_pwr_on, n0_lc_release_clk, n0_lc_release_rst, n0_lc_release_iso;
    
+   reg				n0_req_int, n2_req_int;
+   
    reg [31:0] 		  rand_dat, rand_dat2;
    reg [4:0] 		  state;
    reg [5:0] 		  word_counter;
@@ -82,15 +84,16 @@ wire	[`WATCH_DOG_WIDTH-1:0] THRESHOLD = 20'h05fff;
 
 
 // This configuration works for task4.v only
-// ulpb_layer_wrapper #(.ADDRESS(8'hab), .LAYER_ID(24'd5), .ADDRESS_MASK(8'hff)) n0
+ ulpb_layer_wrapper #(.ADDRESS(8'hab), .LAYER_ID(24'd5), .ADDRESS_MASK(8'hff)) n0
 
 // This configuration is designed to generate vectors for coming UWB
-ulpb_layer_wrapper #(.ADDRESS(8'hb0), .LAYER_ID(24'd11), .ADDRESS_MASK(8'hf0)) n0
+//ulpb_layer_wrapper #(.ADDRESS(8'hb0), .LAYER_ID(24'd11), .ADDRESS_MASK(8'hf0)) n0
      (.CLKIN(SCLK), .CLKOUT(w_n0_clk_out), .RESETn(resetn), .DIN(w_c0n0), .DOUT(w_n0n1), 
       .TX_ADDR(n0_tx_addr), .TX_DATA(n0_tx_data), .TX_REQ(n0_tx_req), .TX_ACK(n0_tx_ack), .TX_PEND(n0_tx_pend), .PRIORITY(n0_priority),
       .RX_ADDR(n0_rx_addr), .RX_DATA(n0_rx_data), .RX_REQ(n0_rx_req), .RX_ACK(n0_rx_ack), .RX_FAIL(n0_rx_fail), .RX_PEND(n0_rx_pend),
       .TX_SUCC(n0_tx_succ), .TX_FAIL(n0_tx_fail), .TX_RESP_ACK(n0_tx_resp_ack),
-	  .LC_POWER_ON(n0_lc_pwr_on), .LC_RELEASE_CLK(n0_lc_release_clk), .LC_RELEASE_RST(n0_lc_release_rst), .LC_RELEASE_ISO(n0_lc_release_iso));
+	  .LC_POWER_ON(n0_lc_pwr_on), .LC_RELEASE_CLK(n0_lc_release_clk), .LC_RELEASE_RST(n0_lc_release_rst), .LC_RELEASE_ISO(n0_lc_release_iso),
+	  .REQ_INT(n0_req_int));
 
    
    ulpb_node32_wo_pwr_gated #(.ADDRESS(8'hcd)) n1
@@ -105,7 +108,8 @@ ulpb_layer_wrapper #(.ADDRESS(8'hef), .LAYER_ID(24'd7)) n2
       .TX_ADDR(n2_tx_addr), .TX_DATA(n2_tx_data), .TX_REQ(n2_tx_req), .TX_ACK(n2_tx_ack), .TX_PEND(n2_tx_pend), .PRIORITY(n2_priority),
       .RX_ADDR(n2_rx_addr), .RX_DATA(n2_rx_data), .RX_REQ(n2_rx_req), .RX_ACK(n2_rx_ack), .RX_FAIL(n2_rx_fail), .RX_PEND(n2_rx_pend),
       .TX_SUCC(n2_tx_succ), .TX_FAIL(n2_tx_fail), .TX_RESP_ACK(n2_tx_resp_ack),
-	  .LC_POWER_ON(n2_lc_pwr_on), .LC_RELEASE_CLK(n2_lc_release_clk), .LC_RELEASE_RST(n2_lc_release_rst), .LC_RELEASE_ISO(n2_lc_release_iso));
+	  .LC_POWER_ON(n2_lc_pwr_on), .LC_RELEASE_CLK(n2_lc_release_clk), .LC_RELEASE_RST(n2_lc_release_rst), .LC_RELEASE_ISO(n2_lc_release_iso),
+	  .REQ_INT(n2_req_int));
    
    ulpb_ctrl_wrapper #(.CTRL_ADDRESS(8'h01), .NODE_ADDRESS(8'haa)) c0 
      (.CLK_EXT(clk), .CLKIN(w_n2_clk_out), .CLKOUT(SCLK), .RESETn(resetn), .DIN(w_n2c0), .DOUT(w_c0n0), 
@@ -164,6 +168,13 @@ end // initial begin
 `elsif TASK5
       `include "task5.v"
 `endif
+
+always @ (posedge clk or negedge resetn) begin
+	if (~resetn) begin
+		n0_req_int <= 0;
+		n2_req_int <= 0;
+	end
+end
 
 always @ (posedge n0_lc_pwr_on)
 	$fdisplay(handle, "N0 Sleep");

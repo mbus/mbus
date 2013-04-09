@@ -26,7 +26,9 @@ module ulpb_layer_wrapper(
 	output LC_POWER_ON,
 	output LC_RELEASE_CLK,
 	output LC_RELEASE_RST,
-	output LC_RELEASE_ISO
+	output LC_RELEASE_ISO,
+
+	input REQ_INT
 );
 
 parameter ADDRESS = 8'hab;
@@ -51,6 +53,8 @@ wire	n0_tx_req_t_bc, n0_tx_pend_t_bc, n0_priority_t_bc, n0_rx_ack_t_bc, n0_tx_re
 wire	[`ADDR_WIDTH-1:0] n0_rx_addr_t_iso;
 wire	[`DATA_WIDTH-1:0] n0_rx_data_t_iso;
 wire	n0_tx_ack_t_iso, n0_rx_req_t_iso, n0_rx_fail_t_iso, n0_rx_pend_t_iso, n0_tx_succ_t_iso, n0_tx_fail_t_iso, n0_pwr_on_t_iso, n0_rel_clk_t_iso, n0_rel_rst_t_iso, n0_rel_iso_t_iso;
+
+wire	ext_int_to_bus, ext_int_to_line, clr_ext_int;
    
 // always on block, interface with layer controller
 	ulpb_node32_isolation iso0
@@ -73,19 +77,30 @@ wire	n0_tx_ack_t_iso, n0_rx_req_t_iso, n0_rx_fail_t_iso, n0_rx_pend_t_iso, n0_tx
       .RX_ADDR(n0_rx_addr_t_iso), .RX_DATA(n0_rx_data_t_iso), .RX_REQ(n0_rx_req_t_iso), .RX_ACK(n0_rx_ack_t_bc), .RX_FAIL(n0_rx_fail_t_iso), .RX_PEND(n0_rx_pend_t_iso),
       .TX_SUCC(n0_tx_succ_t_iso), .TX_FAIL(n0_tx_fail_t_iso), .TX_RESP_ACK(n0_tx_resp_ack_t_bc),
 	  .RELEASE_RST_FROM_SLEEP_CTRL(n0_release_rst), .SLEEP_REQUEST_TO_SLEEP_CTRL(n0_sleep_req),
-	  .POWER_ON_TO_LAYER_CTRL(n0_pwr_on_t_iso), .RELEASE_CLK_TO_LAYER_CTRL(n0_rel_clk_t_iso), .RELEASE_RST_TO_LAYER_CTRL(n0_rel_rst_t_iso), .RELEASE_ISO_TO_LAYER_CTRL(n0_rel_iso_t_iso));
+	  .POWER_ON_TO_LAYER_CTRL(n0_pwr_on_t_iso), .RELEASE_CLK_TO_LAYER_CTRL(n0_rel_clk_t_iso), .RELEASE_RST_TO_LAYER_CTRL(n0_rel_rst_t_iso), .RELEASE_ISO_TO_LAYER_CTRL(n0_rel_iso_t_iso),
+	  .EXTERNAL_INT(ext_int_to_bus), .CLR_EXT_INT(clr_ext_int));
 
 // always on block
-	sleep_ctrl sc0
+	ulpb_sleep_ctrl sc0
 	(.CLKIN(CLKIN), .RESETn(RESETn),
 	 .SLEEP_REQ(n0_sleep_req), .POWER_ON(n0_power_on), .RELEASE_CLK(), .RELEASE_RST(n0_release_rst), .RELEASE_ISO(n0_release_iso_from_sc));
 
-// always on block
-	line_controller_rx_only lc0
+// always on line controller
+ulpb_line_ctrl lc0
 	(.DIN(DIN), .CLKIN(CLKIN), 										// the same input as the node
 	 .RELEASE_ISO_FROM_SLEEP_CTRL(n0_release_iso_from_sc),			// from sleep controller
 	 .DOUT_FROM_BUS(w_n0lc0), .CLKOUT_FROM_BUS(w_n0lc0_clk_out), 	// the outputs from the node
-	 .DOUT(DOUT), .CLKOUT(CLKOUT));									// to next node
+	 .DOUT(DOUT), .CLKOUT(CLKOUT),									// to next node
+	 .EXTERNAL_INT());
+
+// always on interrupt request
+ulpb_ext_int int0(
+	.CLKIN(CLKIN), 
+	.RESETn(RESETn),
+	.REQ_INT(REQ_INT), 
+	.EXTERNAL_INT_TO_LINE(ext_int_to_line), 
+	.EXTERNAL_INT_TO_BUS(ext_int_to_bus), 
+	.CLR_EXT_INT(clr_ext_int));
 
 always @ *
 begin

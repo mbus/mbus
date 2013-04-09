@@ -41,13 +41,16 @@
  * i.e. ADDRESS_MASK = 8'hf0, compare only upper 4-bit of address (from MSB)
  * 
  *
- * Last modified date: 03/16 '13
+ * Last modified date: 04/09 '13
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  * --------------------------------------------------------------------------
  * IMPORTANT: This module only works for RX only layers, not able to transmit
  * 			at this point.
  * --------------------------------------------------------------------------
  * Update log:
+ * 4/09 '13
+ * changed to 32-bit long and short address scheme, 
+ * add external int, 
  * 3/16 '13
  * Add power gated signals, move reset state to RX_ADDR
  * 3/6 '13
@@ -55,7 +58,16 @@
  * interrupt, bypass clock once interrupt occurred
  * */
 
+`define M3
+`define UWB
+
+// If not for M3, set this macro
+`ifndef M3
+	`define THIS_LAYER_ID
+`endif
+
 `include "include/ulpb_def.v"
+`include "include/m3_layer_id.v"
 
 module ulpb_node32(
 	input CLKIN, 
@@ -86,17 +98,22 @@ module ulpb_node32(
 	output reg RELEASE_RST_TO_LAYER_CTRL,
 	output reg RELEASE_ISO_TO_LAYER_CTRL,
 	// power gated signal to sleep controller
-	output reg SLEEP_REQUEST_TO_SLEEP_CTRL
+	output reg SLEEP_REQUEST_TO_SLEEP_CTRL,
+	// External interrupt
+	input EXTERNAL_INT,
+	output reg CLR_EXT_INT
 );
 
 `include "include/ulpb_func.v"
 
-parameter ADDRESS = 8'hef;
-parameter ADDRESS_MASK = 8'hf0;
+parameter ADDRESS = 32'hef;
+parameter ADDRESS_MASK = 32'hf0;
+parameter ADDRESS_MASK_SHORT = 8'hf0;
 // if MULTI_ADDR = 1, check additional address (ADDRESS2)
 parameter MULTI_ADDR_EN = 1'b0;	
-parameter ADDRESS2 = 8'hef;
-parameter ADDRESS_MASK2 = 8'hff;
+parameter ADDRESS2 = 32'hef;
+parameter ADDRESS_MASK2 = 32'hff;
+parameter ADDRESS_MASK2_SHORT = 8'hff;
 
 // Node mode
 parameter MODE_TX_NON_PRIO = 0;
@@ -155,52 +172,72 @@ wire	addr_bit_extract = ((ADDR  & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	data_bit_extract = ((DATA & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 reg		[2:0] addr_match_temp;
 wire	address_match = (addr_match_temp[2] | addr_match_temp[1] | addr_match_temp[0]);
+wire	long_addr_en = (RX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1 : 0;
 
 // Power gating related signals
 wire 	RESETn_local = (RESETn & (~RELEASE_RST_FROM_SLEEP_CTRL));
 reg		[1:0] powerup_seq_fsm;
 reg		shutdown, next_shutdown;
+reg		ext_int;
 
 parameter HOLD = `IO_HOLD;			// During sleep
 parameter RELEASE = `IO_RELEASE;	// During wake-up
 
-`ifdef M3	// M3 specific layer ID assignment
-	`ifdef CPU
-		parameter LAYER_ID = 24'd0;
-	`elsif IMAGER
-		parameter LAYER_ID = 24'd1;
-	`elsif UWB 
-		parameter LAYER_ID = 24'd11;
-	`else
-		parameter LAYER_ID = 24'd5;
-	`endif
+`ifdef M3
+	parameter LAYER_ID = `M3_LAYER_ID;
 `else
-	parameter LAYER_ID = 24'd5;			// From 0 ~ 23
+	// change this line to fit your application
+	parameter LAYER_ID = `THIS_LAYER_ID;
 `endif
 
 wire	[23:0] layer_slot = (1'b1<<LAYER_ID);
 
 always @ *
 begin
-	if (RX_ADDR==`BROADCAST_ADDR)
-		addr_match_temp[2] = 1;
-	else
-		addr_match_temp[2] = 0;
-
-	if (((RX_ADDR ^ ADDRESS) & ADDRESS_MASK)==0)
-		addr_match_temp[1] = 1;
-	else
-		addr_match_temp[1] = 0;
-	
-	if (MULTI_ADDR_EN==1'b1)
+	if (long_addr_en)
 	begin
-		if (((RX_ADDR ^ ADDRESS2) & ADDRESS_MASK2)==0)
-			addr_match_temp[0] = 1;
+		if (RX_ADDR==`BROADCAST_ADDR)
+			addr_match_temp[2] = 1;
+		else
+			addr_match_temp[2] = 0;
+
+		if (((RX_ADDR ^ ADDRESS) & ADDRESS_MASK)==0)
+			addr_match_temp[1] = 1;
+		else
+			addr_match_temp[1] = 0;
+		
+		if (MULTI_ADDR_EN==1'b1)
+		begin
+			if (((RX_ADDR ^ ADDRESS2) & ADDRESS_MASK2)==0)
+				addr_match_temp[0] = 1;
+			else
+				addr_match_temp[0] = 0;
+		end
 		else
 			addr_match_temp[0] = 0;
 	end
 	else
-		addr_match_temp[0] = 0;
+	begin
+		if (RX_ADDR[`ADDR_WIDTH_SHORT-1:0]==`BROADCAST_ADDR[`ADDR_WIDTH_SHORT-1:0])
+			addr_match_temp[2] = 1;
+		else
+			addr_match_temp[2] = 0;
+
+		if (((RX_ADDR[`ADDR_WIDTH_SHORT-1:0] ^ ADDRESS[`ADDR_WIDTH_SHORT-1:0]) & ADDRESS_MASK_SHORT)==0)
+			addr_match_temp[1] = 1;
+		else
+			addr_match_temp[1] = 0;
+		
+		if (MULTI_ADDR_EN==1'b1)
+		begin
+			if (((RX_ADDR[`ADDR_WIDTH_SHORT-1:0] ^ ADDRESS2[`ADDR_WIDTH_SHORT-1:0]) & ADDRESS_MASK2_SHORT)==0)
+				addr_match_temp[0] = 1;
+			else
+				addr_match_temp[0] = 0;
+		end
+		else
+			addr_match_temp[0] = 0;
+	end
 end
 
 always @ (posedge CLKIN or negedge RESETn_local)
@@ -371,6 +408,7 @@ begin
 				if (DIN & (~PRIORITY))
 				begin
 					next_mode = MODE_RX;
+					next_rx_addr = 0;
 				end
 				else
 				begin
@@ -379,6 +417,10 @@ begin
 					next_mode = MODE_TX;
 					next_tx_ack = 1;
 					next_tx_pend = TX_PEND;
+					if (TX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)
+						next_bit_position = `ADDR_WIDTH - 1'b1;
+					else
+						next_bit_position = `ADDR_WIDTH_SHORT - 1'b1;
 				end
 			end
 			else
@@ -391,10 +433,15 @@ begin
 					next_mode = MODE_TX;
 					next_tx_ack = 1;
 					next_tx_pend = TX_PEND;
+					if (TX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)
+						next_bit_position = `ADDR_WIDTH - 1'b1;
+					else
+						next_bit_position = `ADDR_WIDTH_SHORT - 1'b1;
 				end
 				else
 				begin
 					next_mode = MODE_RX;
+					next_rx_addr = 0;
 				end
 			end
 			next_bus_state = BUS_ADDR;
@@ -402,18 +449,36 @@ begin
 
 		BUS_ADDR:
 		begin
-			if (bit_position)
-				next_bit_position = bit_position - 1'b1;
-			else
-			begin
-				next_bit_position = `DATA_WIDTH - 1'b1;
-				if (mode==MODE_RX)
-					next_bus_state = BUS_DATA_RX_ADDI;
-				else
-					next_bus_state = BUS_DATA;
-			end
-			if (mode==MODE_RX)
-				next_rx_addr = {RX_ADDR[`ADDR_WIDTH-2:0], DIN};
+			case (mode)
+				MODE_TX:
+				begin
+					if (bit_position)
+						next_bit_position = bit_position - 1'b1;
+					else
+					begin
+						next_bit_position = `DATA_WIDTH - 1'b1;
+						next_bus_state = BUS_DATA;
+					end
+				end
+
+				MODE_RX:
+				begin
+					// short address
+					if ((bit_position==`ADDR_WIDTH-4)&&(rx_addr[3:0]==4'h0))
+						next_bit_position = `ADDR_WIDTH_SHORT - 3'd6;
+					else
+					begin
+						if (bit_position)
+							next_bit_position = bit_position - 1'b1;
+						else
+						begin
+							next_bit_position = `DATA_WIDTH - 1'b1;
+							next_bus_state = BUS_DATA_RX_ADDI;
+						end
+					end
+					next_rx_addr = {RX_ADDR[`ADDR_WIDTH-2:0], DIN};
+				end
+			endcase
 		end
 
 		BUS_DATA_RX_ADDI:
@@ -580,7 +645,9 @@ begin
 							default:
 							begin
 								next_out_reg_pos = ~CONTROL_BITS[0];
-								next_rx_fail = 1;
+								// don't assert rx_fail if it's a wake up glitch
+								if (~ext_int)
+									next_rx_fail = 1;
 							end
 						endcase
 					end
@@ -629,58 +696,77 @@ begin
 		RELEASE_RST_TO_LAYER_CTRL <= HOLD;
 		RELEASE_ISO_TO_LAYER_CTRL <= HOLD;
 		SLEEP_REQUEST_TO_SLEEP_CTRL <= 0;
+		ext_int <= 0;
+		CLR_EXT_INT <= 0;
 	end
 	else
 	begin
-		case (bus_state)
-			BUS_ADDR:
-			begin
-				powerup_seq_fsm <= 0;
-			end
+		if (CLR_EXT_INT & (~EXTERNAL_INT))
+			CLR_EXT_INT <= 0;
 
-			BUS_DATA_RX_ADDI:
-			begin
-				if (address_match)
+		if (bus_state==BUS_PRIO)
+		begin
+			ext_int <= EXTERNAL_INT;
+			power_up_seq_fsm <= 0;
+		end
+
+		if (ext_int)
+		begin
+			powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
+			case (power_up_seq_fsm)
+				0: begin POWER_ON_TO_LAYER_CTRL <= RELEASE; end
+				1: begin RELEASE_CLK_TO_LAYER_CTRL <= RELEASE; end
+				2: begin RELEASE_ISO_TO_LAYER_CTRL <= RELEASE; end
+				3: begin RELEASE_RST_TO_LAYER_CTRL <= RELEASE; ext_int <= 0; CLR_EXT_INT <= 1; end
+			endcase
+		end
+		else
+		begin
+			case (bus_state)
+				BUS_DATA_RX_ADDI:
 				begin
-					POWER_ON_TO_LAYER_CTRL <= RELEASE;
-					powerup_seq_fsm <= 1;
+					if (address_match)
+					begin
+						POWER_ON_TO_LAYER_CTRL <= RELEASE;
+						powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
+					end
 				end
-			end
 
-			BUS_DATA:
-			begin
-				case (powerup_seq_fsm)
-					1:
-					begin
-						RELEASE_CLK_TO_LAYER_CTRL <= RELEASE;
-						powerup_seq_fsm <= 2;
-					end
-
-					2:
-					begin
-						RELEASE_ISO_TO_LAYER_CTRL <= RELEASE;
-						powerup_seq_fsm <= 3;
-					end
-
-					3:
-					begin
-						RELEASE_RST_TO_LAYER_CTRL <= RELEASE;
-						powerup_seq_fsm <= 0;
-					end
-
-					default: begin end
-				endcase
-			end
-
-			BUS_CONTROL1:
-			begin
-				if (shutdown)
+				BUS_DATA:
 				begin
-					SLEEP_REQUEST_TO_SLEEP_CTRL <= 1;
-					RELEASE_ISO_TO_LAYER_CTRL <= HOLD;
+					case (powerup_seq_fsm)
+						1:
+						begin
+							RELEASE_CLK_TO_LAYER_CTRL <= RELEASE;
+							powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
+						end
+
+						2:
+						begin
+							RELEASE_ISO_TO_LAYER_CTRL <= RELEASE;
+							powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
+						end
+
+						3:
+						begin
+							RELEASE_RST_TO_LAYER_CTRL <= RELEASE;
+							powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
+						end
+
+						default: begin end
+					endcase
 				end
-			end
-		endcase
+
+				BUS_CONTROL1:
+				begin
+					if (shutdown)
+					begin
+						SLEEP_REQUEST_TO_SLEEP_CTRL <= 1;
+						RELEASE_ISO_TO_LAYER_CTRL <= HOLD;
+					end
+				end
+			endcase
+		end
 	end
 end
 

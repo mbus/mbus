@@ -169,7 +169,9 @@ reg		[`ADDR_WIDTH-1:0] next_rx_addr;
 reg		[`DATA_WIDTH-1:0] next_rx_data; 
 reg		[`DATA_WIDTH+1:0] rx_data_buf, next_rx_data_buf;
 reg		next_rx_fail;
-wire	[`DATA_WIDTH-1:0] rx_data_buf_proc;
+wire	[`DATA_WIDTH-1:0] rx_data_buf_proc = (bit_position==1)? rx_data_buf[`DATA_WIDTH-1:0] : (bit_position==`DATA_WIDTH-1'b1)? rx_data_buf[`DATA_WIDTH+1:2] : 0;
+wire	[`BROADCAST_CMD_WIDTH -1:0] rx_broadcast_command = rx_data_buf_proc[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH];
+reg		addr_enum, next_addr_enum;
 
 // interrupt register
 reg		BUS_INT_RSTn;
@@ -189,6 +191,7 @@ wire	address_match = (addr_match_temp[2] | addr_match_temp[1] | addr_match_temp[
 wire	rx_long_addr_en = (RX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1 : 0;
 wire	tx_long_addr_en = (TX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1 : 0;
 reg		tx_broadcast;
+reg		wakeup_req;
 
 // Power gating related signals
 `ifdef POWER_GATING
@@ -207,7 +210,6 @@ wire	[15:0] layer_slot = (1'b1<<ASSIGNED_ADDR_IN);
 
 // Assignments
 assign RX_BROADCAST = addr_match_temp[2];
-assign rx_data_buf_proc = (bit_position==1)? rx_data_buf[`DATA_WIDTH-1:0] : (bit_position==`DATA_WIDTH-1'b1)? rx_data_buf[`DATA_WIDTH+1:2] : 0;
 
 always @ *
 begin
@@ -221,6 +223,23 @@ begin
 	begin
 		if (TX_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH]==`BROADCAST_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH])
 			tx_broadcast = 1;
+	end
+end
+
+always @ *
+begin
+	wakeup_req = 0;
+	// normal messages
+	if (~RX_BROADCAST)
+		wakeup_req = address_match;
+	else
+	begin
+		// which channels should wake up
+		case (RX_ADDR[`FUNC_WIDTH-1:0])
+			`CHANNEL_POWER: begin end
+			`CHANNEL_ENUM: begin end
+			default: wakeup_req = 1;
+		endcase
 	end
 end
 
@@ -326,6 +345,8 @@ begin
 		// power gated related signal
 		shutdown <= 0;
 		`endif
+		// address enumeration
+		addr_enum <= 1;
 	end
 	else
 	begin
@@ -356,6 +377,8 @@ begin
 		// power gated related signal
 		shutdown <= next_shutdown;
 		`endif
+		// address enumeration
+		addr_enum <= next_addr_enum;
 	end
 end
 
@@ -387,6 +410,9 @@ begin
 	next_tx_fail = TX_FAIL;
 	next_tx_success = TX_SUCC;
 	next_tx_ack = TX_ACK;
+
+	// Address enumeration
+	next_addr_enum = addr_enum;
 
 	// Asynchronous interface
 	if (TX_ACK & (~TX_REQ))
@@ -614,15 +640,15 @@ begin
 						if (tx_broadcast)
 						begin
 							case (TX_ADDR[`FUNC_WIDTH-1:0])
-								`BROADCAST_PWR:
+								`CHANNEL_POWER:
 								begin
 									case (TX_DATA[`DATA_WIDTH-1:`DATA_WIDTH-8])
-										`GLOCAL_SHUTDOWN_MSG:
+										`CMD_GLOBAL_SHUTDOWN:
 										begin
 											next_shutdown = 1;
 										end
 
-										`LOCAL_SHUTDOWN_MSG:
+										`CMD_SLOT_SHUTDOWN:
 										begin
 											if ((TX_DATA[15:0]&layer_slot)>0)
 											begin
@@ -657,21 +683,29 @@ begin
 								begin
 									next_out_reg_pos = CONTROL_BITS[0];
 									// broadcast channel
-									case (rx_data_buf_proc[`FUNC_WIDTH-1:0])
-										`BROADCAST_ADDR:
+									case (RX_ADDR[`FUNC_WIDTH-1:0])
+										`CHANNEL_ADDR:
 										begin
+											case (rx_broadcast_command)
+												`CMD_ADDR_ENUMERATE:
+												begin
+													// this node doesn't have a valid short address, active low
+													if (~ASSIGNED_ADDR_VALID)
+														next_addr_enum = 0;
+												end
+											endcase
 										end
 
-										`BROADCAST_PWR:
+										`CHANNEL_POWER:
 										begin
 											// PWR Command
-											case (rx_data_buf_proc[`DATA_WIDTH-1:`DATA_WIDTH-8])
-												`GLOCAL_SHUTDOWN_MSG:
+											case (rx_broadcast_command)
+												`CMD_GLOBAL_SHUTDOWN:
 												begin
 													next_shutdown = 1;
 												end
 
-												`LOCAL_SHUTDOWN_MSG:
+												`CMD_SLOT_SHUTDOWN:
 												begin
 													if ((rx_data_buf_proc[15:0]&layer_slot)>0)
 													begin
@@ -789,18 +823,18 @@ begin
 		else
 		begin
 			case (bus_state)
-				BUS_DATA_RX_ADDI:
-				begin
-					if (address_match)
-					begin
-						POWER_ON_TO_LAYER_CTRL <= `IO_RELEASE;
-						powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
-					end
-				end
-
 				BUS_DATA:
 				begin
 					case (powerup_seq_fsm)
+						0:
+						begin
+							if (wakeup_req)
+							begin
+								POWER_ON_TO_LAYER_CTRL <= `IO_RELEASE;
+								powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
+							end
+						end
+
 						1:
 						begin
 							RELEASE_CLK_TO_LAYER_CTRL <= `IO_RELEASE;
@@ -816,10 +850,7 @@ begin
 						3:
 						begin
 							RELEASE_RST_TO_LAYER_CTRL <= `IO_RELEASE;
-							powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
 						end
-
-						default: begin end
 					endcase
 				end
 
@@ -903,7 +934,7 @@ begin
 	case (bus_state_neg)
 		BUS_IDLE:
 		begin
-			DOUT = ((~TX_REQ) & DIN);
+			DOUT = ((~TX_REQ) & DIN & addr_enum);
 		end
 
 		BUS_ARBITRATE:

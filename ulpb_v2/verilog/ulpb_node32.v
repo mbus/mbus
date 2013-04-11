@@ -60,6 +60,7 @@
 
 `define M3
 `define UWB
+`define POWER_GATING
 
 // If not for M3, set this macro
 `ifndef M3
@@ -77,8 +78,8 @@ module ulpb_node32(
 	output reg DOUT, 
 	input [`ADDR_WIDTH-1:0] TX_ADDR, 
 	input [`DATA_WIDTH-1:0] TX_DATA, 
-	input TX_REQ, 
 	input TX_PEND, 
+	input TX_REQ, 
 	input PRIORITY,
 	output reg TX_ACK, 
 	output reg [`ADDR_WIDTH-1:0] RX_ADDR, 
@@ -90,6 +91,7 @@ module ulpb_node32(
 	output reg TX_FAIL, 
 	output reg TX_SUCC, 
 	input TX_RESP_ACK,
+	`ifdef POWER_GATING
 	// power gated signals from sleep controller
 	input RELEASE_RST_FROM_SLEEP_CTRL,
 	// power gated signals to layer controller
@@ -103,10 +105,11 @@ module ulpb_node32(
 	input EXTERNAL_INT,
 	output reg CLR_EXT_INT,
 	// always on registers (DHCP)
-	input		[`ADDR_WIDTH_SHORT-1:0] ASSIGNED_ADDR_IN,
-	output	reg [`ADDR_WIDTH_SHORT-1:0] ASSIGNED_ADDR_OUT,
+	input		[(`ADDR_WIDTH_SHORT>>1)-1:0] ASSIGNED_ADDR_IN,
+	output	reg [(`ADDR_WIDTH_SHORT>>1)-1:0] ASSIGNED_ADDR_OUT,
 	input		ASSIGNED_ADDR_VALID,
 	output	reg	ASSIGNED_ADDR_WRITE	
+	`endif
 );
 
 `include "include/ulpb_func.v"
@@ -180,13 +183,20 @@ wire	address_match = (addr_match_temp[2] | addr_match_temp[1] | addr_match_temp[
 wire	long_addr_en = (RX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1 : 0;
 
 // Power gating related signals
+`ifdef POWER_GATING
 wire 	RESETn_local = (RESETn & (~RELEASE_RST_FROM_SLEEP_CTRL));
+`else
+wire	RESETn_local = RESETn;
+`endif
+
+`ifdef POWER_GATING
 reg		[1:0] powerup_seq_fsm;
 reg		shutdown, next_shutdown;
 reg		ext_int;
 
 parameter HOLD = `IO_HOLD;			// During sleep
 parameter RELEASE = `IO_RELEASE;	// During wake-up
+`endif
 
 `ifdef M3
 	parameter LAYER_ID = `M3_LAYER_ID;
@@ -221,14 +231,15 @@ begin
 		else
 			addr_match_temp[0] = 0;
 	end
-	else
+	// short address assigned
+	else if (ASSIGNED_ADDR_VALID)
 	begin
 		if (RX_ADDR[`ADDR_WIDTH_SHORT-1:0]==`BROADCAST_ADDR[`ADDR_WIDTH_SHORT-1:0])
 			addr_match_temp[2] = 1;
 		else
 			addr_match_temp[2] = 0;
 
-		if (((RX_ADDR[`ADDR_WIDTH_SHORT-1:0] ^ ADDRESS[`ADDR_WIDTH_SHORT-1:0]) & ADDRESS_MASK_SHORT)==0)
+		if (((RX_ADDR[`ADDR_WIDTH_SHORT-1:0] ^ {ASSIGNED_ADDR_IN[(`ADDR_WIDTH_SHORT>>1)-1:0], {(`ADDR_WIDTH_SHORT>>1){1'b0}}}) & ADDRESS_MASK_SHORT)==0)
 			addr_match_temp[1] = 1;
 		else
 			addr_match_temp[1] = 0;
@@ -249,7 +260,11 @@ always @ (posedge CLKIN or negedge RESETn_local)
 begin
 	if (~RESETn_local)
 	begin
+		`ifdef POWER_GATING
 		bus_state <= BUS_PRIO;
+		`else
+		bus_state <= BUS_IDLE;
+		`endif
 		BUS_INT_RSTn <= 1;
 	end
 	else
@@ -308,8 +323,10 @@ begin
 		RX_REQ <= 0;
 		RX_PEND <= 0;
 		RX_FAIL <= 0;
+		`ifdef POWER_GATING
 		// power gated related signal
 		shutdown <= 0;
+		`endif
 	end
 	else
 	begin
@@ -336,8 +353,10 @@ begin
 		ctrl_bit_buf <= next_ctrl_bit_buf;
 		// Interface registers
 		TX_ACK <= next_tx_ack;
+		`ifdef POWER_GATING
 		// power gated related signal
 		shutdown <= next_shutdown;
+		`endif
 	end
 end
 
@@ -385,8 +404,10 @@ begin
 		next_rx_fail = 0;
 	end
 
+	`ifdef POWER_GATING
 	// power gating signals
 	next_shutdown = shutdown;
+	`endif
 
 	case (bus_state)
 		BUS_IDLE:
@@ -490,7 +511,9 @@ begin
 		begin
 			next_rx_data_buf = {rx_data_buf[`DATA_WIDTH:0], DIN};
 			next_bit_position = bit_position - 1'b1;
+			`ifdef POWER_GATING
 			next_shutdown = 0;
+			`endif
 			if (bit_position==(`DATA_WIDTH-2'b10))
 			begin
 				next_bus_state = BUS_DATA;
@@ -651,8 +674,12 @@ begin
 							begin
 								next_out_reg_pos = ~CONTROL_BITS[0];
 								// don't assert rx_fail if it's a wake up glitch
+								`ifdef POWER_GATING
 								if (~ext_int)
 									next_rx_fail = 1;
+								`else
+									next_rx_fail = 1;
+								`endif
 							end
 						endcase
 					end
@@ -691,6 +718,7 @@ begin
 	endcase
 end
 
+`ifdef POWER_GATING
 always @ (negedge CLKIN or negedge RESETn_local)
 begin
 	if (~RESETn_local)
@@ -774,13 +802,19 @@ begin
 		end
 	end
 end
+`endif
 
 always @ (negedge CLKIN or negedge RESETn_local)
 begin
 	if (~RESETn_local)
 	begin
 		out_reg_neg <= 1;
+		`ifdef POWER_GATING
 		bus_state_neg <= BUS_PRIO;
+		`else
+		bus_state_neg <= BUS_IDLE;
+		`endif
+
 		mode_neg <= MODE_RX;
 	end
 	else

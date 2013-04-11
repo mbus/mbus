@@ -36,7 +36,7 @@ module ulpb_ctrl_wrapper(
 	output	CLR_EXT_INT,
 	// wake up processor
 	input	WAKEUP_PROC,
-	output	reg WAKEUP_PROC_CLR
+	output	SLEEP_REQUEST_TO_SLEEP_CTRL
 );
 
 parameter CTRL_ADDRESS = 8'h01;
@@ -105,16 +105,9 @@ begin
 		RELEASE_ISO_TO_PROC <= `IO_HOLD;
 		RELEASE_RST_TO_PROC <= `IO_HOLD;
 		powerup_seq <= 0;
-		WAKEUP_PROC_CLR <= 0;
 	end
 	else
 	begin
-		if ((~WAKEUP_PROC) & WAKEUP_PROC_CLR)
-		begin
-			WAKEUP_PROC_CLR <= 0;
-			powerup_seq <= 0;
-		end
-
 		case (powerup_seq)
 			0:
 			begin
@@ -122,8 +115,9 @@ begin
 				begin
 					powerup_seq <= powerup_seq + 1'b1;
 					POWER_ON_TO_PROC <= `IO_RELEASE;
-					WAKEUP_PROC_CLR <= 1;
 				end
+				else
+					powerup_seq <= 0;
 			end
 
 			1: 
@@ -141,6 +135,8 @@ begin
 			3:
 			begin
 				RELEASE_RST_TO_PROC <= `IO_RELEASE;
+				if (~WAKEUP_PROC)
+					powerup_seq <= 0;
 			end
 		endcase
 	end
@@ -184,7 +180,7 @@ ulpb_node32 #(.ADDRESS(NODE_ADDRESS), .ADDRESS_MASK(NODE_ADDR_MASK), .MULTI_ADDR
 	.RELEASE_CLK_TO_LAYER_CTRL(RELEASE_CLK_FROM_BUS),
 	.RELEASE_RST_TO_LAYER_CTRL(RELEASE_RST_FROM_BUS),
 	.RELEASE_ISO_TO_LAYER_CTRL(RELEASE_ISO_FROM_BUS),
-	.SLEEP_REQUEST_TO_SLEEP_CTRL(),
+	.SLEEP_REQUEST_TO_SLEEP_CTRL(SLEEP_REQUEST_TO_SLEEP_CTRL),
 	.EXTERNAL_INT(EXTERNAL_INT),
 	.CLR_EXT_INT(CLR_EXT_INT)
 );

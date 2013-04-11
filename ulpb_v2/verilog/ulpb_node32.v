@@ -101,7 +101,12 @@ module ulpb_node32(
 	output reg SLEEP_REQUEST_TO_SLEEP_CTRL,
 	// External interrupt
 	input EXTERNAL_INT,
-	output reg CLR_EXT_INT
+	output reg CLR_EXT_INT,
+	// always on registers (DHCP)
+	input		[`ADDR_WIDTH_SHORT-1:0] ASSIGNED_ADDR_IN,
+	output	reg [`ADDR_WIDTH_SHORT-1:0] ASSIGNED_ADDR_OUT,
+	input		ASSIGNED_ADDR_VALID,
+	output	reg	ASSIGNED_ADDR_WRITE	
 );
 
 `include "include/ulpb_func.v"

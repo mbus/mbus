@@ -1,7 +1,11 @@
+
+`include "include/ulpb_func.v"
+// simulate the always on register file which holds the assigned address
+
 module ulpb_addr_rf(
 	input		RESETn,
-	output	reg	[`ADDR_WIDTH_SHORT-1:0] ADDR_OUT,
-	input		[`ADDR_WIDTH_SHORT-1:0] ADDR_IN,
+	output	reg	[`DYNA-1:0] ADDR_OUT,
+	input		[`DYNA-1:0] ADDR_IN,
 	output	reg	ADDR_VALID,
 	input		ADDR_WR_EN	
 );

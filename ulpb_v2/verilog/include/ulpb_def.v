@@ -1,7 +1,14 @@
 
-`define ADDR_WIDTH_SHORT 8
 `define ADDR_WIDTH 32
 `define DATA_WIDTH 32
+`define FUNC_WIDTH 4
+`define DYNA_WIDTH 4
+`define RSVD_WIDTH 8
+
+`define PRFX_WIDTH 			(`ADDR_WIDTH - `RSVD_WIDTH - `FUNC_WIDTH)
+`define SHORT_ADDR_WIDTH 	(`DYNA_WIDTH + `FUNC_WIDTH)
+
+`define ADDR_WIDTH_SHORT 8
 `define WATCH_DOG_WIDTH 20
 
 `define CONTROL_SEQ 2'b10

@@ -71,42 +71,47 @@
 `include "include/m3_layer_id.v"
 
 module ulpb_node32(
-	input CLKIN, 
-	input RESETn, 
-	input DIN, 
-	output reg CLKOUT,
-	output reg DOUT, 
-	input [`ADDR_WIDTH-1:0] TX_ADDR, 
-	input [`DATA_WIDTH-1:0] TX_DATA, 
-	input TX_PEND, 
-	input TX_REQ, 
-	input PRIORITY,
-	output reg TX_ACK, 
-	output reg [`ADDR_WIDTH-1:0] RX_ADDR, 
-	output reg [`DATA_WIDTH-1:0] RX_DATA, 
-	output reg RX_REQ, 
-	input RX_ACK, 
-	output reg RX_FAIL,
-	output reg RX_PEND, 
-	output reg TX_FAIL, 
-	output reg TX_SUCC, 
-	input TX_RESP_ACK,
+	input 	CLKIN, 
+	input 	RESETn, 
+	input 	DIN, 
+	output 	reg CLKOUT,
+	output 	reg DOUT, 
+
+	input 		[`ADDR_WIDTH-1:0] TX_ADDR, 
+	input 		[`DATA_WIDTH-1:0] TX_DATA, 
+	input 		TX_PEND, 
+	input 		TX_REQ, 
+	output 	reg TX_ACK, 
+	input 		PRIORITY,
+
+	output 	reg [`ADDR_WIDTH-1:0] RX_ADDR, 
+	output 	reg [`DATA_WIDTH-1:0] RX_DATA, 
+	output 	reg RX_PEND, 
+	output 	reg RX_REQ, 
+	input 		RX_ACK, 
+	output 		RX_BROADCAST,
+
+	output 	reg RX_FAIL,
+	output 	reg TX_FAIL, 
+	output 	reg TX_SUCC, 
+	input 		TX_RESP_ACK,
+
 	`ifdef POWER_GATING
 	// power gated signals from sleep controller
-	input RELEASE_RST_FROM_SLEEP_CTRL,
+	input 		RELEASE_RST_FROM_SLEEP_CTRL,
 	// power gated signals to layer controller
-	output reg POWER_ON_TO_LAYER_CTRL,
-	output reg RELEASE_CLK_TO_LAYER_CTRL,
-	output reg RELEASE_RST_TO_LAYER_CTRL,
-	output reg RELEASE_ISO_TO_LAYER_CTRL,
+	output 	reg POWER_ON_TO_LAYER_CTRL,
+	output 	reg RELEASE_CLK_TO_LAYER_CTRL,
+	output 	reg RELEASE_RST_TO_LAYER_CTRL,
+	output 	reg RELEASE_ISO_TO_LAYER_CTRL,
 	// power gated signal to sleep controller
-	output reg SLEEP_REQUEST_TO_SLEEP_CTRL,
+	output 	reg SLEEP_REQUEST_TO_SLEEP_CTRL,
 	// External interrupt
-	input EXTERNAL_INT,
-	output reg CLR_EXT_INT,
+	input 		EXTERNAL_INT,
+	output 	reg CLR_EXT_INT,
 	// always on registers (DHCP)
-	input		[(`ADDR_WIDTH_SHORT>>1)-1:0] ASSIGNED_ADDR_IN,
-	output	reg [(`ADDR_WIDTH_SHORT>>1)-1:0] ASSIGNED_ADDR_OUT,
+	input		[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_IN,
+	output	reg [`DYNA_WIDTH-1:0] ASSIGNED_ADDR_OUT,
 	input		ASSIGNED_ADDR_VALID,
 	output	reg	ASSIGNED_ADDR_WRITE	
 	`endif
@@ -115,19 +120,19 @@ module ulpb_node32(
 `include "include/ulpb_func.v"
 
 parameter ADDRESS = 32'hef;
-parameter ADDRESS_MASK = 32'hf0;
-parameter ADDRESS_MASK_SHORT = 8'hf0;
+parameter ADDRESS_MASK = {(`DATA_WIDTH-`FUNC_WIDTH){1'b1}};
+parameter ADDRESS_MASK_SHORT = {`DYNA_WIDTH{1'b1}};
 // if MULTI_ADDR = 1, check additional address (ADDRESS2)
 parameter MULTI_ADDR_EN = 1'b0;	
 parameter ADDRESS2 = 32'hef;
-parameter ADDRESS_MASK2 = 32'hff;
-parameter ADDRESS_MASK2_SHORT = 8'hff;
+parameter ADDRESS_MASK2 = {(`DATA_WIDTH-`FUNC_WIDTH){1'b1}};
+parameter ADDRESS_MASK2_SHORT = {`DYNA_WIDTH{1'b1}};
 
 // Node mode
-parameter MODE_TX_NON_PRIO = 0;
-parameter MODE_TX = 1;
-parameter MODE_RX = 2;
-parameter MODE_FWD = 3;
+parameter MODE_TX_NON_PRIO = 2'd0;
+parameter MODE_TX = 2'd1;
+parameter MODE_RX = 2'd2;
+parameter MODE_FWD = 2'd3;
 
 // BUS state
 parameter BUS_IDLE = 0;
@@ -164,6 +169,7 @@ reg		[`ADDR_WIDTH-1:0] next_rx_addr;
 reg		[`DATA_WIDTH-1:0] next_rx_data; 
 reg		[`DATA_WIDTH+1:0] rx_data_buf, next_rx_data_buf;
 reg		next_rx_fail;
+wire	[`DATA_WIDTH-1:0] rx_data_buf_proc;
 
 // interrupt register
 reg		BUS_INT_RSTn;
@@ -180,7 +186,9 @@ wire	addr_bit_extract = ((ADDR  & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	data_bit_extract = ((DATA & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 reg		[2:0] addr_match_temp;
 wire	address_match = (addr_match_temp[2] | addr_match_temp[1] | addr_match_temp[0]);
-wire	long_addr_en = (RX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1 : 0;
+wire	rx_long_addr_en = (RX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1 : 0;
+wire	tx_long_addr_en = (TX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1 : 0;
+reg		tx_broadcast;
 
 // Power gating related signals
 `ifdef POWER_GATING
@@ -193,66 +201,57 @@ wire	RESETn_local = RESETn;
 reg		[1:0] powerup_seq_fsm;
 reg		shutdown, next_shutdown;
 reg		ext_int;
-
-parameter HOLD = `IO_HOLD;			// During sleep
-parameter RELEASE = `IO_RELEASE;	// During wake-up
 `endif
 
-`ifdef M3
-	parameter LAYER_ID = `M3_LAYER_ID;
-`else
-	// change this line to fit your application
-	parameter LAYER_ID = `THIS_LAYER_ID;
-`endif
+wire	[15:0] layer_slot = (1'b1<<ASSIGNED_ADDR_IN);
 
-wire	[23:0] layer_slot = (1'b1<<LAYER_ID);
+// Assignments
+assign RX_BROADCAST = addr_match_temp[2];
+assign rx_data_buf_proc = (bit_position==1)? rx_data_buf[`DATA_WIDTH-1:0] : (bit_position==`DATA_WIDTH-1'b1)? rx_data_buf[`DATA_WIDTH+1:2] : 0;
 
 always @ *
 begin
-	if (long_addr_en)
+	tx_braodcast = 0;
+	if (tx_long_addr_en)
 	begin
-		if (RX_ADDR==`BROADCAST_ADDR)
-			addr_match_temp[2] = 1;
-		else
-			addr_match_temp[2] = 0;
+		if (TX_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH]==`BROADCAST_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH])
+			tx_broadcast = 1;
+	end
+	else
+	begin
+		if (TX_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH]==`BROADCAST_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH])
+			tx_broadcast = 1;
+	end
+end
 
-		if (((RX_ADDR ^ ADDRESS) & ADDRESS_MASK)==0)
+always @ *
+begin
+	addr_match_temp = 3'b000;
+	if (rx_long_addr_en)
+	begin
+		if (RX_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH]==`BROADCAST_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH])
+			addr_match_temp[2] = 1;
+
+		if (((RX_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH] ^ ADDRESS[`DATA_WIDTH-1:`FUNC_WIDTH]) & ADDRESS_MASK)==0)
 			addr_match_temp[1] = 1;
-		else
-			addr_match_temp[1] = 0;
 		
-		if (MULTI_ADDR_EN==1'b1)
-		begin
-			if (((RX_ADDR ^ ADDRESS2) & ADDRESS_MASK2)==0)
+		if ((MULTI_ADDR_EN==1'b1) && (((RX_ADDR ^ ADDRESS2) & ADDRESS_MASK2)==0))
 				addr_match_temp[0] = 1;
-			else
-				addr_match_temp[0] = 0;
-		end
-		else
-			addr_match_temp[0] = 0;
 	end
 	// short address assigned
-	else if (ASSIGNED_ADDR_VALID)
+	else
 	begin
-		if (RX_ADDR[`ADDR_WIDTH_SHORT-1:0]==`BROADCAST_ADDR[`ADDR_WIDTH_SHORT-1:0])
+		if (RX_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH]==`BROADCAST_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH])
 			addr_match_temp[2] = 1;
-		else
-			addr_match_temp[2] = 0;
 
-		if (((RX_ADDR[`ADDR_WIDTH_SHORT-1:0] ^ {ASSIGNED_ADDR_IN[(`ADDR_WIDTH_SHORT>>1)-1:0], {(`ADDR_WIDTH_SHORT>>1){1'b0}}}) & ADDRESS_MASK_SHORT)==0)
-			addr_match_temp[1] = 1;
-		else
-			addr_match_temp[1] = 0;
-		
-		if (MULTI_ADDR_EN==1'b1)
+		if (ASSIGNED_ADDR_VALID)
 		begin
-			if (((RX_ADDR[`ADDR_WIDTH_SHORT-1:0] ^ ADDRESS2[`ADDR_WIDTH_SHORT-1:0]) & ADDRESS_MASK2_SHORT)==0)
+			if (((RX_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH] ^ ASSIGNED_ADDR_IN) & ADDRESS_MASK_SHORT)==0)
+				addr_match_temp[1] = 1;
+		
+			if ((MULTI_ADDR_EN==1'b1) && (((RX_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH] ^ ASSIGNED_ADDR_IN) & ADDRESS_MASK2_SHORT)==0))
 				addr_match_temp[0] = 1;
-			else
-				addr_match_temp[0] = 0;
 		end
-		else
-			addr_match_temp[0] = 0;
 	end
 end
 
@@ -443,10 +442,10 @@ begin
 					next_mode = MODE_TX;
 					next_tx_ack = 1;
 					next_tx_pend = TX_PEND;
-					if (TX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)
+					if (tx_long_addr_en)
 						next_bit_position = `ADDR_WIDTH - 1'b1;
 					else
-						next_bit_position = `ADDR_WIDTH_SHORT - 1'b1;
+						next_bit_position = `SHORT_ADDR_WIDTH- 1'b1;
 				end
 			end
 			else
@@ -459,10 +458,10 @@ begin
 					next_mode = MODE_TX;
 					next_tx_ack = 1;
 					next_tx_pend = TX_PEND;
-					if (TX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)
+					if (tx_long_addr_en)
 						next_bit_position = `ADDR_WIDTH - 1'b1;
 					else
-						next_bit_position = `ADDR_WIDTH_SHORT - 1'b1;
+						next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
 				end
 				else
 				begin
@@ -490,8 +489,8 @@ begin
 				MODE_RX:
 				begin
 					// short address
-					if ((bit_position==`ADDR_WIDTH-4)&&(rx_addr[3:0]==4'h0))
-						next_bit_position = `ADDR_WIDTH_SHORT - 3'd6;
+					if ((bit_position==`ADDR_WIDTH-3'd5)&&(rx_addr[3:0]!=4'hf))
+						next_bit_position = `SHORT_ADDR_WIDTH - 3'd6;
 					else
 					begin
 						if (bit_position)
@@ -602,34 +601,89 @@ begin
 		BUS_CONTROL0:
 		begin
 			next_bus_state = BUS_CONTROL0;
-			if ((mode==MODE_TX)&&(~req_interrupt))
-				next_tx_fail = 1;
-
 			next_bus_state = BUS_CONTROL1;
 			next_ctrl_bit_buf = DIN;
 
-			// Prevent wire floating
-			if (req_interrupt)
-				next_out_reg_pos = ~CONTROL_BITS[0];
-			else
-			begin
-				if (mode==MODE_RX)
+			case (mode)
+				MODE_TX:
 				begin
-					// End of Message
-					if (DIN==CONTROL_BITS[1])
+					if (req_interrupt)
 					begin
-						// correct ending state
-						// rx above tx = 31
-						// rx below tx = 1
-						case (bit_position)
-							1:
-							begin
-								if ((rx_data_buf[`DATA_WIDTH-1:`DATA_WIDTH-8]==`GLOBAL_SHUTDOWN_MSG) || ((rx_data_buf[`DATA_WIDTH-1:`DATA_WIDTH-8]==`LOCAL_SHUTDOWN_MSG)&&((rx_data_buf[`DATA_WIDTH-9:0]&layer_slot)>0)))
+						// Prevent wire floating
+						next_out_reg_pos = ~CONTROL_BITS[0];
+						if (tx_broadcast)
+						begin
+							case (TX_ADDR[`FUNC_WIDTH-1:0])
+								`BROADCAST_PWR:
 								begin
-									next_shutdown = 1;
-									next_out_reg_pos = CONTROL_BITS[0];
+									case (TX_DATA[`DATA_WIDTH-1:`DATA_WIDTH-8])
+										`GLOCAL_SHUTDOWN_MSG:
+										begin
+											next_shutdown = 1;
+										end
+
+										`LOCAL_SHUTDOWN_MSG:
+										begin
+											if ((TX_DATA[15:0]&layer_slot)>0)
+											begin
+												next_shutdown = 1;
+											end
+										end
+									endcase
 								end
+							endcase
+						end
+					end
+					else
+						next_tx_fail = 1;
+				end
+
+				MODE_RX:
+				begin
+					if (req_interrupt)
+						next_out_reg_pos = ~CONTROL_BITS[0];
+					else
+					begin
+						// End of Message
+						if (DIN==CONTROL_BITS[1])
+						begin
+							// correct ending state
+							// rx above tx = 31
+							// rx below tx = 1
+							if ((bit_position==1)||(bit_position==(`DATA_WIDTH-1'b1))
+							begin
+								// broadcast message 
+								if (RX_BROADCAST)
+								begin
+									next_out_reg_pos = CONTROL_BITS[0];
+									// broadcast channel
+									case (rx_data_buf_proc[`FUNC_WIDTH-1:0])
+										`BROADCAST_ADDR:
+										begin
+										end
+
+										`BROADCAST_PWR:
+										begin
+											// PWR Command
+											case (rx_data_buf_proc[`DATA_WIDTH-1:`DATA_WIDTH-8])
+												`GLOCAL_SHUTDOWN_MSG:
+												begin
+													next_shutdown = 1;
+												end
+
+												`LOCAL_SHUTDOWN_MSG:
+												begin
+													if ((rx_data_buf_proc[15:0]&layer_slot)>0)
+													begin
+														next_shutdown = 1;
+													end
+												end
+											endcase
+										end
+									endcase
+								end // endif rx_broadcast
 								else
+								// unicast message
 								begin
 									if (RX_REQ)
 									begin
@@ -638,39 +692,15 @@ begin
 									end
 									else
 									begin
-										next_rx_data = rx_data_buf[`DATA_WIDTH-1:0];
+										next_rx_data = rx_data_buf_proc;
 										next_out_reg_pos = CONTROL_BITS[0];
 										next_rx_req = 1;
 										next_rx_pend = 0;
 									end
 								end
-							end
-
-							(`DATA_WIDTH-1'b1):
-							begin
-								if ((rx_data_buf[`DATA_WIDTH+1:`DATA_WIDTH-6]==`GLOBAL_SHUTDOWN_MSG) || ((rx_data_buf[`DATA_WIDTH+1:`DATA_WIDTH-6]==`LOCAL_SHUTDOWN_MSG)&&((rx_data_buf[`DATA_WIDTH-7:2]&layer_slot)>0)))
-								begin
-									next_shutdown = 1;
-									next_out_reg_pos = CONTROL_BITS[0];
-								end
-								else
-								begin
-									if (RX_REQ)
-									begin
-										next_out_reg_pos = ~CONTROL_BITS[0];
-										next_rx_fail = 1;
-									end
-									else
-									begin
-										next_rx_data = rx_data_buf[`DATA_WIDTH+1:2];
-										next_out_reg_pos = CONTROL_BITS[0];
-										next_rx_req = 1;
-										next_rx_pend = 0;
-									end
-								end
-							end
-
-							default:
+							end // endif bit position
+							else
+							// stops at middle of transmission
 							begin
 								next_out_reg_pos = ~CONTROL_BITS[0];
 								// don't assert rx_fail if it's a wake up glitch
@@ -681,15 +711,18 @@ begin
 									next_rx_fail = 1;
 								`endif
 							end
-						endcase
-					end
-					else
-					begin
-						next_out_reg_pos = ~CONTROL_BITS[0];
-						next_rx_fail = 1;
+						end	// endif end of message
+						else
+						// incorrect EOM
+						begin
+							next_out_reg_pos = ~CONTROL_BITS[0];
+							next_rx_fail = 1;
+						end
 					end
 				end
-			end
+
+			endcase
+
 		end
 
 		BUS_CONTROL1:
@@ -724,10 +757,10 @@ begin
 	if (~RESETn_local)
 	begin
 		powerup_seq_fsm <= 0;
-		POWER_ON_TO_LAYER_CTRL <= HOLD;
-		RELEASE_CLK_TO_LAYER_CTRL <= HOLD;
-		RELEASE_ISO_TO_LAYER_CTRL <= HOLD;
-		RELEASE_RST_TO_LAYER_CTRL <= HOLD;
+		POWER_ON_TO_LAYER_CTRL <= `IO_HOLD;
+		RELEASE_CLK_TO_LAYER_CTRL <= `IO_HOLD;
+		RELEASE_ISO_TO_LAYER_CTRL <= `IO_HOLD;
+		RELEASE_RST_TO_LAYER_CTRL <= `IO_HOLD;
 		SLEEP_REQUEST_TO_SLEEP_CTRL <= 0;
 		ext_int <= 0;
 		CLR_EXT_INT <= 0;
@@ -747,10 +780,10 @@ begin
 		begin
 			powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
 			case (power_up_seq_fsm)
-				0: begin POWER_ON_TO_LAYER_CTRL <= RELEASE; end
-				1: begin RELEASE_CLK_TO_LAYER_CTRL <= RELEASE; end
-				2: begin RELEASE_ISO_TO_LAYER_CTRL <= RELEASE; end
-				3: begin RELEASE_RST_TO_LAYER_CTRL <= RELEASE; ext_int <= 0; CLR_EXT_INT <= 1; end
+				0: begin POWER_ON_TO_LAYER_CTRL <= `IO_RELEASE; end
+				1: begin RELEASE_CLK_TO_LAYER_CTRL <= `IO_RELEASE; end
+				2: begin RELEASE_ISO_TO_LAYER_CTRL <= `IO_RELEASE; end
+				3: begin RELEASE_RST_TO_LAYER_CTRL <= `IO_RELEASE; ext_int <= 0; CLR_EXT_INT <= 1; end
 			endcase
 		end
 		else
@@ -760,7 +793,7 @@ begin
 				begin
 					if (address_match)
 					begin
-						POWER_ON_TO_LAYER_CTRL <= RELEASE;
+						POWER_ON_TO_LAYER_CTRL <= `IO_RELEASE;
 						powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
 					end
 				end
@@ -770,19 +803,19 @@ begin
 					case (powerup_seq_fsm)
 						1:
 						begin
-							RELEASE_CLK_TO_LAYER_CTRL <= RELEASE;
+							RELEASE_CLK_TO_LAYER_CTRL <= `IO_RELEASE;
 							powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
 						end
 
 						2:
 						begin
-							RELEASE_ISO_TO_LAYER_CTRL <= RELEASE;
+							RELEASE_ISO_TO_LAYER_CTRL <= `IO_RELEASE;
 							powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
 						end
 
 						3:
 						begin
-							RELEASE_RST_TO_LAYER_CTRL <= RELEASE;
+							RELEASE_RST_TO_LAYER_CTRL <= `IO_RELEASE;
 							powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
 						end
 
@@ -795,7 +828,7 @@ begin
 					if (shutdown)
 					begin
 						SLEEP_REQUEST_TO_SLEEP_CTRL <= 1;
-						RELEASE_ISO_TO_LAYER_CTRL <= HOLD;
+						RELEASE_ISO_TO_LAYER_CTRL <= `IO_HOLD;
 					end
 				end
 			endcase

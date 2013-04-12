@@ -111,13 +111,13 @@ module ulpb_node32(
 	// External interrupt
 	input 		EXTERNAL_INT,
 	output 	reg CLR_EXT_INT,
-	// always on registers (DHCP)
+	`endif
+	// interface with local register files (RF)
 	input		[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_IN,
-	output	reg [`DYNA_WIDTH-1:0] ASSIGNED_ADDR_OUT,
+	output	 	[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_OUT,
 	input		ASSIGNED_ADDR_VALID,
 	output	reg	ASSIGNED_ADDR_WRITE,
-	output	reg	ASSIGNED_ADDR_INVALID
-	`endif
+	output	reg	ASSIGNED_ADDR_INVALIDn
 );
 
 `include "include/ulpb_func.v"
@@ -182,9 +182,8 @@ wire	[`BROADCAST_CMD_WIDTH -1:0] rx_broadcast_command = rx_data_buf_proc[`DATA_W
 
 // address enumation registers
 reg		[1:0] enum_addr_resp, next_enum_addr_resp;
-reg		[`DYNA_WIDTH-1:0] next_assigned_addr_out;
 reg		next_assigned_addr_write;
-reg		next_assigned_addr_invalid;
+reg		next_assigned_addr_invalidn;
 
 // interrupt register
 reg		BUS_INT_RSTn;
@@ -223,6 +222,7 @@ wire	[15:0] layer_slot = (1'b1<<ASSIGNED_ADDR_IN);
 
 // Assignments
 assign RX_BROADCAST = addr_match_temp[2];
+assign ASSIGNED_ADDR_OUT = DATA[`DYNA_WIDTH-1:0];
 
 // Node priority
 // Used only when the BUS_STATE == BUS_PRIO, determine the node should be RX or TX
@@ -400,9 +400,8 @@ begin
 		// address enumeration
 		enum_addr_resp <= ADDR_ENUM_RESPOND_NONE;
 		// address enumeration interface
-		ASSIGNED_ADDR_OUT <= 0;
 		ASSIGNED_ADDR_WRITE <= 0;
-		ASSIGNED_ADDR_INVALID <= 0;
+		ASSIGNED_ADDR_INVALIDn <= 1;
 	end
 	else
 	begin
@@ -436,9 +435,8 @@ begin
 		// address enumeration
 		enum_addr_resp <= next_enum_addr_resp;
 		// address enumeration interface
-		ASSIGNED_ADDR_OUT <= next_assigned_addr_out;
 		ASSIGNED_ADDR_WRITE <= next_assigned_addr_write;
-		ASSIGNED_ADDR_INVALID <= next_assigned_addr_invalid;
+		ASSIGNED_ADDR_INVALIDn <= next_assigned_addr_invalidn;
 	end
 end
 
@@ -475,9 +473,8 @@ begin
 	next_enum_addr_resp = enum_addr_resp;
 
 	// Address enumeratio interface
-	next_assigned_addr_out = ASSIGNED_ADDR_OUT;
-	next_assigned_addr_write = ASSIGNED_ADDR_WRITE;
-	next_assigned_addr_invalid = ASSIGNED_ADDR_INVALID;
+	next_assigned_addr_write = 0;
+	next_assigned_addr_invalidn = 1;
 
 	// Asynchronous interface
 	if (TX_ACK & (~TX_REQ))
@@ -534,7 +531,6 @@ begin
 					ADDR_ENUM_RESPOND_T2:
 					begin
 						next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
-						next_assigned_addr_out = DATA[`DYNA_WIDTH-1:0];
 						next_assigned_addr_write = 1;
 						next_enum_addr_resp = ADDR_ENUM_RESPOND_NONE;
 					end
@@ -767,6 +763,11 @@ begin
 													next_enum_addr_resp = ADDR_ENUM_RESPOND_T1;
 													next_addr = `BROADCAST_ADDR[`SHORT_ADDR_WITDH-1:0];
 													next_data = (`CMD_CHANNEL_ENUM_RESPONSE<<(`DATA_WIDTH-`BROADCAST_CMD_WIDTH)) | (ADDRESS<<`DYNA_WIDTH) | rx_data_buf_proc[`DYNA_WIDTH-1:0];
+												end
+
+												`CMD_CHANNEL_ENUM_INVALID:
+												begin
+													next_assigned_addr_invalidn = 0;
 												end
 											endcase
 										end

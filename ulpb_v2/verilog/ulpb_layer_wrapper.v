@@ -55,6 +55,9 @@ wire	[`DATA_WIDTH-1:0] n0_rx_data_t_iso;
 wire	n0_tx_ack_t_iso, n0_rx_req_t_iso, n0_rx_fail_t_iso, n0_rx_pend_t_iso, n0_tx_succ_t_iso, n0_tx_fail_t_iso, n0_pwr_on_t_iso, n0_rel_clk_t_iso, n0_rel_rst_t_iso, n0_rel_iso_t_iso;
 
 wire	ext_int_to_bus, ext_int_to_line, clr_ext_int;
+
+wire	[`DYNA_WIDTH-1:0] rf_addr_out_to_node, rf_addr_in_from_node;
+wire	rf_addr_valid, rf_addr_write, rf_addr_rstn;
    
 // always on block, interface with layer controller
 	ulpb_node32_isolation iso0
@@ -78,7 +81,9 @@ wire	ext_int_to_bus, ext_int_to_line, clr_ext_int;
       .TX_SUCC(n0_tx_succ_t_iso), .TX_FAIL(n0_tx_fail_t_iso), .TX_RESP_ACK(n0_tx_resp_ack_t_bc),
 	  .RELEASE_RST_FROM_SLEEP_CTRL(n0_release_rst), .SLEEP_REQUEST_TO_SLEEP_CTRL(n0_sleep_req),
 	  .POWER_ON_TO_LAYER_CTRL(n0_pwr_on_t_iso), .RELEASE_CLK_TO_LAYER_CTRL(n0_rel_clk_t_iso), .RELEASE_RST_TO_LAYER_CTRL(n0_rel_rst_t_iso), .RELEASE_ISO_TO_LAYER_CTRL(n0_rel_iso_t_iso),
-	  .EXTERNAL_INT(ext_int_to_bus), .CLR_EXT_INT(clr_ext_int));
+	  .EXTERNAL_INT(ext_int_to_bus), .CLR_EXT_INT(clr_ext_int),
+	  .ASSIGNED_ADDR_IN(rf_addr_out_to_node), .ASSIGNED_ADDR_OUT(rf_addr_in_from_node), 
+	  .ASSIGNED_ADDR_VALID(rf_addr_valid), .ASSIGNED_ADDR_WRITE(rf_addr_write), .ASSIGNED_ADDR_INVALIDn(rf_addr_rstn));
 
 // always on block
 	ulpb_sleep_ctrl sc0
@@ -86,7 +91,7 @@ wire	ext_int_to_bus, ext_int_to_line, clr_ext_int;
 	 .SLEEP_REQ(n0_sleep_req), .POWER_ON(n0_power_on), .RELEASE_CLK(), .RELEASE_RST(n0_release_rst), .RELEASE_ISO(n0_release_iso_from_sc));
 
 // always on line controller
-ulpb_line_ctrl lc0
+ulpb_wire_ctrl lc0
 	(.DIN(DIN), .CLKIN(CLKIN), 										// the same input as the node
 	 .RELEASE_ISO_FROM_SLEEP_CTRL(n0_release_iso_from_sc),			// from sleep controller
 	 .DOUT_FROM_BUS(w_n0lc0), .CLKOUT_FROM_BUS(w_n0lc0_clk_out), 	// the outputs from the node
@@ -101,6 +106,17 @@ ulpb_ext_int int0(
 	.EXTERNAL_INT_TO_LINE(ext_int_to_line), 
 	.EXTERNAL_INT_TO_BUS(ext_int_to_bus), 
 	.CLR_EXT_INT(clr_ext_int));
+
+// always on register files
+ulpb_addr_rf rf0(
+	.RESETn(RESETn),
+	.RELEASE_ISO_FROM_SLEEP_CTRL(n0_release_iso_from_sc)
+	.ADDR_OUT(rf_addr_out_to_node),
+	.ADDR_IN(rf_addr_in_from_node),
+	.ADDR_VALID(rf_addr_valid),
+	.ADDR_WR_EN(rf_addr_write),
+	.ADDR_CLRn(rf_addr_rstn)
+);
 
 always @ *
 begin

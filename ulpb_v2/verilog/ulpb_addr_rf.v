@@ -4,15 +4,20 @@
 
 module ulpb_addr_rf(
 	input		RESETn,
+	input		RELEASE_ISO_FROM_SLEEP_CTRL,
 	output	reg	[`DYNA-1:0] ADDR_OUT,
 	input		[`DYNA-1:0] ADDR_IN,
 	output	reg	ADDR_VALID,
-	input		ADDR_WR_EN	
+	input		ADDR_WR_EN,
+	input		ADDR_CLRn
 );
 
-always @ (posedge ADDR_WR_EN or negedge RESETn)
+wire	RESETn_local = ((RESETn & ADDR_CLRn) | RELEASE_ISO_FROM_SLEEP_CTRL);
+wire	ADDR_UPDATE = (ADDR_WR_EN & (~RELEASE_ISO_FROM_SLEEP_CTRL));
+
+always @ (posedge ADDR_UPDATE or negedge RESETn_local)
 begin
-	if (~RESETn)
+	if (~RESETn_local)
 	begin
 		ADDR_OUT <= 4'hf;
 		ADDR_VALID <= 0;

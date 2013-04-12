@@ -9,7 +9,7 @@
 
 `include "include/ulpb_def.v"
 
-module ulpb_line_ctrl(
+module ulpb_wire_ctrl(
 	input DIN,
 	input CLKIN,
 	input DOUT_FROM_BUS,

@@ -48,6 +48,8 @@
  * 			at this point.
  * --------------------------------------------------------------------------
  * Update log:
+ * 4/11 '13
+ * Working on DHCP, make sure to check the spec
  * 4/09 '13
  * changed to 32-bit long and short address scheme, 
  * add external int, 
@@ -171,7 +173,8 @@ reg		[`DATA_WIDTH+1:0] rx_data_buf, next_rx_data_buf;
 reg		next_rx_fail;
 wire	[`DATA_WIDTH-1:0] rx_data_buf_proc = (bit_position==1)? rx_data_buf[`DATA_WIDTH-1:0] : (bit_position==`DATA_WIDTH-1'b1)? rx_data_buf[`DATA_WIDTH+1:2] : 0;
 wire	[`BROADCAST_CMD_WIDTH -1:0] rx_broadcast_command = rx_data_buf_proc[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH];
-reg		addr_enum, next_addr_enum;
+reg		enum_addr_req, next_enum_addr_req;
+reg		[`DYNA_WIDTH-1:0] enum_addr_assign, next_enum_addr_assign;
 
 // interrupt register
 reg		BUS_INT_RSTn;
@@ -346,7 +349,8 @@ begin
 		shutdown <= 0;
 		`endif
 		// address enumeration
-		addr_enum <= 1;
+		enum_addr_req <= 1;
+		enum_addr_assign <= 0;
 	end
 	else
 	begin
@@ -378,7 +382,8 @@ begin
 		shutdown <= next_shutdown;
 		`endif
 		// address enumeration
-		addr_enum <= next_addr_enum;
+		enum_addr_req <= next_enum_addr_req;
+		enum_addr_assign <= next_enum_addr_assign;
 	end
 end
 
@@ -412,7 +417,8 @@ begin
 	next_tx_ack = TX_ACK;
 
 	// Address enumeration
-	next_addr_enum = addr_enum;
+	next_enum_addr_req = enum_addr_req;
+	next_enum_addr_assign = enum_addr_assign;
 
 	// Asynchronous interface
 	if (TX_ACK & (~TX_REQ))
@@ -463,15 +469,24 @@ begin
 				end
 				else
 				begin
-					next_addr = TX_ADDR;
-					next_data = TX_DATA;
 					next_mode = MODE_TX;
-					next_tx_ack = 1;
-					next_tx_pend = TX_PEND;
-					if (tx_long_addr_en)
-						next_bit_position = `ADDR_WIDTH - 1'b1;
+					if (enum_addr_req)
+					begin
+						next_addr = `BROADCAST[];
+						next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
+						next_data = {, enum_addr_assign}
+					end
 					else
-						next_bit_position = `SHORT_ADDR_WIDTH- 1'b1;
+					begin
+						next_addr = TX_ADDR;
+						next_data = TX_DATA;
+						next_tx_ack = 1;
+						next_tx_pend = TX_PEND;
+						if (tx_long_addr_en)
+							next_bit_position = `ADDR_WIDTH - 1'b1;
+						else
+							next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
+					end
 				end
 			end
 			else
@@ -479,15 +494,24 @@ begin
 				// the node won first trial doesn't request priority
 				if (TX_REQ & PRIORITY & (~DIN))
 				begin
-					next_addr = TX_ADDR;
-					next_data = TX_DATA;
 					next_mode = MODE_TX;
-					next_tx_ack = 1;
-					next_tx_pend = TX_PEND;
-					if (tx_long_addr_en)
-						next_bit_position = `ADDR_WIDTH - 1'b1;
-					else
+					if (enum_addr_req)
+					begin
+						next_addr = `BROADCAST[];
 						next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
+						next_data = {, enum_addr_assign}
+					end
+					else
+					begin
+						next_addr = TX_ADDR;
+						next_data = TX_DATA;
+						next_tx_ack = 1;
+						next_tx_pend = TX_PEND;
+						if (tx_long_addr_en)
+							next_bit_position = `ADDR_WIDTH - 1'b1;
+						else
+							next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
+					end
 				end
 				else
 				begin
@@ -496,6 +520,7 @@ begin
 				end
 			end
 			next_bus_state = BUS_ADDR;
+			next_enum_addr_req = 0;
 		end
 
 		BUS_ADDR:
@@ -691,7 +716,10 @@ begin
 												begin
 													// this node doesn't have a valid short address, active low
 													if (~ASSIGNED_ADDR_VALID)
-														next_addr_enum = 0;
+													begin
+														next_enum_addr_req = 0;
+														next_enum_addr_assign = rx_data_buf_proc[`DYNA_WIDTH-1:0];
+													end
 												end
 											endcase
 										end
@@ -934,7 +962,7 @@ begin
 	case (bus_state_neg)
 		BUS_IDLE:
 		begin
-			DOUT = ((~TX_REQ) & DIN & addr_enum);
+			DOUT = ((~TX_REQ) & DIN & enum_addr_req);
 		end
 
 		BUS_ARBITRATE:

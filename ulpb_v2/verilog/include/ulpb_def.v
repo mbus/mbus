@@ -6,7 +6,7 @@
 `define RSVD_WIDTH 8
 `define BROADCAST_CMD_WIDTH 4
 
-`define PRFX_WIDTH 			(`ADDR_WIDTH - `RSVD_WIDTH - `FUNC_WIDTH)
+`define PRFIX_WIDTH			(`ADDR_WIDTH - `RSVD_WIDTH - `FUNC_WIDTH)
 `define SHORT_ADDR_WIDTH 	(`DYNA_WIDTH + `FUNC_WIDTH)
 
 // Watch don counter width
@@ -34,6 +34,8 @@
 // Commands for CHANNEL_ENUM
 `define CMD_CHANNEL_ENUM_QUERRY				4'h0
 `define CMD_CHANNEL_ENUM_RESPONSE			4'h1
+`define CMD_CHANNEL_ENUM_ENUMERATE			4'h2
+`define CMD_CHANNEL_ENUM_INVALID			4'h3
 
 
 // Commands for CHANNEL_POWER

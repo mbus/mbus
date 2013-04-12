@@ -115,19 +115,20 @@ module ulpb_node32(
 	input		[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_IN,
 	output	reg [`DYNA_WIDTH-1:0] ASSIGNED_ADDR_OUT,
 	input		ASSIGNED_ADDR_VALID,
-	output	reg	ASSIGNED_ADDR_WRITE	
+	output	reg	ASSIGNED_ADDR_WRITE,
+	output	reg	ASSIGNED_ADDR_INVALID
 	`endif
 );
 
 `include "include/ulpb_func.v"
 
-parameter ADDRESS = 32'hef;
-parameter ADDRESS_MASK = {(`DATA_WIDTH-`FUNC_WIDTH){1'b1}};
+parameter ADDRESS = 20'habcde;
+parameter ADDRESS_MASK = {(`PRFIX_WIDTH){1'b1}};
 parameter ADDRESS_MASK_SHORT = {`DYNA_WIDTH{1'b1}};
 // if MULTI_ADDR = 1, check additional address (ADDRESS2)
 parameter MULTI_ADDR_EN = 1'b0;	
-parameter ADDRESS2 = 32'hef;
-parameter ADDRESS_MASK2 = {(`DATA_WIDTH-`FUNC_WIDTH){1'b1}};
+parameter ADDRESS2 = 20'h12345;
+parameter ADDRESS_MASK2 = {(`PRFIX_WIDTH){1'b1}};
 parameter ADDRESS_MASK2_SHORT = {`DYNA_WIDTH{1'b1}};
 
 // Node mode
@@ -149,6 +150,11 @@ parameter BUS_CONTROL0 = 8;
 parameter BUS_CONTROL1 = 9;
 parameter BUS_BACK_TO_IDLE = 10;
 parameter NUM_OF_BUS_STATE = 11;
+
+// Address enumeration response type
+parameter ADDR_ENUM_RESPOND_T1 = 2'b00;
+parameter ADDR_ENUM_RESPOND_T2 = 2'b10;
+parameter ADDR_ENUM_RESPOND_NONE = 2'b11;
 
 wire [1:0] CONTROL_BITS = `CONTROL_SEQ;	// EOM?, ~ACK?
 
@@ -173,8 +179,12 @@ reg		[`DATA_WIDTH+1:0] rx_data_buf, next_rx_data_buf;
 reg		next_rx_fail;
 wire	[`DATA_WIDTH-1:0] rx_data_buf_proc = (bit_position==1)? rx_data_buf[`DATA_WIDTH-1:0] : (bit_position==`DATA_WIDTH-1'b1)? rx_data_buf[`DATA_WIDTH+1:2] : 0;
 wire	[`BROADCAST_CMD_WIDTH -1:0] rx_broadcast_command = rx_data_buf_proc[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH];
-reg		enum_addr_req, next_enum_addr_req;
-reg		[`DYNA_WIDTH-1:0] enum_addr_assign, next_enum_addr_assign;
+
+// address enumation registers
+reg		[1:0] enum_addr_resp, next_enum_addr_resp;
+reg		[`DYNA_WIDTH-1:0] next_assigned_addr_out;
+reg		next_assigned_addr_write;
+reg		next_assigned_addr_invalid;
 
 // interrupt register
 reg		BUS_INT_RSTn;
@@ -214,6 +224,8 @@ wire	[15:0] layer_slot = (1'b1<<ASSIGNED_ADDR_IN);
 // Assignments
 assign RX_BROADCAST = addr_match_temp[2];
 
+// Node priority
+// Used only when the BUS_STATE == BUS_PRIO, determine the node should be RX or TX
 always @ *
 begin
 	mode_temp = MODE_RX;
@@ -234,7 +246,10 @@ begin
 			mode_temp = MODE_RX;
 	end
 end
+// End of node priority
 
+// TX Broadcast
+// For some boradcast message, TX node should take apporiate action, ex: all node sleep
 always @ *
 begin
 	tx_braodcast = 0;
@@ -249,7 +264,10 @@ begin
 			tx_broadcast = 1;
 	end
 end
+// End of TX broadcast
 
+// Wake up control
+// What type of message should wake up the layer controller (LC)
 always @ *
 begin
 	wakeup_req = 0;
@@ -272,7 +290,10 @@ begin
 		endcase
 	end
 end
+// End of Wake up control
 
+// Address compare
+// This block determine the incoming message has match the address or not
 always @ *
 begin
 	addr_match_temp = 3'b000;
@@ -281,10 +302,10 @@ begin
 		if (RX_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH]==`BROADCAST_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH])
 			addr_match_temp[2] = 1;
 
-		if (((RX_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH] ^ ADDRESS[`DATA_WIDTH-1:`FUNC_WIDTH]) & ADDRESS_MASK)==0)
+		if (((RX_ADDR[`DATA_WIDTH-`RSVD_WIDTH-1:`FUNC_WIDTH] ^ ADDRESS) & ADDRESS_MASK)==0)
 			addr_match_temp[1] = 1;
 		
-		if ((MULTI_ADDR_EN==1'b1) && (((RX_ADDR ^ ADDRESS2) & ADDRESS_MASK2)==0))
+		if ((MULTI_ADDR_EN==1'b1) && (((RX_ADDR[`DATA_WIDTH-`RSVD_WIDTH-1:`FUNC_WIDTH] ^ ADDRESS2) & ADDRESS_MASK2)==0))
 				addr_match_temp[0] = 1;
 	end
 	// short address assigned
@@ -303,6 +324,7 @@ begin
 		end
 	end
 end
+// End of address compare
 
 always @ (posedge CLKIN or negedge RESETn_local)
 begin
@@ -376,8 +398,11 @@ begin
 		shutdown <= 0;
 		`endif
 		// address enumeration
-		enum_addr_req <= 1;
-		enum_addr_assign <= 0;
+		enum_addr_resp <= ADDR_ENUM_RESPOND_NONE;
+		// address enumeration interface
+		ASSIGNED_ADDR_OUT <= 0;
+		ASSIGNED_ADDR_WRITE <= 0;
+		ASSIGNED_ADDR_INVALID <= 0;
 	end
 	else
 	begin
@@ -409,8 +434,11 @@ begin
 		shutdown <= next_shutdown;
 		`endif
 		// address enumeration
-		enum_addr_req <= next_enum_addr_req;
-		enum_addr_assign <= next_enum_addr_assign;
+		enum_addr_resp <= next_enum_addr_resp;
+		// address enumeration interface
+		ASSIGNED_ADDR_OUT <= next_assigned_addr_out;
+		ASSIGNED_ADDR_WRITE <= next_assigned_addr_write;
+		ASSIGNED_ADDR_INVALID <= next_assigned_addr_invalid;
 	end
 end
 
@@ -444,8 +472,12 @@ begin
 	next_tx_ack = TX_ACK;
 
 	// Address enumeration
-	next_enum_addr_req = enum_addr_req;
-	next_enum_addr_assign = enum_addr_assign;
+	next_enum_addr_resp = enum_addr_resp;
+
+	// Address enumeratio interface
+	next_assigned_addr_out = ASSIGNED_ADDR_OUT;
+	next_assigned_addr_write = ASSIGNED_ADDR_WRITE;
+	next_assigned_addr_invalid = ASSIGNED_ADDR_INVALID;
 
 	// Asynchronous interface
 	if (TX_ACK & (~TX_REQ))
@@ -488,26 +520,37 @@ begin
 		begin
 			next_mode = mode_temp;
 			next_bus_state = BUS_ADDR;
-			next_enum_addr_req = 0;
 			if (mode_temp==MODE_TX)
 			begin
-				if (enum_addr_req)
-				begin
-					next_addr = `BROADCAST[];
-					next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
-					next_data = {, enum_addr_assign}
-				end
-				else
-				begin
-					next_addr = TX_ADDR;
-					next_data = TX_DATA;
-					next_tx_ack = 1;
-					next_tx_pend = TX_PEND;
-					if (tx_long_addr_en)
-						next_bit_position = `ADDR_WIDTH - 1'b1;
-					else
+				case (enum_addr_resp)
+					// respond to enumeration
+					ADDR_ENUM_RESPOND_T1:
+					begin
 						next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
-				end
+						next_enum_addr_resp = ADDR_ENUM_RESPOND_NONE;
+					end
+
+					// respond to query
+					ADDR_ENUM_RESPOND_T2:
+					begin
+						next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
+						next_assigned_addr_out = DATA[`DYNA_WIDTH-1:0];
+						next_assigned_addr_write = 1;
+						next_enum_addr_resp = ADDR_ENUM_RESPOND_NONE;
+					end
+
+					default:
+					begin
+						next_addr = TX_ADDR;
+						next_data = TX_DATA;
+						next_tx_ack = 1;
+						next_tx_pend = TX_PEND;
+						if (tx_long_addr_en)
+							next_bit_position = `ADDR_WIDTH - 1'b1;
+						else
+							next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
+					end
+				endcase
 			end
 			else
 			// RX mode
@@ -702,17 +745,28 @@ begin
 									next_out_reg_pos = CONTROL_BITS[0];
 									// broadcast channel
 									case (RX_ADDR[`FUNC_WIDTH-1:0])
-										`CHANNEL_ADDR:
+										`CHANNEL_ENUM:
 										begin
 											case (rx_broadcast_command)
-												`CMD_ADDR_ENUMERATE:
+												// any node should report its full prefix and short prefix (dynamic allocated address)
+												// Pad "0" if the dynamic address is invalid
+												`CMD_CHANNEL_ENUM_QUERRY:
 												begin
 													// this node doesn't have a valid short address, active low
-													if (~ASSIGNED_ADDR_VALID)
-													begin
-														next_enum_addr_req = 0;
-														next_enum_addr_assign = rx_data_buf_proc[`DYNA_WIDTH-1:0];
-													end
+													next_enum_addr_resp = ADDR_ENUM_RESPOND_T2;
+													next_addr = `BROADCAST_ADDR[`SHORT_ADDR_WITDH-1:0];
+													if (ASSIGNED_ADDR_VALID)
+														next_data = (`CMD_CHANNEL_ENUM_RESPONSE<<(`DATA_WIDTH-`BROADCAST_CMD_WIDTH)) | (ADDRESS<<`DYNA_WIDTH) | ASSIGNED_ADDR_IN);
+													else
+														next_data = (`CMD_CHANNEL_ENUM_RESPONSE<<(`DATA_WIDTH-`BROADCAST_CMD_WIDTH)) | (ADDRESS<<`DYNA_WIDTH) | {`DYNA_WIDTH{1'b1}};
+												end
+
+												// request arbitration, set short prefix if successed
+												`CMD_CHANNEL_ENUM_ENUMERATE:
+												begin
+													next_enum_addr_resp = ADDR_ENUM_RESPOND_T1;
+													next_addr = `BROADCAST_ADDR[`SHORT_ADDR_WITDH-1:0];
+													next_data = (`CMD_CHANNEL_ENUM_RESPONSE<<(`DATA_WIDTH-`BROADCAST_CMD_WIDTH)) | (ADDRESS<<`DYNA_WIDTH) | rx_data_buf_proc[`DYNA_WIDTH-1:0];
 												end
 											endcase
 										end
@@ -958,7 +1012,7 @@ begin
 	case (bus_state_neg)
 		BUS_IDLE:
 		begin
-			DOUT = ((~TX_REQ) & DIN & enum_addr_req);
+			DOUT = ((~TX_REQ) & DIN & enum_addr_resp[0]);
 		end
 
 		BUS_ARBITRATE:

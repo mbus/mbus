@@ -26,9 +26,15 @@
 // "BB" is broadcast "commands"
 
 // Broadcast channel, the width should be consistant with `FUNC_WIDTH
-`define CHANNEL_POWER 	4'h0
-`define CHANNEL_ENUM	4'hf
+`define CHANNEL_ENUM	4'h0
+`define CHANNEL_POWER 	4'h1
+`define CHANNEL_DATA	4'hf
 
 // Broadcast commands, the width should be consistant with `BROADCAST_CMD_WIDTH
-`define CMD_GLOBAL_SHUTDOWN 	8'hff
-`define CMD_SLOT_SHUTDOWN 		8'hfb
+// Commands for CHANNEL_ENUM
+`define CMD_CHANNEL_ENUM_QUERRY				8'h0
+
+
+// Commands for CHANNEL_POWER
+`define CMD_CHANNEL_POWER_GLOBAL_SHUTDOWN 	8'hff
+`define CMD_CHANNEL_POWER_SLOT_SHUTDOWN		8'hfb

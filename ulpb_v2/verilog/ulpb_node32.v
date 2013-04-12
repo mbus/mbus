@@ -260,9 +260,10 @@ begin
 	begin
 		// which channels should wake up
 		case (RX_ADDR[`FUNC_WIDTH-1:0])
-			`CHANNEL_POWER: begin end
-			`CHANNEL_ENUM: begin end
-			default: wakeup_req = 1;
+			`CHANNEL_POWER: begin wakeup_req = 1; end
+			`CHANNEL_ENUM: begin wakeup_req = 1; end
+			`CHANNEL_DATA: begin wakeup_req = 1; end
+			default: 
 		endcase
 	end
 end
@@ -655,12 +656,12 @@ begin
 								`CHANNEL_POWER:
 								begin
 									case (TX_DATA[`DATA_WIDTH-1:`DATA_WIDTH-8])
-										`CMD_GLOBAL_SHUTDOWN:
+										`CMD_CHANNEL_POWER_GLOBAL_SHUTDOWN:
 										begin
 											next_shutdown = 1;
 										end
 
-										`CMD_SLOT_SHUTDOWN:
+										`CMD_CHANNEL_POWER_SLOT_SHUTDOWN:
 										begin
 											if ((TX_DATA[15:0]&layer_slot)>0)
 											begin
@@ -715,12 +716,12 @@ begin
 										begin
 											// PWR Command
 											case (rx_broadcast_command)
-												`CMD_GLOBAL_SHUTDOWN:
+												`CMD_CHANNEL_POWER_GLOBAL_SHUTDOWN:
 												begin
 													next_shutdown = 1;
 												end
 
-												`CMD_SLOT_SHUTDOWN:
+												`CMD_CHANNEL_POWER_SLOT_SHUTDOWN:
 												begin
 													if ((rx_data_buf_proc[15:0]&layer_slot)>0)
 													begin

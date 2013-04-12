@@ -4,7 +4,7 @@
 `define FUNC_WIDTH 4
 `define DYNA_WIDTH 4
 `define RSVD_WIDTH 8
-`define BROADCAST_CMD_WIDTH 8
+`define BROADCAST_CMD_WIDTH 4
 
 `define PRFX_WIDTH 			(`ADDR_WIDTH - `RSVD_WIDTH - `FUNC_WIDTH)
 `define SHORT_ADDR_WIDTH 	(`DYNA_WIDTH + `FUNC_WIDTH)
@@ -32,9 +32,12 @@
 
 // Broadcast commands, the width should be consistant with `BROADCAST_CMD_WIDTH
 // Commands for CHANNEL_ENUM
-`define CMD_CHANNEL_ENUM_QUERRY				8'h0
+`define CMD_CHANNEL_ENUM_QUERRY				4'h0
+`define CMD_CHANNEL_ENUM_RESPONSE			4'h1
 
 
 // Commands for CHANNEL_POWER
-`define CMD_CHANNEL_POWER_GLOBAL_SHUTDOWN 	8'hff
-`define CMD_CHANNEL_POWER_SLOT_SHUTDOWN		8'hfb
+`define CMD_CHANNEL_POWER_ALL_SLEEP			4'h0
+`define CMD_CHANNEL_POWER_ALL_WAKE			4'h1
+`define CMD_CHANNEL_POWER_SEL_SLEEP			4'h2
+`define CMD_CHANNEL_POWER_SEL_WAKE			4'h3

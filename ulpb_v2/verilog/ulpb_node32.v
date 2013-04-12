@@ -260,7 +260,12 @@ begin
 	begin
 		// which channels should wake up
 		case (RX_ADDR[`FUNC_WIDTH-1:0])
-			`CHANNEL_POWER: begin wakeup_req = 1; end
+			`CHANNEL_POWER:
+			begin
+				case (rx_data_buf[`BROADCAST_CMD_WIDTH-1:0])
+					`CMD_CHANNEL_POWER_ALL_WAKE begin wakeup_req = 1; end
+				endcase
+			end
 			`CHANNEL_ENUM: begin wakeup_req = 1; end
 			`CHANNEL_DATA: begin wakeup_req = 1; end
 			default: 
@@ -656,12 +661,12 @@ begin
 								`CHANNEL_POWER:
 								begin
 									case (TX_DATA[`DATA_WIDTH-1:`DATA_WIDTH-8])
-										`CMD_CHANNEL_POWER_GLOBAL_SHUTDOWN:
+										`CMD_CHANNEL_POWER_ALL_SLEEP:
 										begin
 											next_shutdown = 1;
 										end
 
-										`CMD_CHANNEL_POWER_SLOT_SHUTDOWN:
+										`CMD_CHANNEL_POWER_SEL_SLEEP:
 										begin
 											if ((TX_DATA[15:0]&layer_slot)>0)
 											begin
@@ -716,12 +721,12 @@ begin
 										begin
 											// PWR Command
 											case (rx_broadcast_command)
-												`CMD_CHANNEL_POWER_GLOBAL_SHUTDOWN:
+												`CMD_CHANNEL_POWER_ALL_SLEEP:
 												begin
 													next_shutdown = 1;
 												end
 
-												`CMD_CHANNEL_POWER_SLOT_SHUTDOWN:
+												`CMD_CHANNEL_POWER_SEL_SLEEP:
 												begin
 													if ((rx_data_buf_proc[15:0]&layer_slot)>0)
 													begin
@@ -844,7 +849,10 @@ begin
 					case (powerup_seq_fsm)
 						0:
 						begin
-							if (wakeup_req)
+							// only check the wakeup_req after received broadcast command
+							// FSM stays at BUS_ADDR_ADDI for 2 cycles before entering BUS_DATA
+							// the complete command should received after `DATA_WIDTH (32) - `BROADCAST_CMD_WIDTH(4) + 2(2 BUS_ADDR_ADDI) - 1
+							if ((wakeup_req)&&(bit_position==`DATA_WIDTH-`BROADCAST_CMD_WIDTH+1))
 							begin
 								POWER_ON_TO_LAYER_CTRL <= `IO_RELEASE;
 								powerup_seq_fsm <= power_up_seq_fsm + 1'b1;

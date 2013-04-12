@@ -153,7 +153,7 @@ parameter NUM_OF_BUS_STATE = 11;
 wire [1:0] CONTROL_BITS = `CONTROL_SEQ;	// EOM?, ~ACK?
 
 // general registers
-reg		[1:0] mode, next_mode, mode_neg;
+reg		[1:0] mode, next_mode, mode_neg, mode_temp;
 reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state, bus_state_neg;
 reg		[log2(`DATA_WIDTH-1)-1:0] bit_position, next_bit_position; 
 reg		req_interrupt, next_req_interrupt;
@@ -213,6 +213,27 @@ wire	[15:0] layer_slot = (1'b1<<ASSIGNED_ADDR_IN);
 
 // Assignments
 assign RX_BROADCAST = addr_match_temp[2];
+
+always @ *
+begin
+	mode_temp = MODE_RX;
+	if (mode==MODE_TX_NON_PRIO)
+	begin
+		// Other node request priority,
+		if (DIN & (~PRIORITY))
+			mode_temp = MODE_RX;
+		else
+			mode_temp = MODE_TX;
+	end
+	else
+	begin
+		// the node won first trial doesn't request priority
+		if (TX_REQ & PRIORITY & (~DIN))
+			mode_temp = MODE_TX;
+		else
+			mode_temp = MODE_RX;
+	end
+end
 
 always @ *
 begin
@@ -459,68 +480,34 @@ begin
 
 		BUS_PRIO:
 		begin
-			if (mode==MODE_TX_NON_PRIO)
+			next_mode = mode_temp;
+			next_bus_state = BUS_ADDR;
+			next_enum_addr_req = 0;
+			if (mode_temp==MODE_TX)
 			begin
-				// Other node request priority,
-				if (DIN & (~PRIORITY))
+				if (enum_addr_req)
 				begin
-					next_mode = MODE_RX;
-					next_rx_addr = 0;
+					next_addr = `BROADCAST[];
+					next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
+					next_data = {, enum_addr_assign}
 				end
 				else
 				begin
-					next_mode = MODE_TX;
-					if (enum_addr_req)
-					begin
-						next_addr = `BROADCAST[];
-						next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
-						next_data = {, enum_addr_assign}
-					end
+					next_addr = TX_ADDR;
+					next_data = TX_DATA;
+					next_tx_ack = 1;
+					next_tx_pend = TX_PEND;
+					if (tx_long_addr_en)
+						next_bit_position = `ADDR_WIDTH - 1'b1;
 					else
-					begin
-						next_addr = TX_ADDR;
-						next_data = TX_DATA;
-						next_tx_ack = 1;
-						next_tx_pend = TX_PEND;
-						if (tx_long_addr_en)
-							next_bit_position = `ADDR_WIDTH - 1'b1;
-						else
-							next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
-					end
+						next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
 				end
 			end
 			else
+			// RX mode
 			begin
-				// the node won first trial doesn't request priority
-				if (TX_REQ & PRIORITY & (~DIN))
-				begin
-					next_mode = MODE_TX;
-					if (enum_addr_req)
-					begin
-						next_addr = `BROADCAST[];
-						next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
-						next_data = {, enum_addr_assign}
-					end
-					else
-					begin
-						next_addr = TX_ADDR;
-						next_data = TX_DATA;
-						next_tx_ack = 1;
-						next_tx_pend = TX_PEND;
-						if (tx_long_addr_en)
-							next_bit_position = `ADDR_WIDTH - 1'b1;
-						else
-							next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
-					end
-				end
-				else
-				begin
-					next_mode = MODE_RX;
-					next_rx_addr = 0;
-				end
+				next_rx_addr = 0;
 			end
-			next_bus_state = BUS_ADDR;
-			next_enum_addr_req = 0;
 		end
 
 		BUS_ADDR:

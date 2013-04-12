@@ -60,17 +60,9 @@
  * interrupt, bypass clock once interrupt occurred
  * */
 
-`define M3
-`define UWB
 `define POWER_GATING
 
-// If not for M3, set this macro
-`ifndef M3
-	`define THIS_LAYER_ID
-`endif
-
 `include "include/ulpb_def.v"
-`include "include/m3_layer_id.v"
 
 module ulpb_node32(
 	input 	CLKIN, 

@@ -31,8 +31,7 @@ module ulpb_layer_wrapper(
 	input REQ_INT
 );
 
-parameter ADDRESS = 8'hab;
-parameter LAYER_ID = 24'd5;
+parameter ADDRESS = 20'h12345;
 
 wire	n0_power_on, n0_sleep_req, n0_release_rst, n0_release_iso_from_sc;
 wire	w_n0lc0, w_n0lc0_clk_out;
@@ -74,7 +73,7 @@ wire	rf_addr_valid, rf_addr_write, rf_addr_rstn;
 	 .POWER_ON_TO_LC(LC_POWER_ON), .RELEASE_CLK_TO_LC(LC_RELEASE_CLK), .RELEASE_RST_TO_LC(LC_RELEASE_RST));
 
 // power gated block
-   ulpb_node32 #(.ADDRESS(ADDRESS), .LAYER_ID(LAYER_ID)) n0
+   ulpb_node32 #(.ADDRESS(ADDRESS)) n0
      (.CLKIN(CLKIN), .CLKOUT(w_n0lc0_clk_out), .RESETn(RESETn), .DIN(DIN), .DOUT(w_n0lc0), 
       .TX_ADDR(n0_tx_addr_t_bc), .TX_DATA(n0_tx_data_t_bc), .TX_REQ(n0_tx_req_t_bc), .TX_ACK(n0_tx_ack_t_iso), .TX_PEND(n0_tx_pend_t_bc), .PRIORITY(n0_priority_t_bc),
       .RX_ADDR(n0_rx_addr_t_iso), .RX_DATA(n0_rx_data_t_iso), .RX_REQ(n0_rx_req_t_iso), .RX_ACK(n0_rx_ack_t_bc), .RX_FAIL(n0_rx_fail_t_iso), .RX_PEND(n0_rx_pend_t_iso),
@@ -117,6 +116,7 @@ ulpb_addr_rf rf0(
 	.ADDR_WR_EN(rf_addr_write),
 	.ADDR_CLRn(rf_addr_rstn)
 );
+
 
 always @ *
 begin

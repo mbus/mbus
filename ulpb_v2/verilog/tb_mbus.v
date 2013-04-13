@@ -48,7 +48,6 @@ module tb_mbus();
    reg [31:0] 		  rand_dat, rand_dat2;
    reg [4:0] 		  state;
    reg [5:0] 		  word_counter;
-   reg 			  clk_en;
    integer 		  handle;
 
    parameter 		  TASK0=0;
@@ -121,12 +120,14 @@ mbus_ctrl_wrapper #(.CTRL_ADDRESS(20'haaaa0)) c0
       //VCD DUMP SECTION
 
 //`ifdef APR
+/*
 	`ifdef TASK4
 		$dumpfile("task4.vcd");
 	`elsif TASK5
 		$dumpfile("task5.vcd");
 	`endif
 	$dumpvars(0, tb_ulpb_node32);
+*/
 //`endif
       
 	  /*
@@ -149,10 +150,8 @@ mbus_ctrl_wrapper #(.CTRL_ADDRESS(20'haaaa0)) c0
       //Calls Tasks from tasks.v
       //***********************
 
-`ifdef TASK4
-      task4();
-`elsif TASK5
-      task5();
+`ifdef TASK0
+      task0();
 `else
       $display("**************************************");
       $display("************NO TASKS SUPPLIED*********");
@@ -163,24 +162,76 @@ mbus_ctrl_wrapper #(.CTRL_ADDRESS(20'haaaa0)) c0
    
 end // initial begin
    
-`ifdef TASK4
-      `include "task4.v"
-`elsif TASK5
-      `include "task5.v"
+`ifdef TASK0
+	`include "task0.v"
 `endif
-
-always @ (posedge clk or negedge resetn) begin
-	if (~resetn) begin
-		n0_req_int <= 0;
-		n2_req_int <= 0;
-	end
-end
 
 always @ (posedge n0_lc_pwr_on)
 	$fdisplay(handle, "N0 Sleep");
 
+always @ (posedge n1_lc_pwr_on)
+	$fdisplay(handle, "N1 Sleep");
+
 always @ (posedge n2_lc_pwr_on)
 	$fdisplay(handle, "N2 Sleep");
+
+always @ (posedge c0_lc_pwr_on)
+	$fdisplay(handle, "Processor Sleep");
+
+always @ (negedge n0_lc_pwr_on)
+	$fdisplay(handle, "N0 Wakeup");
+
+always @ (negedge n1_lc_pwr_on)
+	$fdisplay(handle, "N1 Wakeup");
+
+always @ (negedge  n2_lc_pwr_on)
+	$fdisplay(handle, "N2 Wakeup");
+
+always @ (negedge c0_lc_pwr_on)
+	$fdisplay(handle, "Processor Wakeup");
+
+always @ (negedge resetn)
+begin
+	if (~resetn)
+	begin
+		n0_tx_addr  <= 0;
+		n0_tx_data  <= 0;
+		n0_tx_pend  <= 0;
+		n0_tx_req   <= 0;
+		n0_priority <= 0;
+		n0_req_int	<= 0;
+      
+		n1_tx_addr  <= 0;
+		n1_tx_data  <= 0;
+		n1_tx_pend  <= 0;
+		n1_tx_req   <= 0;
+		n1_priority <= 0;
+		n1_req_int	<= 0;
+		
+		n2_tx_addr  <= 0;
+		n2_tx_data  <= 0;
+		n2_tx_pend  <= 0;
+		n2_tx_req   <= 0;
+		n2_priority <= 0;
+		n2_req_int	<= 0;
+		
+		c0_tx_addr  <= 0;
+		c0_tx_data  <= 0;
+		c0_tx_pend  <= 0;
+		c0_tx_req   <= 0;
+		c0_priority <= 0;
+		c0_req_int	<= 0;
+		c0_wakeup	<= 0;
+	end
+	else
+	begin
+		if (n0_tx_ack) n0_tx_req <= 0;
+		if (n1_tx_ack) n1_tx_req <= 0;
+		if (n2_tx_ack) n2_tx_req <= 0;
+		if (c0_tx_ack) c0_tx_req <= 0;
+	end
+end
+
 
   always @ (posedge clk or negedge resetn) begin
      if (~resetn) begin
@@ -302,7 +353,7 @@ always @ (posedge n2_lc_pwr_on)
    end
    
    //Changed to 400K for primetime calculations
-   always #1250 if (clk_en) clk = ~clk; else clk = 1;
+   always #1250 clk = ~clk; else clk = 1;
 
 `include "tasks.v"
 endmodule // tb_ulpb_node32

@@ -146,7 +146,6 @@ reg		[1:0] addr_match_temp;
 wire	address_match = (addr_match_temp[1] | addr_match_temp[0]);
 
 // Broadcast processing
-wire	[`DATA_WIDTH-1:0] rx_data_buf_proc = (rx_dat_length_valid)? (rx_position==RX_BELOW_TX)? rx_data_buf[`DATA_WIDTH-1:0] : rx_data_buf[`DATA_WIDTH+1:2] : 0;
 reg		[`BROADCAST_CMD_WIDTH -1:0] rx_broadcast_command;
 wire	rx_long_addr_en = (RX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1 : 0;
 wire	tx_long_addr_en = (TX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1 : 0;
@@ -154,6 +153,8 @@ reg		tx_broadcast;
 reg		[1:0] tx_dat_length, rx_dat_length;
 reg		rx_position, rx_dat_length_valid;
 reg		wakeup_req;
+wire	[`DATA_WIDTH-1:0] broadcast_addr = `BROADCAST_ADDR;
+wire	[`DATA_WIDTH-1:0] rx_data_buf_proc = (rx_dat_length_valid)? (rx_position==RX_BELOW_TX)? rx_data_buf[`DATA_WIDTH-1:0] : rx_data_buf[`DATA_WIDTH+1:2] : 0;
 
 // Power gating related signals
 `ifdef POWER_GATING
@@ -202,15 +203,15 @@ end
 // For some boradcast message, TX node should take apporiate action, ex: all node sleep
 always @ *
 begin
-	tx_braodcast = 0;
+	tx_broadcast = 0;
 	if (tx_long_addr_en)
 	begin
-		if (TX_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH]==`BROADCAST_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH])
+		if (TX_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH]==broadcast_addr[`DATA_WIDTH-1:`FUNC_WIDTH])
 			tx_broadcast = 1;
 	end
 	else
 	begin
-		if (TX_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH]==`BROADCAST_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH])
+		if (TX_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH]==broadcast_addr[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH])
 			tx_broadcast = 1;
 	end
 end
@@ -231,11 +232,11 @@ begin
 			`CHANNEL_POWER:
 			begin
 				case (rx_data_buf[`BROADCAST_CMD_WIDTH-1:0])
-					`CMD_CHANNEL_POWER_ALL_WAKE begin wakeup_req = 1; end
+					`CMD_CHANNEL_POWER_ALL_WAKE: begin wakeup_req = 1; end
 				endcase
 			end
 			`CHANNEL_ENUM: begin wakeup_req = 1; end
-			default: 
+			default: begin end
 		endcase
 	end
 end
@@ -248,7 +249,7 @@ begin
 	addr_match_temp = 2'b00;
 	if (rx_long_addr_en)
 	begin
-		if (RX_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH]==`BROADCAST_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH])
+		if (RX_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH]==broadcast_addr[`DATA_WIDTH-1:`FUNC_WIDTH])
 			addr_match_temp[0] = 1;
 
 		if (((RX_ADDR[`DATA_WIDTH-`RSVD_WIDTH-1:`FUNC_WIDTH] ^ ADDRESS) & ADDRESS_MASK)==0)
@@ -258,7 +259,7 @@ begin
 	// short address assigned
 	else
 	begin
-		if (RX_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH]==`BROADCAST_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH])
+		if (RX_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH]==broadcast_addr[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH])
 			addr_match_temp[0] = 1;
 
 		if (ASSIGNED_ADDR_VALID)
@@ -583,7 +584,7 @@ begin
 				MODE_RX:
 				begin
 					// short address
-					if ((bit_position==`ADDR_WIDTH-3'd5)&&(rx_addr[3:0]!=4'hf))
+					if ((bit_position==`ADDR_WIDTH-3'd5)&&(RX_ADDR[3:0]!=4'hf))
 						next_bit_position = `SHORT_ADDR_WIDTH - 3'd6;
 					else
 					begin
@@ -766,16 +767,16 @@ begin
 												begin
 													// this node doesn't have a valid short address, active low
 													next_enum_addr_resp = ADDR_ENUM_RESPOND_T2;
-													next_addr = `BROADCAST_ADDR[`SHORT_ADDR_WITDH-1:0];
-													next_data = (`CMD_CHANNEL_ENUM_RESPONSE<<(`DATA_WIDTH-`BROADCAST_CMD_WIDTH)) | (ADDRESS<<`DYNA_WIDTH) | ASSIGNED_ADDR_IN);
+													next_addr = broadcast_addr[`SHORT_ADDR_WIDTH-1:0];
+													next_data = ((`CMD_CHANNEL_ENUM_RESPONSE<<(`DATA_WIDTH-`BROADCAST_CMD_WIDTH)) | (ADDRESS<<`DYNA_WIDTH) | ASSIGNED_ADDR_IN);
 												end
 
 												// request arbitration, set short prefix if successed
 												`CMD_CHANNEL_ENUM_ENUMERATE:
 												begin
 													next_enum_addr_resp = ADDR_ENUM_RESPOND_T1;
-													next_addr = `BROADCAST_ADDR[`SHORT_ADDR_WITDH-1:0];
-													next_data = (`CMD_CHANNEL_ENUM_RESPONSE<<(`DATA_WIDTH-`BROADCAST_CMD_WIDTH)) | (ADDRESS<<`DYNA_WIDTH) | rx_data_buf_proc[`DYNA_WIDTH-1:0];
+													next_addr = broadcast_addr[`SHORT_ADDR_WIDTH-1:0];
+													next_data = ((`CMD_CHANNEL_ENUM_RESPONSE<<(`DATA_WIDTH-`BROADCAST_CMD_WIDTH)) | (ADDRESS<<`DYNA_WIDTH) | rx_data_buf_proc[`DYNA_WIDTH-1:0]);
 												end
 
 												`CMD_CHANNEL_ENUM_INVALIDATE:
@@ -907,13 +908,13 @@ begin
 		if (bus_state==BUS_PRIO)
 		begin
 			ext_int <= EXTERNAL_INT;
-			power_up_seq_fsm <= 0;
+			powerup_seq_fsm <= 0;
 		end
 
 		if (ext_int)
 		begin
-			powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
-			case (power_up_seq_fsm)
+			powerup_seq_fsm <= powerup_seq_fsm + 1'b1;
+			case (powerup_seq_fsm)
 				0: begin POWER_ON_TO_LAYER_CTRL <= `IO_RELEASE; end
 				1: begin RELEASE_CLK_TO_LAYER_CTRL <= `IO_RELEASE; end
 				2: begin RELEASE_ISO_TO_LAYER_CTRL <= `IO_RELEASE; end
@@ -934,20 +935,20 @@ begin
 							if ((wakeup_req)&&(bit_position==`DATA_WIDTH-`BROADCAST_CMD_WIDTH+1))
 							begin
 								POWER_ON_TO_LAYER_CTRL <= `IO_RELEASE;
-								powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
+								powerup_seq_fsm <= powerup_seq_fsm + 1'b1;
 							end
 						end
 
 						1:
 						begin
 							RELEASE_CLK_TO_LAYER_CTRL <= `IO_RELEASE;
-							powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
+							powerup_seq_fsm <= powerup_seq_fsm + 1'b1;
 						end
 
 						2:
 						begin
 							RELEASE_ISO_TO_LAYER_CTRL <= `IO_RELEASE;
-							powerup_seq_fsm <= power_up_seq_fsm + 1'b1;
+							powerup_seq_fsm <= powerup_seq_fsm + 1'b1;
 						end
 
 						3:

@@ -13,9 +13,9 @@ wire RESETn_local2 = (RESETn & (~CLR_EXT_INT));
 always @ (posedge REQ_INT or negedge RESETn_local)
 begin
 	if (~RESETn_local)
-		EXTERNAL_INT_TO_LINE <= 0;
+		EXTERNAL_INT_TO_WIRE <= 0;
 	else
-		EXTERNAL_INT_TO_LINE <= 1;
+		EXTERNAL_INT_TO_WIRE <= 1;
 end
 
 always @ (posedge REQ_INT or negedge RESETn_local2)

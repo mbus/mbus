@@ -32,6 +32,7 @@ module mbus_regular_isolation(
 	output 	reg TX_FAIL_TO_LC, 
 	output 	reg TX_SUCC_TO_LC, 
 	input 	TX_RESP_ACK_FROM_LC,
+	output	reg RX_BROADCAST_TO_LC,
 	// BC stands for Bus Controller
 	// Interrconnect between this module and BC 
 	output 	reg [`ADDR_WIDTH-1:0] TX_ADDR_TO_BC, 
@@ -49,6 +50,7 @@ module mbus_regular_isolation(
 	input 	TX_FAIL_FROM_BC, 
 	input 	TX_SUCC_FROM_BC, 
 	output 	reg TX_RESP_ACK_TO_BC,
+	input	RX_BROADCAST_FROM_BC,
 
 	input 	POWER_ON_FROM_BC,
 	input	RELEASE_CLK_FROM_BC,
@@ -93,6 +95,7 @@ begin
 		RX_PEND_TO_LC 	= 0;
 		TX_FAIL_TO_LC 	= 0;
 		TX_SUCC_TO_LC 	= 0;
+		RX_BROADCAST_TO_LC = 0;
 		RELEASE_ISO_FROM_BC_MASKED = HOLD;
 	end
 	else
@@ -105,6 +108,7 @@ begin
 		RX_PEND_TO_LC 	= RX_PEND_FROM_BC;
 		TX_FAIL_TO_LC 	= TX_FAIL_FROM_BC;
 		TX_SUCC_TO_LC 	= TX_SUCC_FROM_BC;
+		RX_BROADCAST_TO_LC = RX_BROADCAST_FROM_BC;
 		RELEASE_ISO_FROM_BC_MASKED = RELEASE_ISO_FROM_BC;
 	end
 end

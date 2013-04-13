@@ -110,7 +110,7 @@ mbus_ext_int int0(
 // always on register files
 mbus_addr_rf rf0(
 	.RESETn(RESETn),
-	.RELEASE_ISO_FROM_SLEEP_CTRL(n0_release_iso_from_sc)
+	.RELEASE_ISO_FROM_SLEEP_CTRL(n0_release_iso_from_sc),
 	.ADDR_OUT(rf_addr_out_to_node),
 	.ADDR_IN(rf_addr_in_from_node),
 	.ADDR_VALID(rf_addr_valid),

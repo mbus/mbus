@@ -5,6 +5,7 @@
 // LAST TIME SAVED: Apr 10 15:16:23 2013
 // NETLIST TIME: Apr 10 15:41:53 2013
 `timescale 1ns / 1ns 
+`include "/afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/verilog/tsmc18_neg.v"
 
 module SLEEP_CONTROLv4 ( MBC_ISOLATE, MBC_ISOLATE_B, MBC_RESET,
      MBC_RESET_B, MBC_SLEEP, MBC_SLEEP_B, SYSTEM_ACTIVE,

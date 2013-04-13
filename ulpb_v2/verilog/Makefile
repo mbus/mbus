@@ -26,16 +26,28 @@ all:    simv
 # Modify starting here
 #####
 
-TESTBENCH = tb_ulpb_node32_rx_only.v
-SIMFILES = ulpb_node32.v ulpb_ctrl.v ulpb_swapper.v ulpb_ctrl_wrapper.v ulpb_node32_wo_pwr_gated.v ulpb_node32_isolation.v sleep_ctrl.v line_ctrl_rx_only.v ulpb_layer_wrapper.v
-SYNFILES = 	../syn/ulpb_node32_ab.nl.v \
-		../syn/ulpb_node32_cd.nl.v \
-		../syn/ulpb_node32_ef.nl.v \
-		../syn/ulpb_ctrl_wrapper.nl.v
-APRFILES = 	../apr/ulpb_node32_ab/ulpb_node32_ab.apr.v \
-		../apr/ulpb_node32_cd/ulpb_node32_cd.apr.v \
-		../apr/ulpb_node32_ef/ulpb_node32_ef.apr.v \
-		../apr/ulpb_ctrl_wrapper/ulpb_ctrl_wrapper.apr.v
+TESTBENCH = tb_mbus.v
+SIMFILES = 	mbus_addr_rf.v \
+			mbus_ctrl.v \
+			mbus_ctrl_wrapper.v \
+			mbus_ext_int.v \
+			mbus_layer_wrapper.v \
+			mbus_master_node.v \
+			mbus_node_core.v \
+			mbus_regular_isolation.v \
+			mbus_regular_node.v \
+			mbus_regular_sleep_ctrl.v \
+			mbus_swapper.v \
+			mbus_wire_ctrl.v 
+
+SYNFILES = 	../syn/mbus_node32_ab.nl.v \
+		../syn/mbus_node32_cd.nl.v \
+		../syn/mbus_node32_ef.nl.v \
+		../syn/mbus_ctrl_wrapper.nl.v
+APRFILES = 	../apr/mbus_node32_ab/mbus_node32_ab.apr.v \
+		../apr/mbus_node32_cd/mbus_node32_cd.apr.v \
+		../apr/mbus_node32_ef/mbus_node32_ef.apr.v \
+		../apr/mbus_ctrl_wrapper/mbus_ctrl_wrapper.apr.v
 
 #####
 # Should be no need to modify after here

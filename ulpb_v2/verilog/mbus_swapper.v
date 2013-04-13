@@ -6,7 +6,7 @@
 // 		Maintains Last seen Clock State
 //////////////////////////////////////////
 
-module ulpb_swapper
+module mbus_swapper
   (
    //Inputs
     input      CLK,
@@ -98,4 +98,4 @@ module ulpb_swapper
       end
    end
    
-endmodule // ulpb_swapper
+endmodule // mbus_swapper

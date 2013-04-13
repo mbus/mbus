@@ -6,7 +6,7 @@
  * MBUS makes certain assumptions about the transmissions:
  *
  * 1. The transmission each round is always 32-bits, i.e. TX_DATA is 32-bit
- * wide. This could be changed in the definitions file include/ulpb_def.v
+ * wide. This could be changed in the definitions file include/mbus_def.v
  *
  * 2. Transmissions only use short (8-bit) addresses.
  *
@@ -62,7 +62,7 @@
  * interrupt, bypass clock once interrupt occurred
  * */
 
-`include "include/ulpb_func.v"
+`include "include/mbus_func.v"
 
 parameter ADDRESS = 20'habcde;
 parameter ADDRESS_MASK = {(`PRFIX_WIDTH){1'b1}};
@@ -1103,7 +1103,7 @@ begin
 		CLKOUT = 1;
 end
 
-ulpb_swapper swapper0(
+mbus_swapper swapper0(
 	// inputs
 	.CLK(CLKIN),
     .RESETn(RESETn_local),

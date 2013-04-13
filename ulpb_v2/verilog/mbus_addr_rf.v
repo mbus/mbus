@@ -1,8 +1,8 @@
 
-`include "include/ulpb_func.v"
+`include "include/mbus_func.v"
 // simulate the always on register file which holds the assigned address
 
-module ulpb_addr_rf(
+module mbus_addr_rf(
 	input		RESETn,
 	input		RELEASE_ISO_FROM_SLEEP_CTRL,
 	output	reg	[`DYNA-1:0] ADDR_OUT,

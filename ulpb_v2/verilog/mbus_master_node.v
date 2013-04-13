@@ -1,5 +1,5 @@
 
-`include "include/ulpb_def.v"
+`include "include/mbus_def.v"
 
 module mbus_master_node(
 	input 	CLKIN, 
@@ -50,6 +50,7 @@ module mbus_master_node(
 );
 
 `define MBUS_MASTER_NODE
+`define CPU_LAYER
 
 `include "mbus_node_core.v"
 

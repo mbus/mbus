@@ -1,7 +1,7 @@
 
-`include "include/ulpb_def.v"
+`include "include/mbus_def.v"
 
-module ulpb_ctrl_wrapper(
+module mbus_ctrl_wrapper(
 	input 	CLK_EXT,
 	input 	RESETn,
 	input 	CLKIN,
@@ -144,7 +144,7 @@ begin
 end
 
 
-ulpb_ctrl ctrl0(
+mbus_ctrl ctrl0(
 	.CLK_EXT(CLK_EXT),
 	.RESETn(RESETn_local),
 	.CLKIN(CLKIN),

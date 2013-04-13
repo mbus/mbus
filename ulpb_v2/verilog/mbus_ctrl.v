@@ -4,9 +4,9 @@
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  * Last modified content: Added glitch reset
  * */
-`include "include/ulpb_def.v"
+`include "include/mbus_def.v"
 
-module ulpb_ctrl(
+module mbus_ctrl(
 	input CLK_EXT,
 	input RESETn,
 	input CLKIN,
@@ -16,7 +16,7 @@ module ulpb_ctrl(
 	input [`WATCH_DOG_WIDTH-1:0] THRESHOLD
 );
 
-`include "include/ulpb_func.v"
+`include "include/mbus_func.v"
 
 parameter BUS_IDLE = 0;
 parameter BUS_WAIT_START = 3;

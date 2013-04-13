@@ -10,9 +10,9 @@
  * --------------------------------------------------------------------------
  * */
 
-`include "include/ulpb_def.v"
+`include "include/mbus_def.v"
 
-module ulpb_node32_isolation(
+module mbus_regular_isolation(
 	input 	RELEASE_ISO_FROM_SLEEP_CTRL,
 
 	// LC stands for Layer Controller

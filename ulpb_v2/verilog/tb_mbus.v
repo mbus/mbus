@@ -10,7 +10,7 @@
 
 `include "include/ulpb_def.v"
 
-module tb_ulpb_node32();
+module tb_mbus();
 
    reg		         clk, resetn;
    wire 		 SCLK;
@@ -39,7 +39,8 @@ module tb_ulpb_node32();
    wire				n2_lc_pwr_on, n2_lc_release_clk, n2_lc_release_rst, n2_lc_release_iso;
    wire				n0_lc_pwr_on, n0_lc_release_clk, n0_lc_release_rst, n0_lc_release_iso;
    
-   reg				n0_req_int, n2_req_int;
+   reg				n0_req_int, n1_req_int, n2_req_int, c0_req_int;
+   wire				n0_rx_broadcast, n1_rx_broadcast, n2_rx_broadcast, c0_rx_broadcast;
    
    reg [31:0] 		  rand_dat, rand_dat2;
    reg [4:0] 		  state;
@@ -84,36 +85,51 @@ wire	[`WATCH_DOG_WIDTH-1:0] THRESHOLD = 20'h05fff;
 
 
 // This configuration works for task4.v only
- ulpb_layer_wrapper #(.ADDRESS(8'hab)) n0
+mbus_layer_wrapper #(.ADDRESS(8'hab)) n0
      (.CLKIN(SCLK), .CLKOUT(w_n0_clk_out), .RESETn(resetn), .DIN(w_c0n0), .DOUT(w_n0n1), 
       .TX_ADDR(n0_tx_addr), .TX_DATA(n0_tx_data), .TX_REQ(n0_tx_req), .TX_ACK(n0_tx_ack), .TX_PEND(n0_tx_pend), .PRIORITY(n0_priority),
       .RX_ADDR(n0_rx_addr), .RX_DATA(n0_rx_data), .RX_REQ(n0_rx_req), .RX_ACK(n0_rx_ack), .RX_FAIL(n0_rx_fail), .RX_PEND(n0_rx_pend),
-      .TX_SUCC(n0_tx_succ), .TX_FAIL(n0_tx_fail), .TX_RESP_ACK(n0_tx_resp_ack),
+      .TX_SUCC(n0_tx_succ), .TX_FAIL(n0_tx_fail), .TX_RESP_ACK(n0_tx_resp_ack), .RX_BROADCAST(n0_rx_broadcast),
 	  .LC_POWER_ON(n0_lc_pwr_on), .LC_RELEASE_CLK(n0_lc_release_clk), .LC_RELEASE_RST(n0_lc_release_rst), .LC_RELEASE_ISO(n0_lc_release_iso),
 	  .REQ_INT(n0_req_int));
 
-   
-   ulpb_node32_wo_pwr_gated #(.ADDRESS(8'hcd)) n1
+mbus_layer_wrapper #(.ADDRESS(8'hab)) n1
      (.CLKIN(w_n0_clk_out), .CLKOUT(w_n1_clk_out), .RESETn(resetn), .DIN(w_n0n1), .DOUT(w_n1n2), 
       .TX_ADDR(n1_tx_addr), .TX_DATA(n1_tx_data), .TX_REQ(n1_tx_req), .TX_ACK(n1_tx_ack), .TX_PEND(n1_tx_pend), .PRIORITY(n1_priority),
       .RX_ADDR(n1_rx_addr), .RX_DATA(n1_rx_data), .RX_REQ(n1_rx_req), .RX_ACK(n1_rx_ack), .RX_FAIL(n1_rx_fail), .RX_PEND(n1_rx_pend),
-      .TX_SUCC(n1_tx_succ), .TX_FAIL(n1_tx_fail), .TX_RESP_ACK(n1_tx_resp_ack));
-   
+      .TX_SUCC(n1_tx_succ), .TX_FAIL(n1_tx_fail), .TX_RESP_ACK(n1_tx_resp_ack), .RX_BROADCAST(n1_rx_broadcast),
+	  .LC_POWER_ON(n1_lc_pwr_on), .LC_RELEASE_CLK(n1_lc_release_clk), .LC_RELEASE_RST(n1_lc_release_rst), .LC_RELEASE_ISO(n1_lc_release_iso),
+	  .REQ_INT(n1_req_int));
 
-ulpb_layer_wrapper #(.ADDRESS(8'hef), .LAYER_ID(24'd7)) n2
+mbus_layer_wrapper #(.ADDRESS(8'hef)) n2
      (.CLKIN(w_n1_clk_out), .CLKOUT(w_n2_clk_out), .RESETn(resetn), .DIN(w_n1n2), .DOUT(w_n2c0), 
       .TX_ADDR(n2_tx_addr), .TX_DATA(n2_tx_data), .TX_REQ(n2_tx_req), .TX_ACK(n2_tx_ack), .TX_PEND(n2_tx_pend), .PRIORITY(n2_priority),
       .RX_ADDR(n2_rx_addr), .RX_DATA(n2_rx_data), .RX_REQ(n2_rx_req), .RX_ACK(n2_rx_ack), .RX_FAIL(n2_rx_fail), .RX_PEND(n2_rx_pend),
-      .TX_SUCC(n2_tx_succ), .TX_FAIL(n2_tx_fail), .TX_RESP_ACK(n2_tx_resp_ack),
+      .TX_SUCC(n2_tx_succ), .TX_FAIL(n2_tx_fail), .TX_RESP_ACK(n2_tx_resp_ack), .RX_BROADCAST(n2_rx_broadcast),
 	  .LC_POWER_ON(n2_lc_pwr_on), .LC_RELEASE_CLK(n2_lc_release_clk), .LC_RELEASE_RST(n2_lc_release_rst), .LC_RELEASE_ISO(n2_lc_release_iso),
 	  .REQ_INT(n2_req_int));
    
-   ulpb_ctrl_wrapper #(.CTRL_ADDRESS(8'h01), .NODE_ADDRESS(8'haa)) c0 
+mbus_ctrl_wrapper #(.CTRL_ADDRESS(8'h01)) c0 
      (.CLK_EXT(clk), .CLKIN(w_n2_clk_out), .CLKOUT(SCLK), .RESETn(resetn), .DIN(w_n2c0), .DOUT(w_c0n0), 
       .TX_ADDR(c0_tx_addr), .TX_DATA(c0_tx_data), .TX_REQ(c0_tx_req), .TX_ACK(c0_tx_ack), .TX_PEND(c0_tx_pend), .PRIORITY(c0_priority),
       .RX_ADDR(c0_rx_addr), .RX_DATA(c0_rx_data), .RX_REQ(c0_rx_req), .RX_ACK(c0_rx_ack), .RX_FAIL(c0_rx_fail), .RX_PEND(c0_rx_pend),
-      .TX_SUCC(c0_tx_succ), .TX_FAIL(c0_tx_fail), .TX_RESP_ACK(c0_tx_resp_ack), .THRESHOLD(THRESHOLD));
+      .TX_SUCC(c0_tx_succ), .TX_FAIL(c0_tx_fail), .TX_RESP_ACK(c0_tx_resp_ack), .THRESHOLD(THRESHOLD), .RX_BROADCAST(c0_rx_broadcast),
+	  .RELEASE_RST_FROM_SLEEP_CTRL(), .POWER_ON_TO_LAYER_CTRL(), .RELEASE_CLK_TO_LAYER_CTRL(),
+	  .RELEASE_RST_TO_LAYER_CTRL(), .RELEASE_ISO_TO_LAYER_CTRL()
+	  .REQ_INT(c0_req_int));
 
+	input 	,
+	// power gated signals to layer controller
+	output 	,
+	output 	,
+	output 	,
+	output 	,
+	// wake up bus controller
+	input 	EXTERNAL_INT,
+	output	CLR_EXT_INT,
+	// wake up processor
+	input	WAKEUP_PROC,
+	output	SLEEP_REQUEST_TO_SLEEP_CTRL
    initial begin
       //VCD DUMP SECTION
 

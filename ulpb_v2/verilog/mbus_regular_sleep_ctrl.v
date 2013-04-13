@@ -1,5 +1,5 @@
 
-module ulpb_sleep_ctrl(
+module mbus_regular_sleep_ctrl(
 	input	CLKIN,
 	input	RESETn,
 	input	SLEEP_REQ,
@@ -9,7 +9,7 @@ module ulpb_sleep_ctrl(
 	output	reg RELEASE_ISO
 );
 
-`include "include/ulpb_def.v"
+`include "include/mbus_def.v"
 
 reg	[1:0] fsm_pos, fsm_neg;
 

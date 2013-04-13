@@ -1,8 +1,8 @@
-module ulpb_ext_int(
+module mbus_ext_int(
 	input	CLKIN, 
 	input	RESETn,
 	input	REQ_INT, 
-	output 	reg EXTERNAL_INT_TO_LINE, 
+	output 	reg EXTERNAL_INT_TO_WIRE, 
 	output	reg EXTERNAL_INT_TO_BUS, 
 	input	CLR_EXT_INT
 );

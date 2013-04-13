@@ -7,9 +7,9 @@
  * --------------------------------------------------------------------------
  * */
 
-`include "include/ulpb_def.v"
+`include "include/mbus_def.v"
 
-module ulpb_wire_ctrl(
+module mbus_wire_ctrl(
 	input DIN,
 	input CLKIN,
 	input DOUT_FROM_BUS,

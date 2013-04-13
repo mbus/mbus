@@ -316,7 +316,8 @@ begin
 end
 
 // This block used to determine the received data length.
-// only broadcast cannot be word alignment
+// only broadcast can be any byte aligned
+// otherwise, regular message has to be word aligned
 always @ *
 begin
 	rx_dat_length = LENGTH_4BYTE;
@@ -326,14 +327,14 @@ begin
 		1: begin rx_dat_length = LENGTH_4BYTE; rx_dat_length_valid = 1; rx_position = RX_BELOW_TX; end
 		(`DATA_WIDTH-1'b1): begin rx_dat_length = LENGTH_4BYTE; rx_dat_length_valid = 1; rx_position = RX_ABOVE_TX; end
 
-		9: begin rx_dat_length = LENGTH_3BYTE; rx_dat_length_valid = 1; rx_position = RX_BELOW_TX; end
-		7: begin rx_dat_length = LENGTH_3BYTE; rx_dat_length_valid = 1; rx_position = RX_ABOVE_TX; end
+		9: begin rx_dat_length = LENGTH_3BYTE; if (RX_BROADCAST) rx_dat_length_valid = 1; rx_position = RX_BELOW_TX; end
+		7: begin rx_dat_length = LENGTH_3BYTE; if (RX_BROADCAST) rx_dat_length_valid = 1; rx_position = RX_ABOVE_TX; end
 
-		17: begin rx_dat_length = LENGTH_2BYTE; rx_dat_length_valid = 1; rx_position = RX_BELOW_TX; end
-		15: begin rx_dat_length = LENGTH_2BYTE; rx_dat_length_valid = 1; rx_position = RX_ABOVE_TX; end
+		17: begin rx_dat_length = LENGTH_2BYTE; if (RX_BROADCAST) rx_dat_length_valid = 1; rx_position = RX_BELOW_TX; end
+		15: begin rx_dat_length = LENGTH_2BYTE; if (RX_BROADCAST) rx_dat_length_valid = 1; rx_position = RX_ABOVE_TX; end
 
-		25: begin rx_dat_length = LENGTH_1BYTE; rx_dat_length_valid = 1; rx_position = RX_BELOW_TX; end
-		23: begin rx_dat_length = LENGTH_1BYTE; rx_dat_length_valid = 1; rx_position = RX_ABOVE_TX; end
+		25: begin rx_dat_length = LENGTH_1BYTE; if (RX_BROADCAST) rx_dat_length_valid = 1; rx_position = RX_BELOW_TX; end
+		23: begin rx_dat_length = LENGTH_1BYTE; if (RX_BROADCAST) rx_dat_length_valid = 1; rx_position = RX_ABOVE_TX; end
 	endcase
 end
 

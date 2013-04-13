@@ -30,13 +30,14 @@
 // Broadcast channel, the width should be consistant with `FUNC_WIDTH
 `define CHANNEL_ENUM	4'h0
 `define CHANNEL_POWER 	4'h1
+`define CHANNEL_CTRL	4'h2
 
 // Broadcast commands, the width should be consistant with `BROADCAST_CMD_WIDTH
 // Commands for CHANNEL_ENUM
 `define CMD_CHANNEL_ENUM_QUERRY				4'h0
 `define CMD_CHANNEL_ENUM_RESPONSE			4'h1
 `define CMD_CHANNEL_ENUM_ENUMERATE			4'h2
-`define CMD_CHANNEL_ENUM_INVALID			4'h3
+`define CMD_CHANNEL_ENUM_INVALIDATE			4'h3
 
 
 // Commands for CHANNEL_POWER

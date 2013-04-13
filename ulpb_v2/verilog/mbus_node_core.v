@@ -68,12 +68,6 @@ parameter ADDRESS = 20'habcde;
 parameter ADDRESS_MASK = {(`PRFIX_WIDTH){1'b1}};
 parameter ADDRESS_MASK_SHORT = {`DYNA_WIDTH{1'b1}};
 
-`ifdef MBUS_MASTER_NODE
-parameter ADDRESS2 = 20'h12345;
-parameter ADDRESS_MASK2 = {(`PRFIX_WIDTH){1'b1}};
-parameter ADDRESS_MASK2_SHORT = {`DYNA_WIDTH{1'b1}};
-`endif
-
 // Node mode
 parameter MODE_TX_NON_PRIO = 2'd0;
 parameter MODE_TX = 2'd1;
@@ -148,12 +142,12 @@ reg		next_rx_pend;
 
 wire	addr_bit_extract = ((ADDR  & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	data_bit_extract = ((DATA & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
-reg		[2:0] addr_match_temp;
-wire	address_match = (addr_match_temp[2] | addr_match_temp[1] | addr_match_temp[0]);
+reg		[1:0] addr_match_temp;
+wire	address_match = (addr_match_temp[1] | addr_match_temp[0]);
 
 // Broadcast processing
-wire	[`DATA_WIDTH-1:0] rx_data_buf_proc = (bit_position==1)? rx_data_buf[`DATA_WIDTH-1:0] : (bit_position==`DATA_WIDTH-1'b1)? rx_data_buf[`DATA_WIDTH+1:2] : 0;
-wire	[`BROADCAST_CMD_WIDTH -1:0] rx_broadcast_command = rx_data_buf_proc[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH];
+wire	[`DATA_WIDTH-1:0] rx_data_buf_proc = (rx_dat_length_valid)? (rx_position==RX_BELOW_TX)? rx_data_buf[`DATA_WIDTH-1:0] : rx_data_buf[`DATA_WIDTH+1:2] : 0;
+reg		[`BROADCAST_CMD_WIDTH -1:0] rx_broadcast_command;
 wire	rx_long_addr_en = (RX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1 : 0;
 wire	tx_long_addr_en = (TX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1 : 0;
 reg		tx_broadcast;
@@ -177,7 +171,7 @@ reg		ext_int;
 wire	[15:0] layer_slot = (1'b1<<ASSIGNED_ADDR_IN);
 
 // Assignments
-assign RX_BROADCAST = addr_match_temp[2];
+assign RX_BROADCAST = addr_match_temp[0];
 assign ASSIGNED_ADDR_OUT = DATA[`DYNA_WIDTH-1:0];
 
 // Node priority
@@ -241,7 +235,6 @@ begin
 				endcase
 			end
 			`CHANNEL_ENUM: begin wakeup_req = 1; end
-			`CHANNEL_DATA: begin wakeup_req = 1; end
 			default: 
 		endcase
 	end
@@ -252,7 +245,7 @@ end
 // This block determine the incoming message has match the address or not
 always @ *
 begin
-	addr_match_temp = 3'b000;
+	addr_match_temp = 2'b00;
 	if (rx_long_addr_en)
 	begin
 		if (RX_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH]==`BROADCAST_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH])
@@ -261,10 +254,6 @@ begin
 		if (((RX_ADDR[`DATA_WIDTH-`RSVD_WIDTH-1:`FUNC_WIDTH] ^ ADDRESS) & ADDRESS_MASK)==0)
 			addr_match_temp[1] = 1;
 		
-		`ifdef MBUS_MASTER_NODE
-		if (((RX_ADDR[`DATA_WIDTH-`RSVD_WIDTH-1:`FUNC_WIDTH] ^ ADDRESS2) & ADDRESS_MASK2)==0)
-				addr_match_temp[2] = 1;
-		`endif
 	end
 	// short address assigned
 	else
@@ -278,10 +267,6 @@ begin
 				addr_match_temp[1] = 1;
 		end
 		
-		`ifdef MBUS_MASTER_NODE
-		if (((RX_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH] ^ ASSIGNED_ADDR_IN2) & ADDRESS_MASK2_SHORT)==0)
-			addr_match_temp[2] = 1;
-		`endif
 	end
 end
 // End of address compare
@@ -292,20 +277,20 @@ end
 always @ *
 begin
 	tx_dat_length = LENGTH_4BYTE;
-	case (TX_ADDR[`FUNC_WIDTH-1:0])
+	case (ADDR[`FUNC_WIDTH-1:0])
 		`CHANNEL_ENUM:
 		begin
-			case (TX_DATA[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH])
+			case (DATA[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH])
 				`CMD_CHANNEL_ENUM_QUERRY: 		begin tx_dat_length = LENGTH_1BYTE; end
 				`CMD_CHANNEL_ENUM_RESPONSE: 	begin tx_dat_length = LENGTH_4BYTE; end
 				`CMD_CHANNEL_ENUM_ENUMERATE: 	begin tx_dat_length = LENGTH_1BYTE; end
-				`CMD_CHANNEL_ENUM_INVALID: 		begin tx_dat_length = LENGTH_1BYTE; end
+				`CMD_CHANNEL_ENUM_INVALIDATE:	begin tx_dat_length = LENGTH_1BYTE; end
 			endcase
 		end
 
 		`CHANNEL_POWER:
 		begin
-			case (TX_DATA[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH])
+			case (DATA[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH])
 				`CMD_CHANNEL_POWER_ALL_SLEEP: 	begin tx_dat_length = LENGTH_1BYTE; end
 				`CMD_CHANNEL_POWER_ALL_WAKE: 	begin tx_dat_length = LENGTH_1BYTE; end
 				`CMD_CHANNEL_POWER_SEL_SLEEP: 	begin tx_dat_length = LENGTH_3BYTE; end
@@ -336,6 +321,18 @@ begin
 		25: begin rx_dat_length = LENGTH_1BYTE; if (RX_BROADCAST) rx_dat_length_valid = 1; rx_position = RX_BELOW_TX; end
 		23: begin rx_dat_length = LENGTH_1BYTE; if (RX_BROADCAST) rx_dat_length_valid = 1; rx_position = RX_ABOVE_TX; end
 	endcase
+end
+
+always @ *
+begin
+	rx_broadcast_command = rx_data_buf_proc[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH];
+	case (rx_dat_length)
+		LENGTH_4BYTE: begin rx_broadcast_command = rx_data_buf_proc[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH]; end
+		LENGTH_3BYTE: begin rx_broadcast_command = rx_data_buf_proc[`DATA_WIDTH-9:`DATA_WIDTH-`BROADCAST_CMD_WIDTH-8]; end
+		LENGTH_2BYTE: begin rx_broadcast_command = rx_data_buf_proc[`DATA_WIDTH-17:`DATA_WIDTH-`BROADCAST_CMD_WIDTH-16]; end
+		LENGTH_1BYTE: begin rx_broadcast_command = rx_data_buf_proc[`DATA_WIDTH-25:`DATA_WIDTH-`BROADCAST_CMD_WIDTH-24]; end
+	endcase
+ 
 end
 
 always @ (posedge CLKIN or negedge RESETn_local)
@@ -529,6 +526,8 @@ begin
 		begin
 			next_mode = mode_temp;
 			next_bus_state = BUS_ADDR;
+			if (enum_addr_resp== ADDR_ENUM_RESPOND_T1)
+				next_enum_addr_resp = ADDR_ENUM_RESPOND_NONE;
 			if (mode_temp==MODE_TX)
 			begin
 				case (enum_addr_resp)
@@ -536,7 +535,6 @@ begin
 					ADDR_ENUM_RESPOND_T1:
 					begin
 						next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
-						next_enum_addr_resp = ADDR_ENUM_RESPOND_NONE;
 					end
 
 					// respond to query
@@ -547,6 +545,7 @@ begin
 						next_enum_addr_resp = ADDR_ENUM_RESPOND_NONE;
 					end
 
+					// TX initiated from layer controller
 					default:
 					begin
 						next_addr = TX_ADDR;
@@ -622,7 +621,9 @@ begin
 			case (mode)
 				MODE_TX:
 				begin
-					if (bit_position)
+					// support variable tx length for broadcast messages
+					if (((tx_dat_length==LENGTH_4BYTE)&&(bit_position>0))||((tx_dat_length==LENGTH_3BYTE)&&(bit_position>8))||((tx_dat_length==LENGTH_2BYTE)&&(bit_position>16))||((tx_dat_length==LENGTH_1BYTE)&&(bit_position>24)))
+					//if (bit_position)
 						next_bit_position = bit_position - 1'b1;
 					else
 					begin
@@ -708,10 +709,10 @@ begin
 						next_out_reg_pos = ~CONTROL_BITS[0];
 						if (tx_broadcast)
 						begin
-							case (TX_ADDR[`FUNC_WIDTH-1:0])
+							case (ADDR[`FUNC_WIDTH-1:0])
 								`CHANNEL_POWER:
 								begin
-									case (TX_DATA[`DATA_WIDTH-1:`DATA_WIDTH-8])
+									case (DATA[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH ])
 										`CMD_CHANNEL_POWER_ALL_SLEEP:
 										begin
 											next_shutdown = 1;
@@ -719,7 +720,7 @@ begin
 
 										`CMD_CHANNEL_POWER_SEL_SLEEP:
 										begin
-											if ((TX_DATA[15:0]&layer_slot)>0)
+											if ((DATA[27:12]&layer_slot)>0)
 											begin
 												next_shutdown = 1;
 											end
@@ -745,12 +746,15 @@ begin
 							// correct ending state
 							// rx above tx = 31
 							// rx below tx = 1
-							if ((bit_position==1)||(bit_position==(`DATA_WIDTH-1'b1))
+							if (rx_dat_length_valid)
 							begin
 								// broadcast message 
 								if (RX_BROADCAST)
 								begin
 									next_out_reg_pos = CONTROL_BITS[0];
+									`ifdef CPU_LAYER
+										next_rx_req = 1;
+									`endif
 									// broadcast channel
 									case (RX_ADDR[`FUNC_WIDTH-1:0])
 										`CHANNEL_ENUM:
@@ -763,10 +767,7 @@ begin
 													// this node doesn't have a valid short address, active low
 													next_enum_addr_resp = ADDR_ENUM_RESPOND_T2;
 													next_addr = `BROADCAST_ADDR[`SHORT_ADDR_WITDH-1:0];
-													if (ASSIGNED_ADDR_VALID)
-														next_data = (`CMD_CHANNEL_ENUM_RESPONSE<<(`DATA_WIDTH-`BROADCAST_CMD_WIDTH)) | (ADDRESS<<`DYNA_WIDTH) | ASSIGNED_ADDR_IN);
-													else
-														next_data = (`CMD_CHANNEL_ENUM_RESPONSE<<(`DATA_WIDTH-`BROADCAST_CMD_WIDTH)) | (ADDRESS<<`DYNA_WIDTH) | {`DYNA_WIDTH{1'b1}};
+													next_data = (`CMD_CHANNEL_ENUM_RESPONSE<<(`DATA_WIDTH-`BROADCAST_CMD_WIDTH)) | (ADDRESS<<`DYNA_WIDTH) | ASSIGNED_ADDR_IN);
 												end
 
 												// request arbitration, set short prefix if successed
@@ -777,9 +778,13 @@ begin
 													next_data = (`CMD_CHANNEL_ENUM_RESPONSE<<(`DATA_WIDTH-`BROADCAST_CMD_WIDTH)) | (ADDRESS<<`DYNA_WIDTH) | rx_data_buf_proc[`DYNA_WIDTH-1:0];
 												end
 
-												`CMD_CHANNEL_ENUM_INVALID:
+												`CMD_CHANNEL_ENUM_INVALIDATE:
 												begin
-													next_assigned_addr_invalidn = 0;
+													case (rx_data_buf_proc[`DYNA_WIDTH-1:0])
+														{`DYNA_WIDTH{1'b1}}: begin next_assigned_addr_invalidn  = 0; end
+														ASSIGNED_ADDR_IN: begin next_assigned_addr_invalidn  = 0; end
+														default: begin end
+													endcase
 												end
 											endcase
 										end
@@ -795,13 +800,20 @@ begin
 
 												`CMD_CHANNEL_POWER_SEL_SLEEP:
 												begin
-													if ((rx_data_buf_proc[15:0]&layer_slot)>0)
+													if ((rx_data_buf_proc[19:4]&layer_slot)>0)
 													begin
 														next_shutdown = 1;
 													end
 												end
 											endcase
 										end
+
+										`ifdef MBUS_MASTER_NODE
+										`CHANNEL_CTRL:
+										begin
+											next_rx_req = 1;
+										end
+										`endif
 									endcase
 								end // endif rx_broadcast
 								else
@@ -820,7 +832,7 @@ begin
 										next_rx_pend = 0;
 									end
 								end
-							end // endif bit position
+							end // endif invalid rx dat length 
 							else
 							// stops at middle of transmission
 							begin

@@ -18,6 +18,7 @@ module ulpb_ctrl_wrapper(
 	output 	[`DATA_WIDTH-1:0] RX_DATA, 
 	output 	RX_REQ, 
 	input 	RX_ACK, 
+	output  RX_BROADCAST,
 	output	RX_FAIL,
 	output 	RX_PEND, 
 	output 	TX_FAIL, 
@@ -39,7 +40,6 @@ module ulpb_ctrl_wrapper(
 	output	SLEEP_REQUEST_TO_SLEEP_CTRL
 );
 
-parameter CTRL_ADDRESS = 20'ha0000;
 parameter NODE_ADDRESS = 20'haaaaa;
 
 wire	CLK_CTRL_TO_NODE;
@@ -66,13 +66,16 @@ assign 	RELEASE_CLK_TO_LAYER_CTRL = (RELEASE_CLK_TO_PROC | RELEASE_CLK_FROM_BUS)
 assign 	RELEASE_RST_TO_LAYER_CTRL = (RELEASE_RST_TO_PROC | RELEASE_RST_FROM_BUS);
 assign 	RELEASE_ISO_TO_LAYER_CTRL = (RELEASE_ISO_TO_PROC | RELEASE_ISO_FROM_BUS);
 
+wire	RX_BROADCAST;
+
 always @ *
 begin
-	ctrl_addr_match = 0;
-	// address match to ctrl node
-	if ((RX_ADDR ^ CTRL_ADDRESS)==0)
+	if ((RX_BROADCAST) &&  (RX_ADDR[`FUNC_WIDTH-1:0]==`CHANNEL_CTRL))
 		ctrl_addr_match = 1;
+	else
+		ctrl_addr_match = 0;
 end
+
 assign RX_REQ = (ctrl_addr_match)? 1'b0 : NODE_RX_REQ;
 
 always @ (posedge CLK_EXT or negedge RESETn_local)
@@ -151,7 +154,7 @@ ulpb_ctrl ctrl0(
 	.THRESHOLD(THRESHOLD)
 );
 
-mbus_master_node#(.ADDRESS(NODE_ADDRESS),  .ADDRESS2(CTRL_ADDRESS)) node0(
+mbus_master_node#(.ADDRESS(NODE_ADDRESS)) node0(
 	.CLKIN(CLK_CTRL_TO_NODE), 
 	.RESETn(RESETn), 
 	.DIN(DOUT_CTRL_TO_NODE), 
@@ -167,6 +170,7 @@ mbus_master_node#(.ADDRESS(NODE_ADDRESS),  .ADDRESS2(CTRL_ADDRESS)) node0(
 	.RX_DATA(RX_DATA), 
 	.RX_REQ(NODE_RX_REQ), 
 	.RX_ACK(NODE_RX_ACK), 
+	.RX_BROADCAST(RX_BROADCAST),
 	.RX_FAIL(RX_FAIL),
 	.RX_PEND(RX_PEND), 
 	.TX_FAIL(TX_FAIL), 
@@ -180,12 +184,11 @@ mbus_master_node#(.ADDRESS(NODE_ADDRESS),  .ADDRESS2(CTRL_ADDRESS)) node0(
 	.SLEEP_REQUEST_TO_SLEEP_CTRL(SLEEP_REQUEST_TO_SLEEP_CTRL),
 	.EXTERNAL_INT(EXTERNAL_INT),
 	.CLR_EXT_INT(CLR_EXT_INT)
-	.ASSIGNED_ADDR_IN(8'h02),
+	.ASSIGNED_ADDR_IN(8'h01),
 	.ASSIGNED_ADDR_OUT(),
 	.ASSIGNED_ADDR_VALID(1'b1),
 	.ASSIGNED_ADDR_WRITE(),
-	.ASSIGNED_ADDR_INVALIDn(),
-	.ASSIGNED_ADDR_IN2(8'h01)
+	.ASSIGNED_ADDR_INVALIDn()
 );
 
 endmodule

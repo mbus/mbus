@@ -46,16 +46,7 @@ module mbus_master_node(
 	output	 	[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_OUT,
 	input		ASSIGNED_ADDR_VALID,
 	output	reg	ASSIGNED_ADDR_WRITE,
-	output	reg	ASSIGNED_ADDR_INVALIDn,
-
-	input		[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_IN2
-	/*
-	Not implemented in Version 1 of MBus
-	output	 	[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_OUT2,
-	input		ASSIGNED_ADDR_VALID2,
-	output	reg	ASSIGNED_ADDR_WRITE2,
-	output	reg	ASSIGNED_ADDR_INVALIDn2
-	*/
+	output	reg	ASSIGNED_ADDR_INVALIDn
 );
 
 `define MBUS_MASTER_NODE

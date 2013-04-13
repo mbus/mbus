@@ -48,6 +48,8 @@
  * 			at this point.
  * --------------------------------------------------------------------------
  * Update log:
+ * 4/12 '13
+ * A bunch of changes...
  * 4/11 '13
  * Working on DHCP, make sure to check the spec
  * 4/09 '13
@@ -60,68 +62,17 @@
  * interrupt, bypass clock once interrupt occurred
  * */
 
-`define POWER_GATING
-
-`include "include/ulpb_def.v"
-
-module ulpb_node32(
-	input 	CLKIN, 
-	input 	RESETn, 
-	input 	DIN, 
-	output 	reg CLKOUT,
-	output 	reg DOUT, 
-
-	input 		[`ADDR_WIDTH-1:0] TX_ADDR, 
-	input 		[`DATA_WIDTH-1:0] TX_DATA, 
-	input 		TX_PEND, 
-	input 		TX_REQ, 
-	output 	reg TX_ACK, 
-	input 		PRIORITY,
-
-	output 	reg [`ADDR_WIDTH-1:0] RX_ADDR, 
-	output 	reg [`DATA_WIDTH-1:0] RX_DATA, 
-	output 	reg RX_PEND, 
-	output 	reg RX_REQ, 
-	input 		RX_ACK, 
-	output 		RX_BROADCAST,
-
-	output 	reg RX_FAIL,
-	output 	reg TX_FAIL, 
-	output 	reg TX_SUCC, 
-	input 		TX_RESP_ACK,
-
-	`ifdef POWER_GATING
-	// power gated signals from sleep controller
-	input 		RELEASE_RST_FROM_SLEEP_CTRL,
-	// power gated signals to layer controller
-	output 	reg POWER_ON_TO_LAYER_CTRL,
-	output 	reg RELEASE_CLK_TO_LAYER_CTRL,
-	output 	reg RELEASE_RST_TO_LAYER_CTRL,
-	output 	reg RELEASE_ISO_TO_LAYER_CTRL,
-	// power gated signal to sleep controller
-	output 	reg SLEEP_REQUEST_TO_SLEEP_CTRL,
-	// External interrupt
-	input 		EXTERNAL_INT,
-	output 	reg CLR_EXT_INT,
-	`endif
-	// interface with local register files (RF)
-	input		[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_IN,
-	output	 	[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_OUT,
-	input		ASSIGNED_ADDR_VALID,
-	output	reg	ASSIGNED_ADDR_WRITE,
-	output	reg	ASSIGNED_ADDR_INVALIDn
-);
-
 `include "include/ulpb_func.v"
 
 parameter ADDRESS = 20'habcde;
 parameter ADDRESS_MASK = {(`PRFIX_WIDTH){1'b1}};
 parameter ADDRESS_MASK_SHORT = {`DYNA_WIDTH{1'b1}};
-// if MULTI_ADDR = 1, check additional address (ADDRESS2)
-parameter MULTI_ADDR_EN = 1'b0;	
+
+`ifdef MBUS_MASTER_NODE
 parameter ADDRESS2 = 20'h12345;
 parameter ADDRESS_MASK2 = {(`PRFIX_WIDTH){1'b1}};
 parameter ADDRESS_MASK2_SHORT = {`DYNA_WIDTH{1'b1}};
+`endif
 
 // Node mode
 parameter MODE_TX_NON_PRIO = 2'd0;
@@ -148,6 +99,15 @@ parameter ADDR_ENUM_RESPOND_T1 = 2'b00;
 parameter ADDR_ENUM_RESPOND_T2 = 2'b10;
 parameter ADDR_ENUM_RESPOND_NONE = 2'b11;
 
+// TX broadcast data length
+parameter LENGTH_1BYTE = 2'b00;
+parameter LENGTH_2BYTE = 2'b01;
+parameter LENGTH_3BYTE = 2'b10;
+parameter LENGTH_4BYTE = 2'b11;
+
+parameter RX_ABOVE_TX = 1'b1;
+parameter RX_BELOW_TX = 1'b0;
+
 wire [1:0] CONTROL_BITS = `CONTROL_SEQ;	// EOM?, ~ACK?
 
 // general registers
@@ -169,8 +129,6 @@ reg		[`ADDR_WIDTH-1:0] next_rx_addr;
 reg		[`DATA_WIDTH-1:0] next_rx_data; 
 reg		[`DATA_WIDTH+1:0] rx_data_buf, next_rx_data_buf;
 reg		next_rx_fail;
-wire	[`DATA_WIDTH-1:0] rx_data_buf_proc = (bit_position==1)? rx_data_buf[`DATA_WIDTH-1:0] : (bit_position==`DATA_WIDTH-1'b1)? rx_data_buf[`DATA_WIDTH+1:2] : 0;
-wire	[`BROADCAST_CMD_WIDTH -1:0] rx_broadcast_command = rx_data_buf_proc[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH];
 
 // address enumation registers
 reg		[1:0] enum_addr_resp, next_enum_addr_resp;
@@ -192,9 +150,15 @@ wire	addr_bit_extract = ((ADDR  & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	data_bit_extract = ((DATA & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 reg		[2:0] addr_match_temp;
 wire	address_match = (addr_match_temp[2] | addr_match_temp[1] | addr_match_temp[0]);
+
+// Broadcast processing
+wire	[`DATA_WIDTH-1:0] rx_data_buf_proc = (bit_position==1)? rx_data_buf[`DATA_WIDTH-1:0] : (bit_position==`DATA_WIDTH-1'b1)? rx_data_buf[`DATA_WIDTH+1:2] : 0;
+wire	[`BROADCAST_CMD_WIDTH -1:0] rx_broadcast_command = rx_data_buf_proc[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH];
 wire	rx_long_addr_en = (RX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1 : 0;
 wire	tx_long_addr_en = (TX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1 : 0;
 reg		tx_broadcast;
+reg		[1:0] tx_dat_length, rx_dat_length;
+reg		rx_position, rx_dat_length_valid;
 reg		wakeup_req;
 
 // Power gating related signals
@@ -292,31 +256,86 @@ begin
 	if (rx_long_addr_en)
 	begin
 		if (RX_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH]==`BROADCAST_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH])
-			addr_match_temp[2] = 1;
+			addr_match_temp[0] = 1;
 
 		if (((RX_ADDR[`DATA_WIDTH-`RSVD_WIDTH-1:`FUNC_WIDTH] ^ ADDRESS) & ADDRESS_MASK)==0)
 			addr_match_temp[1] = 1;
 		
-		if ((MULTI_ADDR_EN==1'b1) && (((RX_ADDR[`DATA_WIDTH-`RSVD_WIDTH-1:`FUNC_WIDTH] ^ ADDRESS2) & ADDRESS_MASK2)==0))
-				addr_match_temp[0] = 1;
+		`ifdef MBUS_MASTER_NODE
+		if (((RX_ADDR[`DATA_WIDTH-`RSVD_WIDTH-1:`FUNC_WIDTH] ^ ADDRESS2) & ADDRESS_MASK2)==0)
+				addr_match_temp[2] = 1;
+		`endif
 	end
 	// short address assigned
 	else
 	begin
 		if (RX_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH]==`BROADCAST_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH])
-			addr_match_temp[2] = 1;
+			addr_match_temp[0] = 1;
 
 		if (ASSIGNED_ADDR_VALID)
 		begin
 			if (((RX_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH] ^ ASSIGNED_ADDR_IN) & ADDRESS_MASK_SHORT)==0)
 				addr_match_temp[1] = 1;
-		
-			if ((MULTI_ADDR_EN==1'b1) && (((RX_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH] ^ ASSIGNED_ADDR_IN) & ADDRESS_MASK2_SHORT)==0))
-				addr_match_temp[0] = 1;
 		end
+		
+		`ifdef MBUS_MASTER_NODE
+		if (((RX_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH] ^ ASSIGNED_ADDR_IN2) & ADDRESS_MASK2_SHORT)==0)
+			addr_match_temp[2] = 1;
+		`endif
 	end
 end
 // End of address compare
+
+// TX broadcast command length
+// This only take care the broadcast command issued from layer controller
+// CANNOT use this in self generate enumerate response
+always @ *
+begin
+	tx_dat_length = LENGTH_4BYTE;
+	case (TX_ADDR[`FUNC_WIDTH-1:0])
+		`CHANNEL_ENUM:
+		begin
+			case (TX_DATA[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH])
+				`CMD_CHANNEL_ENUM_QUERRY: 		begin tx_dat_length = LENGTH_1BYTE; end
+				`CMD_CHANNEL_ENUM_RESPONSE: 	begin tx_dat_length = LENGTH_4BYTE; end
+				`CMD_CHANNEL_ENUM_ENUMERATE: 	begin tx_dat_length = LENGTH_1BYTE; end
+				`CMD_CHANNEL_ENUM_INVALID: 		begin tx_dat_length = LENGTH_1BYTE; end
+			endcase
+		end
+
+		`CHANNEL_POWER:
+		begin
+			case (TX_DATA[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH])
+				`CMD_CHANNEL_POWER_ALL_SLEEP: 	begin tx_dat_length = LENGTH_1BYTE; end
+				`CMD_CHANNEL_POWER_ALL_WAKE: 	begin tx_dat_length = LENGTH_1BYTE; end
+				`CMD_CHANNEL_POWER_SEL_SLEEP: 	begin tx_dat_length = LENGTH_3BYTE; end
+				`CMD_CHANNEL_POWER_SEL_WAKE: 	begin tx_dat_length = LENGTH_3BYTE; end	
+			endcase
+		end
+	endcase
+end
+
+// This block used to determine the received data length.
+// only broadcast cannot be word alignment
+always @ *
+begin
+	rx_dat_length = LENGTH_4BYTE;
+	rx_dat_length_valid = 0;
+	rx_position = RX_ABOVE_TX;
+	case (bit_position)
+		1: begin rx_dat_length = LENGTH_4BYTE; rx_dat_length_valid = 1; rx_position = RX_BELOW_TX; end
+		(`DATA_WIDTH-1'b1): begin rx_dat_length = LENGTH_4BYTE; rx_dat_length_valid = 1; rx_position = RX_ABOVE_TX; end
+
+		9: begin rx_dat_length = LENGTH_3BYTE; rx_dat_length_valid = 1; rx_position = RX_BELOW_TX; end
+		7: begin rx_dat_length = LENGTH_3BYTE; rx_dat_length_valid = 1; rx_position = RX_ABOVE_TX; end
+
+		17: begin rx_dat_length = LENGTH_2BYTE; rx_dat_length_valid = 1; rx_position = RX_BELOW_TX; end
+		15: begin rx_dat_length = LENGTH_2BYTE; rx_dat_length_valid = 1; rx_position = RX_ABOVE_TX; end
+
+		25: begin rx_dat_length = LENGTH_1BYTE; rx_dat_length_valid = 1; rx_position = RX_BELOW_TX; end
+		23: begin rx_dat_length = LENGTH_1BYTE; rx_dat_length_valid = 1; rx_position = RX_ABOVE_TX; end
+	endcase
+end
 
 always @ (posedge CLKIN or negedge RESETn_local)
 begin
@@ -1080,5 +1099,3 @@ ulpb_swapper swapper0(
    	//Outputs
     .LAST_CLK(),
     .INT_FLAG(BUS_INT));
-
-endmodule

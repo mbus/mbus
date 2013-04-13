@@ -39,10 +39,8 @@ module ulpb_ctrl_wrapper(
 	output	SLEEP_REQUEST_TO_SLEEP_CTRL
 );
 
-parameter CTRL_ADDRESS = 8'h01;
-parameter NODE_ADDRESS = 8'haa;
-parameter CTRL_ADDR_MASK = 8'hff;
-parameter NODE_ADDR_MASK = 8'hff;
+parameter CTRL_ADDRESS = 20'ha0000;
+parameter NODE_ADDRESS = 20'haaaaa;
 
 wire	CLK_CTRL_TO_NODE;
 wire	DOUT_CTRL_TO_NODE;
@@ -72,7 +70,7 @@ always @ *
 begin
 	ctrl_addr_match = 0;
 	// address match to ctrl node
-	if (((RX_ADDR ^ CTRL_ADDRESS) & CTRL_ADDR_MASK)==0)
+	if ((RX_ADDR ^ CTRL_ADDRESS)==0)
 		ctrl_addr_match = 1;
 end
 assign RX_REQ = (ctrl_addr_match)? 1'b0 : NODE_RX_REQ;
@@ -153,8 +151,7 @@ ulpb_ctrl ctrl0(
 	.THRESHOLD(THRESHOLD)
 );
 
-ulpb_node32 #(.ADDRESS(NODE_ADDRESS), .ADDRESS_MASK(NODE_ADDR_MASK), .MULTI_ADDR_EN(1'b1), 
-			.ADDRESS2(CTRL_ADDRESS), .ADDRESS_MASK2(NODE_ADDR_MASK)) node0(
+mbus_master_node#(.ADDRESS(NODE_ADDRESS),  .ADDRESS2(CTRL_ADDRESS)) node0(
 	.CLKIN(CLK_CTRL_TO_NODE), 
 	.RESETn(RESETn), 
 	.DIN(DOUT_CTRL_TO_NODE), 
@@ -183,6 +180,12 @@ ulpb_node32 #(.ADDRESS(NODE_ADDRESS), .ADDRESS_MASK(NODE_ADDR_MASK), .MULTI_ADDR
 	.SLEEP_REQUEST_TO_SLEEP_CTRL(SLEEP_REQUEST_TO_SLEEP_CTRL),
 	.EXTERNAL_INT(EXTERNAL_INT),
 	.CLR_EXT_INT(CLR_EXT_INT)
+	.ASSIGNED_ADDR_IN(8'h02),
+	.ASSIGNED_ADDR_OUT(),
+	.ASSIGNED_ADDR_VALID(1'b1),
+	.ASSIGNED_ADDR_WRITE(),
+	.ASSIGNED_ADDR_INVALIDn(),
+	.ASSIGNED_ADDR_IN2(8'h01)
 );
 
 endmodule

@@ -18,6 +18,8 @@
 `define IO_HOLD 1'b1
 `define IO_RELEASE 1'b0
 
+`define POWER_GATING
+
 // A broadcast message consists of two segaments,
 // 0x0A			0xBB_XXXXXX for short address or
 // 0xf0000_000A 0xBB_XXXXXX for long address
@@ -28,7 +30,6 @@
 // Broadcast channel, the width should be consistant with `FUNC_WIDTH
 `define CHANNEL_ENUM	4'h0
 `define CHANNEL_POWER 	4'h1
-`define CHANNEL_DATA	4'hf
 
 // Broadcast commands, the width should be consistant with `BROADCAST_CMD_WIDTH
 // Commands for CHANNEL_ENUM
@@ -43,3 +44,4 @@
 `define CMD_CHANNEL_POWER_ALL_WAKE			4'h1
 `define CMD_CHANNEL_POWER_SEL_SLEEP			4'h2
 `define CMD_CHANNEL_POWER_SEL_WAKE			4'h3
+

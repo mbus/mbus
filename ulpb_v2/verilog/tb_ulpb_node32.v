@@ -84,10 +84,7 @@ wire	[`WATCH_DOG_WIDTH-1:0] THRESHOLD = 20'h05fff;
 
 
 // This configuration works for task4.v only
- ulpb_layer_wrapper #(.ADDRESS(8'hab), .LAYER_ID(24'd5), .ADDRESS_MASK(8'hff)) n0
-
-// This configuration is designed to generate vectors for coming UWB
-//ulpb_layer_wrapper #(.ADDRESS(8'hb0), .LAYER_ID(24'd11), .ADDRESS_MASK(8'hf0)) n0
+ ulpb_layer_wrapper #(.ADDRESS(8'hab)) n0
      (.CLKIN(SCLK), .CLKOUT(w_n0_clk_out), .RESETn(resetn), .DIN(w_c0n0), .DOUT(w_n0n1), 
       .TX_ADDR(n0_tx_addr), .TX_DATA(n0_tx_data), .TX_REQ(n0_tx_req), .TX_ACK(n0_tx_ack), .TX_PEND(n0_tx_pend), .PRIORITY(n0_priority),
       .RX_ADDR(n0_rx_addr), .RX_DATA(n0_rx_data), .RX_REQ(n0_rx_req), .RX_ACK(n0_rx_ack), .RX_FAIL(n0_rx_fail), .RX_PEND(n0_rx_pend),

@@ -28,6 +28,8 @@ all:    simv
 
 TESTBENCH = tb_mbus.v
 SIMFILES = 	mbus_addr_rf.v \
+			mbus_clk_sim.v \
+			mbus_ctrl_layer_wrapper.v \
 			mbus_ctrl.v \
 			mbus_ctrl_wrapper.v \
 			mbus_ext_int.v \

@@ -90,7 +90,7 @@ mbus_regular_sleep_ctrl sc0
 	(.CLKIN(CLKIN), .RESETn(RESETn),
 	 .SLEEP_REQ(n0_sleep_req), .POWER_ON(n0_power_on), .RELEASE_CLK(), .RELEASE_RST(n0_release_rst), .RELEASE_ISO(n0_release_iso_from_sc));
 
-// always on line controller
+// always on wire controller
 mbus_wire_ctrl lc0
 	(.DIN(DIN), .CLKIN(CLKIN), 										// the same input as the node
 	 .RELEASE_ISO_FROM_SLEEP_CTRL(n0_release_iso_from_sc),			// from sleep controller

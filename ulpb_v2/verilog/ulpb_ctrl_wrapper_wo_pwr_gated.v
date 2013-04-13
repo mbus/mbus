@@ -1,1 +1,0 @@
-wo_pwr_gated/ulpb_ctrl_wrapper_wo_pwr_gated.v

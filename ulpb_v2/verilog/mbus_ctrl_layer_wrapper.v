@@ -69,8 +69,8 @@ mbus_clk_sim mcs0(
 wire	w_m0wc0_clk_out, w_m0wc0;
 wire	ext_int_to_wire, ext_int_to_bus;
 
-mbus_ctrl_wrapper #(.ADDRESS(ADDRESS)) m0
-	.CLK_EXT(CLK_GEN), .RESETn()RESETn, 
+mbus_ctrl_wrapper #(.ADDRESS(ADDRESS)) m0(
+	.CLK_EXT(CLK_GEN), .RESETn(RESETn), 
 	.CLKIN(CLKIN), .CLKOUT(w_m0wc0_clk_out), .DIN(DIN), .DOUT(w_m0wc0),
 	.TX_ADDR(TX_ADDR), .TX_DATA(TX_DATA), .TX_PEND(TX_PEND), .TX_REQ(TX_REQ), .PRIORITY(PRIORITY), .TX_ACK(TX_ACK), 
 	.RX_ADDR(RX_ADDR), .RX_DATA(RX_DATA), .RX_REQ(RX_REQ), .RX_ACK(RX_ACK), .RX_BROADCAST(RX_BROADCAST),

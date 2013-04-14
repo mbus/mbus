@@ -141,7 +141,7 @@ mbus_ext_int int0(
 
 always @ *
 begin
-	if (m0_power_on)
+	if (~m0_power_on)
 	begin
 		m0_tx_ack_f_bc 	= 1'bx;
 		m0_rx_addr_f_bc = 8'bxx;

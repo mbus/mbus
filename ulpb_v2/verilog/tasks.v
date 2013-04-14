@@ -23,7 +23,7 @@ task task0;
       @ (posedge clk);
 
       #10000;
-      $fdisplay(handle, "TASK0, Correct result: N1 TX Success");
+      $fdisplay(handle, "TASK0, Master node and Processor wake up");
       state = TASK0;
       @ (posedge clk);
       @ (posedge clk);
@@ -31,6 +31,17 @@ task task0;
       @ (posedge clk);
       @ (posedge clk);
 	  c0_wakeup = 0;
+
+      #10000;
+      $fdisplay(handle, "TASK1, Master node introduce glitch");
+      state = TASK1;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  c0_req_int = 0;
+	  #100000;
 
       #10000;
       $display("*************************************");

@@ -7,6 +7,8 @@
  * --------------------------------------------------------------------------
  * */
 
+`timescale 1ns/1ps
+
 `include "include/mbus_def.v"
 
 module mbus_wire_ctrl(

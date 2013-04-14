@@ -1,14 +1,14 @@
+
 `define SD #1
+`timescale 1ns/1ps
 
 `ifdef SYN
-	`timescale 1ns/1ps
 	`include "/afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/verilog/tsmc18_neg.v"
 `elsif APR
-	`timescale 1ns/1ps
 	`include "/afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/verilog/tsmc18_neg.v"
 `endif
 
-`include "include/ulpb_def.v"
+`include "include/mbus_def.v"
 
 module tb_mbus();
 
@@ -108,7 +108,7 @@ mbus_layer_wrapper #(.ADDRESS(20'hbbbb2)) n2
 	  .LC_POWER_ON(n2_lc_pwr_on), .LC_RELEASE_CLK(n2_lc_release_clk), .LC_RELEASE_RST(n2_lc_release_rst), .LC_RELEASE_ISO(n2_lc_release_iso),
 	  .REQ_INT(n2_req_int));
 
-mbus_ctrl_wrapper #(.CTRL_ADDRESS(20'haaaa0)) c0 
+mbus_ctrl_layer_wrapper #(.ADDRESS(20'haaaa0)) c0 
      (.CLK_EXT(clk), .CLKIN(w_n2_clk_out), .CLKOUT(SCLK), .RESETn(resetn), .DIN(w_n2c0), .DOUT(w_c0n0), 
       .TX_ADDR(c0_tx_addr), .TX_DATA(c0_tx_data), .TX_REQ(c0_tx_req), .TX_ACK(c0_tx_ack), .TX_PEND(c0_tx_pend), .PRIORITY(c0_priority),
       .RX_ADDR(c0_rx_addr), .RX_DATA(c0_rx_data), .RX_REQ(c0_rx_req), .RX_ACK(c0_rx_ack), .RX_FAIL(c0_rx_fail), .RX_PEND(c0_rx_pend),
@@ -353,7 +353,7 @@ end
    end
    
    //Changed to 400K for primetime calculations
-   always #1250 clk = ~clk; else clk = 1;
+   always #1250 clk = ~clk;
 
 `include "tasks.v"
 endmodule // tb_ulpb_node32

@@ -79,7 +79,7 @@ mbus_regular_node#(.ADDRESS(ADDRESS)) n0
       .TX_ADDR(n0_tx_addr_t_bc), .TX_DATA(n0_tx_data_t_bc), .TX_REQ(n0_tx_req_t_bc), .TX_ACK(n0_tx_ack_t_iso), .TX_PEND(n0_tx_pend_t_bc), .PRIORITY(n0_priority_t_bc),
       .RX_ADDR(n0_rx_addr_t_iso), .RX_DATA(n0_rx_data_t_iso), .RX_REQ(n0_rx_req_t_iso), .RX_ACK(n0_rx_ack_t_bc), .RX_BROADCAST(n0_rx_bcast_t_iso), .RX_FAIL(n0_rx_fail_t_iso), .RX_PEND(n0_rx_pend_t_iso),
       .TX_SUCC(n0_tx_succ_t_iso), .TX_FAIL(n0_tx_fail_t_iso), .TX_RESP_ACK(n0_tx_resp_ack_t_bc),
-	  .RELEASE_RST_FROM_SLEEP_CTRL(n0_release_rst), .SLEEP_REQUEST_TO_SLEEP_CTRL(n0_sleep_req),
+	  .RELEASE_RST_FROM_SLEEP_CTRL(n0_release_rst), .SLEEP_REQUEST_TO_SLEEP_CTRL(n0_sleep_req), .BUS_PWR_OVERRIDE(),
 	  .POWER_ON_TO_LAYER_CTRL(n0_pwr_on_t_iso), .RELEASE_CLK_TO_LAYER_CTRL(n0_rel_clk_t_iso), .RELEASE_RST_TO_LAYER_CTRL(n0_rel_rst_t_iso), .RELEASE_ISO_TO_LAYER_CTRL(n0_rel_iso_t_iso),
 	  .EXTERNAL_INT(ext_int_to_bus), .CLR_EXT_INT(clr_ext_int),
 	  .ASSIGNED_ADDR_IN(rf_addr_out_to_node), .ASSIGNED_ADDR_OUT(rf_addr_in_from_node), 

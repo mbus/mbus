@@ -47,10 +47,13 @@ wire	DOUT_CTRL_TO_NODE;
 wire	NODE_RX_REQ;
 wire	NODE_RX_ACK;
 reg		ctrl_addr_match, ctrl_rx_ack;
+reg		pwr_switch;
+parameter FROM_WRAPPER = 1'b0;
+parameter FROM_BUS = 1'b1;
 
 wire 	RESETn_local = (RESETn & (~RELEASE_RST_FROM_SLEEP_CTRL));
 
-reg 	powerup_seq;
+reg 	[1:0] powerup_seq;
 reg		POWER_ON_TO_PROC;
 reg		RELEASE_CLK_TO_PROC;
 reg 	RELEASE_RST_TO_PROC;
@@ -61,11 +64,11 @@ wire	RELEASE_CLK_FROM_BUS;
 wire	RELEASE_RST_FROM_BUS;
 wire	RELEASE_ISO_FROM_BUS;
 
-assign 	POWER_ON_TO_LAYER_CTRL 	  = (POWER_ON_TO_PROC | POWER_ON_FROM_BUS);
-assign 	RELEASE_CLK_TO_LAYER_CTRL = (RELEASE_CLK_TO_PROC | RELEASE_CLK_FROM_BUS);
-assign 	RELEASE_RST_TO_LAYER_CTRL = (RELEASE_RST_TO_PROC | RELEASE_RST_FROM_BUS);
-assign 	RELEASE_ISO_TO_LAYER_CTRL = (RELEASE_ISO_TO_PROC | RELEASE_ISO_FROM_BUS);
-
+assign 	POWER_ON_TO_LAYER_CTRL 	  = (pwr_switch==FROM_WRAPPER)? POWER_ON_TO_PROC 	: POWER_ON_FROM_BUS;
+assign 	RELEASE_CLK_TO_LAYER_CTRL = (pwr_switch==FROM_WRAPPER)? RELEASE_CLK_TO_PROC : RELEASE_CLK_FROM_BUS;
+assign 	RELEASE_RST_TO_LAYER_CTRL = (pwr_switch==FROM_WRAPPER)? RELEASE_RST_TO_PROC : RELEASE_RST_FROM_BUS;
+assign 	RELEASE_ISO_TO_LAYER_CTRL = (pwr_switch==FROM_WRAPPER)? RELEASE_ISO_TO_PROC : RELEASE_ISO_FROM_BUS;
+                                    
 always @ *
 begin
 	if ((RX_BROADCAST) &&  (RX_ADDR[`FUNC_WIDTH-1:0]==`CHANNEL_CTRL))
@@ -75,6 +78,14 @@ begin
 end
 
 assign RX_REQ = (ctrl_addr_match)? 1'b0 : NODE_RX_REQ;
+
+always @ (posedge CLK_EXT or negedge RESETn_local)
+begin
+	if (~RESETn_local)
+		pwr_switch <= FROM_WRAPPER;
+	else if (BUS_PWR_OVERRIDE)
+		pwr_swtich <= FROM_BUS;
+end
 
 always @ (posedge CLK_EXT or negedge RESETn_local)
 begin
@@ -180,6 +191,7 @@ mbus_master_node#(.ADDRESS(ADDRESS)) node0(
 	.RELEASE_RST_TO_LAYER_CTRL(RELEASE_RST_FROM_BUS),
 	.RELEASE_ISO_TO_LAYER_CTRL(RELEASE_ISO_FROM_BUS),
 	.SLEEP_REQUEST_TO_SLEEP_CTRL(SLEEP_REQUEST_TO_SLEEP_CTRL),
+	.BUS_PWR_OVERRIDE(BUS_PWR_OVERRIDE)
 	.EXTERNAL_INT(EXTERNAL_INT),
 	.CLR_EXT_INT(CLR_EXT_INT),
 	.ASSIGNED_ADDR_IN(4'h1),

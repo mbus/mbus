@@ -24,3 +24,19 @@ Design Hierarchy for MBus
 	- mbus_layer_wrapper.v
 	- mbus_ctrl_layer_wrapper.v
 	- tasks.v
+
+Compile procedure
+	1. 	- mbus_addr_rf.v
+		- mbus_swapper.v
+		- mbus_ext_int.v
+		- mbus_wire_ctrl.v
+		- mbus_clk_sim.v
+		- mbus_regular_isolation.v
+		- mbus_regular_sleep_ctrl.v
+		- mbus_ctrl.v
+		- mbus_master_sleep_ctrl.v
+	2.  - mbus_master_node.v
+		- mbus_regular_node.v
+	3.	- mbus_ctrl_wrapper.v
+		- mbus_layer_wrapper.v
+	4.	- mbus_ctrl_layer_wrapper.v

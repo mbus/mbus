@@ -28,19 +28,19 @@ all:    simv
 
 TESTBENCH = tb_mbus.v
 SIMFILES = 	mbus_addr_rf.v \
-			mbus_clk_sim.v \
-			mbus_ctrl_layer_wrapper.v \
-			mbus_ctrl.v \
-			mbus_ctrl_wrapper.v \
-			mbus_ext_int.v \
-			mbus_layer_wrapper.v \
-			mbus_master_node.v \
-			mbus_node_core.v \
-			mbus_regular_isolation.v \
-			mbus_regular_node.v \
-			mbus_regular_sleep_ctrl.v \
 			mbus_swapper.v \
-			mbus_wire_ctrl.v 
+			mbus_ext_int.v \
+			mbus_wire_ctrl.v \
+			mbus_clk_sim.v \
+			mbus_regular_isolation.v \
+			mbus_regular_sleep_ctrl.v \
+			mbus_ctrl.v \
+			mbus_master_sleep_ctrl.v \
+			mbus_master_node.v \
+			mbus_regular_node.v \
+			mbus_ctrl_wrapper.v \
+			mbus_layer_wrapper.v \
+			mbus_ctrl_layer_wrapper.v 
 
 SYNFILES = 	../syn/mbus_node32_ab.nl.v \
 		../syn/mbus_node32_cd.nl.v \

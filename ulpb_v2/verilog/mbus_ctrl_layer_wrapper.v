@@ -67,7 +67,7 @@ mbus_clk_sim mcs0(
 );
 
 wire	w_m0wc0_clk_out, w_m0wc0;
-wire	ext_int_to_wire, ext_int_to_bus;
+wire	ext_int_to_wire, ext_int_to_bus, clr_ext_int;
 
 mbus_ctrl_wrapper #(.ADDRESS(ADDRESS)) m0(
 	.CLK_EXT(CLK_GEN), .RESETn(RESETn), 

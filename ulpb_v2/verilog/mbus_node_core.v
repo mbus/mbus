@@ -147,14 +147,14 @@ wire	address_match = (addr_match_temp[1] | addr_match_temp[0]);
 
 // Broadcast processing
 reg		[`BROADCAST_CMD_WIDTH -1:0] rx_broadcast_command;
-wire	rx_long_addr_en = (RX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1 : 0;
-wire	tx_long_addr_en = (TX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1 : 0;
+wire	rx_long_addr_en = (RX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1'b1 : 1'b0;
+wire	tx_long_addr_en = (TX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1'b1 : 1'b0;
 reg		tx_broadcast;
 reg		[1:0] tx_dat_length, rx_dat_length;
 reg		rx_position, rx_dat_length_valid;
 reg		wakeup_req;
 wire	[`DATA_WIDTH-1:0] broadcast_addr = `BROADCAST_ADDR;
-wire	[`DATA_WIDTH-1:0] rx_data_buf_proc = (rx_dat_length_valid)? (rx_position==RX_BELOW_TX)? rx_data_buf[`DATA_WIDTH-1:0] : rx_data_buf[`DATA_WIDTH+1:2] : 0;
+wire	[`DATA_WIDTH-1:0] rx_data_buf_proc = (rx_dat_length_valid)? (rx_position==RX_BELOW_TX)? rx_data_buf[`DATA_WIDTH-1:0] : rx_data_buf[`DATA_WIDTH+1:2] : {`DATA_WIDTH{1'b0}};
 
 // Power gating related signals
 `ifdef POWER_GATING

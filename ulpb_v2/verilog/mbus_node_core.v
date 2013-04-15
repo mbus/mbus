@@ -48,6 +48,8 @@
  * 			at this point.
  * --------------------------------------------------------------------------
  * Update log:
+ * 4/15 '13
+ * remove BUS_PWR_OVERRIDE port
  * 4/14 '13
  * Add power related signals, these signals are only for simulation, in real
  * setting, the isolation block will assert these signals to layer controller
@@ -899,7 +901,6 @@ begin
 		SLEEP_REQUEST_TO_SLEEP_CTRL <= 0;
 		ext_int <= 0;
 		CLR_EXT_INT <= 0;
-		BUS_PWR_OVERRIDE <= 0;
 	end
 	else
 	begin
@@ -908,21 +909,28 @@ begin
 
 		if (bus_state==BUS_PRIO)
 		begin
-			ext_int <= EXTERNAL_INT;
-			powerup_seq_fsm <= 0;
+			if (EXTERNAL_INT)
+			begin
+				ext_int <= 1;
+				powerup_seq_fsm <= 1;
+				POWER_ON_TO_LAYER_CTRL <= `IO_RELEASE;
+			end
+			else
+				powerup_seq_fsm <= 0;
 		end
 
-		if (BUS_PWR_OVERRIDE)
-			BUS_PWR_OVERRIDE <= 0;
+		if (bus_state==BUS_CONTROL1)
+			ext_int <= 0;
+
 
 		if (ext_int)
 		begin
-			powerup_seq_fsm <= powerup_seq_fsm + 1'b1;
+			
 			case (powerup_seq_fsm)
-				0: begin POWER_ON_TO_LAYER_CTRL <= `IO_RELEASE; BUS_PWR_OVERRIDE <= 1; end
-				1: begin RELEASE_CLK_TO_LAYER_CTRL <= `IO_RELEASE; end
-				2: begin RELEASE_ISO_TO_LAYER_CTRL <= `IO_RELEASE; end
-				3: begin RELEASE_RST_TO_LAYER_CTRL <= `IO_RELEASE; ext_int <= 0; CLR_EXT_INT <= 1; end
+				1: begin RELEASE_CLK_TO_LAYER_CTRL <= `IO_RELEASE; CLR_EXT_INT <= 1; powerup_seq_fsm <= powerup_seq_fsm + 1'b1; end
+				2: begin RELEASE_ISO_TO_LAYER_CTRL <= `IO_RELEASE; powerup_seq_fsm <= powerup_seq_fsm + 1'b1; end
+				3: begin RELEASE_RST_TO_LAYER_CTRL <= `IO_RELEASE; powerup_seq_fsm <= powerup_seq_fsm + 1'b1; end
+				0: begin end
 			endcase
 		end
 		else
@@ -938,7 +946,6 @@ begin
 							// the complete command should received after `DATA_WIDTH (32) - `BROADCAST_CMD_WIDTH(4) + 2(2 BUS_ADDR_ADDI) - 1
 							if ((wakeup_req)&&(bit_position==`DATA_WIDTH-`BROADCAST_CMD_WIDTH+1))
 							begin
-								BUS_PWR_OVERRIDE <= 1; 
 								POWER_ON_TO_LAYER_CTRL <= `IO_RELEASE;
 								powerup_seq_fsm <= powerup_seq_fsm + 1'b1;
 							end
@@ -967,7 +974,6 @@ begin
 				begin
 					if (shutdown)
 					begin
-						BUS_PWR_OVERRIDE <= 1; 
 						SLEEP_REQUEST_TO_SLEEP_CTRL <= 1;
 						RELEASE_ISO_TO_LAYER_CTRL <= `IO_HOLD;
 					end

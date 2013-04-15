@@ -42,7 +42,6 @@ module tb_mbus();
    wire				c0_lc_pwr_on, c0_lc_release_clk, c0_lc_release_rst, c0_lc_release_iso;
    
    reg				n0_req_int, n1_req_int, n2_req_int, c0_req_int;
-   reg				c0_wakeup;
    wire				n0_rx_broadcast, n1_rx_broadcast, n2_rx_broadcast, c0_rx_broadcast;
    
    reg [31:0] 		  rand_dat, rand_dat2;
@@ -114,7 +113,7 @@ mbus_ctrl_layer_wrapper #(.ADDRESS(20'haaaa0)) c0
       .RX_ADDR(c0_rx_addr), .RX_DATA(c0_rx_data), .RX_REQ(c0_rx_req), .RX_ACK(c0_rx_ack), .RX_FAIL(c0_rx_fail), .RX_PEND(c0_rx_pend),
       .TX_SUCC(c0_tx_succ), .TX_FAIL(c0_tx_fail), .TX_RESP_ACK(c0_tx_resp_ack),  .RX_BROADCAST(c0_rx_broadcast),
 	  .LC_POWER_ON(c0_lc_pwr_on), .LC_RELEASE_CLK(c0_lc_release_clk), .LC_RELEASE_RST(c0_lc_release_rst), .LC_RELEASE_ISO(c0_lc_release_iso),
-	  .REQ_INT(c0_req_int), .WAKEUP_PROC(c0_wakeup));
+	  .REQ_INT(c0_req_int));
 
    initial begin
       //VCD DUMP SECTION
@@ -221,7 +220,6 @@ begin
 		c0_tx_req   <= 0;
 		c0_priority <= 0;
 		c0_req_int	<= 0;
-		c0_wakeup	<= 0;
 	end
 	else
 	begin

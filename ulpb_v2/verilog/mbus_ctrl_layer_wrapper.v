@@ -30,9 +30,7 @@ module mbus_ctrl_layer_wrapper(
 	output 	LC_RELEASE_RST,
 	output 	LC_RELEASE_ISO,
 
-	input 	REQ_INT,
-
-	input	WAKEUP_PROC
+	input 	REQ_INT
 );
 
 parameter ADDRESS = 20'haaaaa;
@@ -55,7 +53,7 @@ SLEEP_CONTROLv4 s0(
 	.MBUS_DIN(DIN), 
 	.RESETn(RESETn), 
 	.SLEEP_REQ(sleep_req_from_m0),
-    .WAKEUP_REQ0(WAKEUP_PROC), 
+    .WAKEUP_REQ0(REQ_INT), 
 	.WAKEUP_REQ1(), 
 	.WAKEUP_REQ2());
 
@@ -117,7 +115,6 @@ mbus_ctrl_wrapper #(.ADDRESS(ADDRESS)) m0(
 	.RELEASE_RST_TO_LAYER_CTRL(m0_rel_rst_t_iso),
 	.RELEASE_ISO_TO_LAYER_CTRL(m0_rel_iso_t_iso),
 	.EXTERNAL_INT(ext_int_to_bus), .CLR_EXT_INT(clr_ext_int),
-	.WAKEUP_PROC(WAKEUP_PROC),
 	.SLEEP_REQUEST_TO_SLEEP_CTRL(sleep_req_from_m0)
 );
 

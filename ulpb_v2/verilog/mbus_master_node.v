@@ -40,7 +40,6 @@ module mbus_master_node(
 	// External interrupt
 	input 		EXTERNAL_INT,
 	output 	reg CLR_EXT_INT,
-	output 	reg	BUS_PWR_OVERRIDE, 
 	`endif
 	// interface with local register files (RF)
 	input		[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_IN,

@@ -22,6 +22,7 @@ task task0;
       @ (posedge clk);
       @ (posedge clk);
 
+/*
       #10000;
       $fdisplay(handle, "TASK0, Master node and Processor wake up");
       state = TASK0;
@@ -32,6 +33,7 @@ task task0;
       @ (posedge clk);
 	  @ (posedge SCLK);
 	  c0_req_int = 0;
+	  */
 
       #10000;
       $display("*************************************");

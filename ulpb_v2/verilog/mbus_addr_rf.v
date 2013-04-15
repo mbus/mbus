@@ -12,7 +12,7 @@ module mbus_addr_rf(
 	input		ADDR_CLRn
 );
 
-wire	RESETn_local = ((RESETn & ADDR_CLRn) | RELEASE_ISO_FROM_SLEEP_CTRL);
+wire	RESETn_local = (RESETn & ADDR_CLRn); 
 wire	ADDR_UPDATE = (ADDR_WR_EN & (~RELEASE_ISO_FROM_SLEEP_CTRL));
 
 always @ (posedge ADDR_UPDATE or negedge RESETn_local)

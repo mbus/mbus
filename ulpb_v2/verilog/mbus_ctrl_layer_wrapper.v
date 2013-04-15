@@ -54,8 +54,8 @@ SLEEP_CONTROLv4 s0(
 	.RESETn(RESETn), 
 	.SLEEP_REQ(sleep_req_from_m0),
     .WAKEUP_REQ0(REQ_INT), 
-	.WAKEUP_REQ1(), 
-	.WAKEUP_REQ2());
+	.WAKEUP_REQ1(REQ_INT), 
+	.WAKEUP_REQ2(REQ_INT));
 
 
 mbus_clk_sim mcs0(

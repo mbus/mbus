@@ -189,7 +189,7 @@ always @ (negedge  n2_lc_pwr_on)
 always @ (negedge c0_lc_pwr_on)
 	$fdisplay(handle, "Processor Wakeup");
 
-always @ (negedge resetn)
+always @ (posedge clk or negedge resetn)
 begin
 	if (~resetn)
 	begin
@@ -220,6 +220,7 @@ begin
 		c0_tx_req   <= 0;
 		c0_priority <= 0;
 		c0_req_int	<= 0;
+		word_counter <= 0;
 	end
 	else
 	begin

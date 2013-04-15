@@ -25,18 +25,24 @@ module mbus_wire_ctrl(
 always @ *
 begin
 	if (RELEASE_ISO_FROM_SLEEP_CTRL==`IO_HOLD)
-	begin
-		DOUT = DIN;
 		CLKOUT = CLKIN;
-		if (EXTERNAL_INT)
-			DOUT = 0;
-		else
-			DOUT = DIN;
+	else
+		CLKOUT = CLKOUT_FROM_BUS;
+
+	if (EXTERNAL_INT)
+	begin
+		DOUT = 0;
 	end
 	else
 	begin
-		DOUT = DOUT_FROM_BUS;
-		CLKOUT = CLKOUT_FROM_BUS;
+		if (RELEASE_ISO_FROM_SLEEP_CTRL==`IO_HOLD)
+		begin
+			DOUT = DIN;
+		end
+		else
+		begin
+			DOUT = DOUT_FROM_BUS;
+		end
 	end
 end
 

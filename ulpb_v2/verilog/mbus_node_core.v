@@ -530,8 +530,11 @@ begin
 		begin
 			next_mode = mode_temp;
 			next_bus_state = BUS_ADDR;
+			// no matter this node wins the arbitration or not, must clear
+			// type T1
 			if (enum_addr_resp== ADDR_ENUM_RESPOND_T1)
 				next_enum_addr_resp = ADDR_ENUM_RESPOND_NONE;
+
 			if (mode_temp==MODE_TX)
 			begin
 				case (enum_addr_resp)
@@ -539,13 +542,13 @@ begin
 					ADDR_ENUM_RESPOND_T1:
 					begin
 						next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
+						next_assigned_addr_write = 1;
 					end
 
 					// respond to query
 					ADDR_ENUM_RESPOND_T2:
 					begin
 						next_bit_position = `SHORT_ADDR_WIDTH - 1'b1;
-						next_assigned_addr_write = 1;
 						next_enum_addr_resp = ADDR_ENUM_RESPOND_NONE;
 					end
 
@@ -745,115 +748,109 @@ begin
 					else
 					begin
 						// End of Message
-						if (DIN==CONTROL_BITS[1])
+						// correct ending state
+						// rx above tx = 31
+						// rx below tx = 1
+						if ((DIN==CONTROL_BITS[1])&&(rx_dat_length_valid))
 						begin
-							// correct ending state
-							// rx above tx = 31
-							// rx below tx = 1
-							if (rx_dat_length_valid)
+							// rx overflow
+							if (RX_REQ)
 							begin
-								// broadcast message 
-								if (RX_BROADCAST)
-								begin
-									next_out_reg_pos = CONTROL_BITS[0];
-									`ifdef CPU_LAYER
-										next_rx_req = 1;
-									`endif
-									// broadcast channel
-									case (RX_ADDR[`FUNC_WIDTH-1:0])
-										`CHANNEL_ENUM:
-										begin
-											case (rx_broadcast_command)
-												// any node should report its full prefix and short prefix (dynamic allocated address)
-												// Pad "0" if the dynamic address is invalid
-												`CMD_CHANNEL_ENUM_QUERRY:
-												begin
-													// this node doesn't have a valid short address, active low
-													next_enum_addr_resp = ADDR_ENUM_RESPOND_T2;
-													next_addr = broadcast_addr[`SHORT_ADDR_WIDTH-1:0];
-													next_data = ((`CMD_CHANNEL_ENUM_RESPONSE<<(`DATA_WIDTH-`BROADCAST_CMD_WIDTH)) | (ADDRESS<<`DYNA_WIDTH) | ASSIGNED_ADDR_IN);
-												end
+								next_out_reg_pos = ~CONTROL_BITS[0];
+								next_rx_fail = 1;
+							end
+							else
+							// assert rx_req if not a broadcast
+							begin
+								next_rx_data = rx_data_buf_proc;
+								next_out_reg_pos = CONTROL_BITS[0];
+								if (~RX_BROADCAST)
+									next_rx_req = 1;
+								next_rx_pend = 0;
+							end
 
-												// request arbitration, set short prefix if successed
-												`CMD_CHANNEL_ENUM_ENUMERATE:
+							// broadcast message 
+							if (RX_BROADCAST)
+							begin
+								// assert rx_req if CPU_LAYER
+								`ifdef CPU_LAYER
+								if (~RX_REQ)
+									next_rx_req = 1;
+								`endif
+								// broadcast channel
+								case (RX_ADDR[`FUNC_WIDTH-1:0])
+									`CHANNEL_ENUM:
+									begin
+										case (rx_broadcast_command)
+											// any node should report its full prefix and short prefix (dynamic allocated address)
+											// Pad "0" if the dynamic address is invalid
+											`CMD_CHANNEL_ENUM_QUERRY:
+											begin
+												// this node doesn't have a valid short address, active low
+												next_enum_addr_resp = ADDR_ENUM_RESPOND_T2;
+												next_addr = broadcast_addr[`SHORT_ADDR_WIDTH-1:0];
+												next_data = ((`CMD_CHANNEL_ENUM_RESPONSE<<(`DATA_WIDTH-`BROADCAST_CMD_WIDTH)) | (ADDRESS<<`DYNA_WIDTH) | ASSIGNED_ADDR_IN);
+											end
+
+											// request arbitration, set short prefix if successed
+											`CMD_CHANNEL_ENUM_ENUMERATE:
+											begin
+												if (~ASSIGNED_ADDR_VALID)
 												begin
 													next_enum_addr_resp = ADDR_ENUM_RESPOND_T1;
 													next_addr = broadcast_addr[`SHORT_ADDR_WIDTH-1:0];
 													next_data = ((`CMD_CHANNEL_ENUM_RESPONSE<<(`DATA_WIDTH-`BROADCAST_CMD_WIDTH)) | (ADDRESS<<`DYNA_WIDTH) | rx_data_buf_proc[`DYNA_WIDTH-1:0]);
 												end
+											end
 
-												`CMD_CHANNEL_ENUM_INVALIDATE:
-												begin
-													case (rx_data_buf_proc[`DYNA_WIDTH-1:0])
-														{`DYNA_WIDTH{1'b1}}: begin next_assigned_addr_invalidn  = 0; end
-														ASSIGNED_ADDR_IN: begin next_assigned_addr_invalidn  = 0; end
-														default: begin end
-													endcase
-												end
-											endcase
-										end
+											`CMD_CHANNEL_ENUM_INVALIDATE:
+											begin
+												case (rx_data_buf_proc[`DYNA_WIDTH-1:0])
+													{`DYNA_WIDTH{1'b1}}: begin next_assigned_addr_invalidn  = 0; end
+													ASSIGNED_ADDR_IN: begin next_assigned_addr_invalidn  = 0; end
+													default: begin end
+												endcase
+											end
+										endcase
+									end
 
-										`CHANNEL_POWER:
-										begin
-											// PWR Command
-											case (rx_broadcast_command)
-												`CMD_CHANNEL_POWER_ALL_SLEEP:
+									`CHANNEL_POWER:
+									begin
+										// PWR Command
+										case (rx_broadcast_command)
+											`CMD_CHANNEL_POWER_ALL_SLEEP:
+											begin
+												next_shutdown = 1;
+											end
+
+											`CMD_CHANNEL_POWER_SEL_SLEEP:
+											begin
+												if ((rx_data_buf_proc[19:4]&layer_slot)>0)
 												begin
 													next_shutdown = 1;
 												end
-
-												`CMD_CHANNEL_POWER_SEL_SLEEP:
-												begin
-													if ((rx_data_buf_proc[19:4]&layer_slot)>0)
-													begin
-														next_shutdown = 1;
-													end
-												end
-											endcase
-										end
-
-										// shoud only be active at master
-										`CHANNEL_CTRL:
-										begin
-											next_rx_req = 1;
-										end
-									endcase
-								end // endif rx_broadcast
-								else
-								// unicast message
-								begin
-									if (RX_REQ)
-									begin
-										next_out_reg_pos = ~CONTROL_BITS[0];
-										next_rx_fail = 1;
+											end
+										endcase
 									end
-									else
+
+									// shoud only be active at master
+									`CHANNEL_CTRL:
 									begin
-										next_rx_data = rx_data_buf_proc;
-										next_out_reg_pos = CONTROL_BITS[0];
 										next_rx_req = 1;
-										next_rx_pend = 0;
 									end
-								end
-							end // endif invalid rx dat length 
-							else
-							// stops at middle of transmission
-							begin
-								next_out_reg_pos = ~CONTROL_BITS[0];
-								// don't assert rx_fail if it's a wake up glitch
-								`ifdef POWER_GATING
-								if (~ext_int)
-									next_rx_fail = 1;
-								`else
-									next_rx_fail = 1;
-								`endif
-							end
-						end	// endif end of message
+								endcase
+							end // endif rx_broadcast
+						end	// endif valid reception
 						else
-						// incorrect EOM
+						// invalid data length or invalid EOM
 						begin
 							next_out_reg_pos = ~CONTROL_BITS[0];
-							next_rx_fail = 1;
+							`ifdef POWER_GATING
+							if (~ext_int)
+								next_rx_fail = 1;
+							`else
+								next_rx_fail = 1;
+							`endif
 						end
 					end
 				end
@@ -1119,7 +1116,7 @@ begin
 
 		BUS_BACK_TO_IDLE:
 		begin
-			DOUT = ((~TX_REQ) & DIN);
+			DOUT = ((~TX_REQ) & DIN & enum_addr_resp[0]);
 		end
 
 	endcase

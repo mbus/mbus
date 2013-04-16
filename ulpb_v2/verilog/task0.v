@@ -159,7 +159,7 @@ always @ (posedge clk or negedge resetn) begin
 			// n2->n0 using short address
 			TASK14:
 			begin
-				n2_tx_addr <= {24'h0, 4'h2, 4'h2};	// last 4-bits (4'h2) are functional ID
+				n2_tx_addr <= {24'h0, 4'h8, 4'h2};	// last 4-bits (4'h2) are functional ID
 				n2_tx_data <= rand_dat;
 				n2_tx_pend <= 0;
 				n2_tx_req <= 1;

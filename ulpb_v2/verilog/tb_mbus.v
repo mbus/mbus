@@ -205,7 +205,9 @@ mbus_ctrl_layer_wrapper #(.ADDRESS(20'haaaa0)) c0
       //***********************
 
 `ifdef TASK0
-      task0();
+	task0();
+`elsif TASK1
+	task1();
 `else
       $display("**************************************");
       $display("************NO TASKS SUPPLIED*********");
@@ -222,6 +224,8 @@ always #1250 clk = ~clk;
    
 `ifdef TASK0
 	`include "task0.v"
+`elsif TASK1
+	`include "task1.v"
 `endif
 
 always @ (posedge n0_lc_pwr_on)

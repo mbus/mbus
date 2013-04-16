@@ -268,6 +268,18 @@ always @ (posedge clk or negedge resetn) begin
 				state <= TX_WAIT;
 			end
 
+			// n2 sends to control
+			TASK24:
+			begin
+				n2_tx_addr <= {28'hf00000, `CHANNEL_CTRL};
+				n2_tx_data <= rand_dat;
+				n2_tx_pend <= 0;
+				n2_tx_req <= 1;
+				n2_priority <= 0;
+   	      		$fdisplay(handle, "N2 Data in =\t32'h%h", rand_dat);
+				state <= TX_WAIT;
+			end
+
       	endcase // case (state)
 	end
 end // always @ (posedge clk or negedge resetn)

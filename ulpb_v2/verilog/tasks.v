@@ -207,7 +207,7 @@ task task0;
 
       #10000;
       $fdisplay(handle, "TASK15, N2 asserts ext_int");
-      $fdisplay(handle, "Result: C0, N1, N2, N3 RX Fail");
+      $fdisplay(handle, "Result: C0, N0, N1, N3 RX Fail");
       state = TASK15;
       @ (posedge clk);
       @ (posedge clk);
@@ -383,10 +383,7 @@ task task0;
       @ (posedge clk);
       @ (posedge clk);
       @ (posedge clk);
-	  @ (posedge n2_rx_req);
-	  @ (posedge n2_rx_req);
-	  @ (posedge n2_rx_req);
-	  @ (posedge n2_rx_req);
+      #1000000;
 
 
       #10000;

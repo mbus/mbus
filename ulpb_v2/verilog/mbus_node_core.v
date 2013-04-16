@@ -572,6 +572,7 @@ begin
 			else
 			// RX mode
 			begin
+				next_rx_data_buf = 0;
 				next_rx_addr = 0;
 			end
 		end

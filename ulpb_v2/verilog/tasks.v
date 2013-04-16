@@ -6,10 +6,6 @@ task task0;
    begin
       clk = 0;
       resetn = 1;
-      n0_auto_rx_ack = 1;
-      n1_auto_rx_ack = 1;
-      n2_auto_rx_ack = 1;
-      c0_auto_rx_ack = 1;
       handle=$fopen("result_task0.txt");
 
       @ (posedge clk);
@@ -45,6 +41,7 @@ task task0;
 	  @ (posedge c0_rx_req);
 	  @ (posedge c0_rx_req);
 	  @ (posedge c0_rx_req);
+	  @ (posedge c0_rx_req);
 
       #10000;
       $fdisplay(handle, "TASK2, Master node enumerate with address 4'h2");
@@ -77,29 +74,19 @@ task task0;
 	  @ (posedge c0_rx_req);
 
       #10000;
-      $fdisplay(handle, "TASK4, Master node enumerate with address 4'h4");
-      state = TASK4;
-      @ (posedge clk);
-      @ (posedge clk);
-      @ (posedge clk);
-      @ (posedge clk);
-      @ (posedge clk);
-	  @ (posedge c0_tx_succ|c0_tx_fail);
-
-      #10000;
-      $fdisplay(handle, "TASK5, n1 to n0 using long address");
-      $fdisplay(handle, "Result: N1 TX success");
+      $fdisplay(handle, "TASK5, Master node enumerate with address 4'h5");
       state = TASK5;
       @ (posedge clk);
       @ (posedge clk);
       @ (posedge clk);
       @ (posedge clk);
       @ (posedge clk);
-	  @ (posedge n1_tx_succ|n1_tx_fail);
+	  @ (posedge c0_rx_req);
 
       #10000;
-      $fdisplay(handle, "TASK6, n1 to n2 using long address");
-      $fdisplay(handle, "Result: N1 TX success");
+      $fdisplay(handle, "TASK6, N1 to N0 using long address");
+      $fdisplay(handle, "Result: N1 TX Success");
+      $fdisplay(handle, "Result: N0 RX Success");
       state = TASK6;
       @ (posedge clk);
       @ (posedge clk);
@@ -109,8 +96,10 @@ task task0;
 	  @ (posedge n1_tx_succ|n1_tx_fail);
 
       #10000;
-      $fdisplay(handle, "TASK7, n1 to n0 using short address");
-      $fdisplay(handle, "Result: N1 TX success");
+      $fdisplay(handle, "TASK7, N1 to N2 using long address");
+      $fdisplay(handle, "Result: N1 TX Success");
+      $fdisplay(handle, "Result: N2 RX Success");
+      $fdisplay(handle, "Result: N3 RX Success");
       state = TASK7;
       @ (posedge clk);
       @ (posedge clk);
@@ -120,8 +109,9 @@ task task0;
 	  @ (posedge n1_tx_succ|n1_tx_fail);
 
       #10000;
-      $fdisplay(handle, "TASK8, n1 to n2 using short address");
-      $fdisplay(handle, "Result: N1 TX success");
+      $fdisplay(handle, "TASK8, N1 to N0 using short address");
+      $fdisplay(handle, "Result: N1 TX Success");
+      $fdisplay(handle, "Result: N0 RX Success");
       state = TASK8;
       @ (posedge clk);
       @ (posedge clk);
@@ -131,40 +121,47 @@ task task0;
 	  @ (posedge n1_tx_succ|n1_tx_fail);
 
       #10000;
-      $fdisplay(handle, "TASK9, invalidate 4'h2 (n0) short address");
+      $fdisplay(handle, "TASK9, N1 to N2 using short address");
+      $fdisplay(handle, "Result: N1 TX Success");
+      $fdisplay(handle, "Result: N2 RX Success");
       state = TASK9;
       @ (posedge clk);
       @ (posedge clk);
       @ (posedge clk);
       @ (posedge clk);
       @ (posedge clk);
-	  @ (posedge c0_tx_succ|c0_tx_fail);
-
-      #10000;
-      $fdisplay(handle, "TASK7, n1 to n0 using short address");
-      $fdisplay(handle, "Result: N1 TX fail");
-      state = TASK7;
-      @ (posedge clk);
-      @ (posedge clk);
-      @ (posedge clk);
-      @ (posedge clk);
-      @ (posedge clk);
 	  @ (posedge n1_tx_succ|n1_tx_fail);
 
       #10000;
-      $fdisplay(handle, "TASK10, Master node enumerate with address 4'h8");
+      $fdisplay(handle, "TASK10, N1 to N3 using short address");
+      $fdisplay(handle, "Result: N1 TX Success");
+      $fdisplay(handle, "Result: N3 RX Success");
       state = TASK10;
       @ (posedge clk);
       @ (posedge clk);
       @ (posedge clk);
       @ (posedge clk);
       @ (posedge clk);
-	  @ (posedge c0_rx_req);
+	  @ (posedge n1_tx_succ|n1_tx_fail);
 
       #10000;
-      $fdisplay(handle, "TASK11, n1 to n0 using short address");
-      $fdisplay(handle, "Result: N1 TX success");
+      $fdisplay(handle, "TASK11, invalidate 4'h2 (n0) short address");
       state = TASK11;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge c0_tx_succ|c0_tx_fail);
+	  // n0 -> 4'hf (invalid)
+	  // n1 -> 4'h3
+	  // n2 -> 4'h4
+	  // n3 -> 4'h5
+
+      #10000;
+      $fdisplay(handle, "TASK8, N1 to N0 using short address");
+      $fdisplay(handle, "Result: N1 TX Fail");
+      state = TASK8;
       @ (posedge clk);
       @ (posedge clk);
       @ (posedge clk);
@@ -173,8 +170,34 @@ task task0;
 	  @ (posedge n1_tx_succ|n1_tx_fail);
 
       #10000;
-      $fdisplay(handle, "TASK12, Selective sleep n0, n2");
+      $fdisplay(handle, "TASK12, Master node enumerate with address 4'h8");
       state = TASK12;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge c0_rx_req);
+	  // n0 -> 4'h8
+	  // n1 -> 4'h3
+	  // n2 -> 4'h4
+	  // n3 -> 4'h5
+
+      #10000;
+      $fdisplay(handle, "TASK13, N1 to N0 using short address");
+      $fdisplay(handle, "Result: N1 TX Success");
+      $fdisplay(handle, "Result: N0 RX Success");
+      state = TASK13;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge n1_tx_succ|n1_tx_fail);
+
+      #10000;
+      $fdisplay(handle, "TASK14, Selective sleep N0, N2");
+      state = TASK14;
       @ (posedge clk);
       @ (posedge clk);
       @ (posedge clk);
@@ -183,9 +206,9 @@ task task0;
 	  @ (posedge c0_tx_succ | c0_tx_fail);
 
       #10000;
-      $fdisplay(handle, "TASK13, n2 asserts ext_int");
-      $fdisplay(handle, "Result: c0, n1 RX fail");
-      state = TASK13;
+      $fdisplay(handle, "TASK15, N2 asserts ext_int");
+      $fdisplay(handle, "Result: C0, N1, N2 RX Fail");
+      state = TASK15;
       @ (posedge clk);
       @ (posedge clk);
       @ (posedge clk);
@@ -196,10 +219,10 @@ task task0;
       #50000;
 
       #10000;
-      $fdisplay(handle, "TASK14, n2 to n0 using short address");
-      $fdisplay(handle, "Result: N2 TX success");
-      $fdisplay(handle, "Result: N0 RX success");
-      state = TASK14;
+      $fdisplay(handle, "TASK16, N2 to N0 using short address");
+      $fdisplay(handle, "Result: N2 TX Success");
+      $fdisplay(handle, "Result: N0 RX Success");
+      state = TASK16;
       @ (posedge clk);
       @ (posedge clk);
       @ (posedge clk);
@@ -207,6 +230,40 @@ task task0;
       @ (posedge clk);
 	  @ (posedge n2_tx_succ|n2_tx_fail);
 	  
+      #10000;
+      $fdisplay(handle, "TASK14, Selective sleep N0, N2");
+      state = TASK14;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge c0_tx_succ | c0_tx_fail);
+
+      #10000;
+      $fdisplay(handle, "TASK10, N1 to N3 using short address");
+      $fdisplay(handle, "Result: N1 TX Success");
+      $fdisplay(handle, "Result: N3 RX Success");
+      state = TASK10;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge n1_tx_succ|n1_tx_fail);
+
+      #10000;
+      $fdisplay(handle, "TASK17, Master node sends out long querry");
+      state = TASK17;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge c0_rx_req);
+	  @ (posedge c0_rx_req);
+	  @ (posedge c0_rx_req);
+	  @ (posedge c0_rx_req);
 
       #10000;
       $display("*************************************");

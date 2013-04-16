@@ -36,8 +36,7 @@ SIMFILES = 	mbus_addr_rf.v \
 			mbus_regular_sleep_ctrl.v \
 			mbus_ctrl.v \
 			mbus_master_sleep_ctrl.v \
-			mbus_master_node.v \
-			mbus_regular_node.v \
+			mbus_node.v \
 			mbus_ctrl_wrapper.v \
 			mbus_layer_wrapper.v \
 			mbus_ctrl_layer_wrapper.v 
@@ -79,7 +78,7 @@ clean:
 	int_simv int_simv.daidir syn_int_simv syn_int_simv.daidir \
 	DVEfiles\
         dve *.vpd *.vcd *.dump ucli.key *.vdb REPORTS .saveDVEfiles .restart* .synopsys_dve* cm.log *.prof \
-	INCA_libs waves.shm irun* nclaunch* ncverilog*
+	INCA_libs waves.shm irun* nclaunch* ncverilog* result*.txt
 
 nuke:	clean
 	rm -rvf *.vg *.rep *.db *.chk *.log *.out DVEfiles/

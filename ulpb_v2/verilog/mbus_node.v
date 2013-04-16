@@ -69,6 +69,56 @@
  * interrupt, bypass clock once interrupt occurred
  * */
 
+`include "include/mbus_def.v"
+
+module mbus_node(
+	input 	CLKIN, 
+	input 	RESETn, 
+	input 	DIN, 
+	output 	reg CLKOUT,
+	output 	reg DOUT, 
+
+	input 		[`ADDR_WIDTH-1:0] TX_ADDR, 
+	input 		[`DATA_WIDTH-1:0] TX_DATA, 
+	input 		TX_PEND, 
+	input 		TX_REQ, 
+	output 	reg TX_ACK, 
+	input 		PRIORITY,
+
+	output 	reg [`ADDR_WIDTH-1:0] RX_ADDR, 
+	output 	reg [`DATA_WIDTH-1:0] RX_DATA, 
+	output 	reg RX_PEND, 
+	output 	reg RX_REQ, 
+	input 		RX_ACK, 
+	output 		RX_BROADCAST,
+
+	output 	reg RX_FAIL,
+	output 	reg TX_FAIL, 
+	output 	reg TX_SUCC, 
+	input 		TX_RESP_ACK,
+
+	`ifdef POWER_GATING
+	// power gated signals from sleep controller
+	input 		RELEASE_RST_FROM_SLEEP_CTRL,
+	// power gated signals to layer controller
+	output 	reg POWER_ON_TO_LAYER_CTRL,
+	output 	reg RELEASE_CLK_TO_LAYER_CTRL,
+	output 	reg RELEASE_RST_TO_LAYER_CTRL,
+	output 	reg RELEASE_ISO_TO_LAYER_CTRL,
+	// power gated signal to sleep controller
+	output 	reg SLEEP_REQUEST_TO_SLEEP_CTRL,
+	// External interrupt
+	input 		EXTERNAL_INT,
+	output 	reg CLR_EXT_INT,
+	`endif
+	// interface with local register files (RF)
+	input		[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_IN,
+	output	 	[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_OUT,
+	input		ASSIGNED_ADDR_VALID,
+	output	reg	ASSIGNED_ADDR_WRITE,
+	output	reg	ASSIGNED_ADDR_INVALIDn
+);
+
 `include "include/mbus_func.v"
 
 parameter ADDRESS = 20'habcde;
@@ -111,6 +161,8 @@ parameter RX_BELOW_TX = 1'b0;
 
 // override this parameter to "1'b1" if the node is master
 parameter MASTER_NODE = 1'b0;
+// override this parameter to "1'b1" if the layer is CPU
+parameter CPU_LAYER = 1'b0;
 
 wire [1:0] CONTROL_BITS = `CONTROL_SEQ;	// EOM?, ~ACK?
 
@@ -790,11 +842,9 @@ begin
 							// broadcast message 
 							if (RX_BROADCAST)
 							begin
-								// assert rx_req if CPU_LAYER
-								`ifdef CPU_LAYER
-								if (~RX_REQ)
+								// assert broadcast rx_req only in CPU layer
+								if ((CPU_LAYER==1'b1)&&(~RX_REQ))
 									next_rx_req = 1;
-								`endif
 								// broadcast channel
 								case (RX_ADDR[`FUNC_WIDTH-1:0])
 									`CHANNEL_ENUM:
@@ -1165,3 +1215,5 @@ mbus_swapper swapper0(
    	//Outputs
     .LAST_CLK(),
     .INT_FLAG(BUS_INT));
+
+endmodule

@@ -207,7 +207,7 @@ task task0;
 
       #10000;
       $fdisplay(handle, "TASK15, N2 asserts ext_int");
-      $fdisplay(handle, "Result: C0, N1, N2 RX Fail");
+      $fdisplay(handle, "Result: C0, N1, N2, N3 RX Fail");
       state = TASK15;
       @ (posedge clk);
       @ (posedge clk);
@@ -264,6 +264,130 @@ task task0;
 	  @ (posedge c0_rx_req);
 	  @ (posedge c0_rx_req);
 	  @ (posedge c0_rx_req);
+
+      #10000;
+      $fdisplay(handle, "TASK18, All sleep");
+      state = TASK18;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge c0_tx_succ | c0_tx_fail);
+
+      #10000;
+      $fdisplay(handle, "TASK0, Master node and Processor wake up");
+      state = TASK0;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge SCLK);
+	  c0_req_int = 0;
+      #50000;
+
+      #10000;
+      $fdisplay(handle, "TASK17, Master node sends out long querry");
+      state = TASK17;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge c0_rx_req);
+	  @ (posedge c0_rx_req);
+	  @ (posedge c0_rx_req);
+	  @ (posedge c0_rx_req);
+
+      #10000;
+      $fdisplay(handle, "TASK18, All sleep");
+      state = TASK18;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge c0_tx_succ | c0_tx_fail);
+
+      #10000;
+      $fdisplay(handle, "TASK0, Master node and Processor wake up");
+      state = TASK0;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge SCLK);
+	  c0_req_int = 0;
+      #50000;
+
+      #10000;
+      $fdisplay(handle, "TASK19, All Wake");
+      state = TASK19;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge c0_tx_succ | c0_tx_fail);
+
+      #10000;
+      $fdisplay(handle, "TASK20, Invalidate all short address");
+      state = TASK20;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge c0_tx_succ | c0_tx_fail);
+
+      #10000;
+      $fdisplay(handle, "TASK1, Master node sends out querry");
+      state = TASK1;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge c0_rx_req);
+	  @ (posedge c0_rx_req);
+	  @ (posedge c0_rx_req);
+	  @ (posedge c0_rx_req);
+
+      #10000;
+      $fdisplay(handle, "TASK21, Selective sleep N1 using long prefix");
+      state = TASK21;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge c0_tx_succ | c0_tx_fail);
+
+      #10000;
+      $fdisplay(handle, "TASK22, Selective sleep processor using long prefix");
+      state = TASK22;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge c0_tx_succ | c0_tx_fail);
+
+      #10000;
+      $fdisplay(handle, "TASK23, N2 node sends out querry");
+      state = TASK23;
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+      @ (posedge clk);
+	  @ (posedge n2_rx_req);
+	  @ (posedge n2_rx_req);
+	  @ (posedge n2_rx_req);
+	  @ (posedge n2_rx_req);
+
 
       #10000;
       $display("*************************************");

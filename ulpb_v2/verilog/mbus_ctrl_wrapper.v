@@ -36,7 +36,7 @@ module mbus_ctrl_wrapper(
 	input 	EXTERNAL_INT,
 	output	CLR_EXT_INT,
 	// wake up processor
-	output	SLEEP_REQUEST_TO_SLEEP_CTRL
+	output	reg SLEEP_REQUEST_TO_SLEEP_CTRL
 );
 
 parameter ADDRESS = 20'haaaaa;
@@ -45,6 +45,7 @@ wire	CLK_CTRL_TO_NODE;
 wire	DOUT_CTRL_TO_NODE;
 wire	NODE_RX_REQ;
 wire	NODE_RX_ACK;
+wire	SLEEP_REQ;
 reg		ctrl_addr_match, ctrl_rx_ack;
 
 wire 	RESETn_local = (RESETn & (~RELEASE_RST_FROM_SLEEP_CTRL));
@@ -64,6 +65,7 @@ begin
 	if (~RESETn_local)
 	begin
 		ctrl_rx_ack <= 0;
+		SLEEP_REQUEST_TO_SLEEP_CTRL <= 0;
 	end
 	else
 	begin
@@ -74,6 +76,9 @@ begin
 
 		if (ctrl_rx_ack & (~NODE_RX_REQ))
 			ctrl_rx_ack <= 0;
+
+		// delay 1 cycle
+		SLEEP_REQUEST_TO_SLEEP_CTRL <= SLEEP_REQ;
 	end
 end
 assign NODE_RX_ACK = (RX_ACK | ctrl_rx_ack);
@@ -88,7 +93,7 @@ mbus_ctrl ctrl0(
 	.THRESHOLD(THRESHOLD)
 );
 
-mbus_master_node#(.ADDRESS(ADDRESS)) node0(
+mbus_node#(.ADDRESS(ADDRESS), .MASTER_NODE(1'b1), .CPU_LAYER(1'b1)) node0(
 	.CLKIN(CLK_CTRL_TO_NODE), 
 	.RESETn(RESETn), 
 	.DIN(DOUT_CTRL_TO_NODE), 
@@ -115,7 +120,7 @@ mbus_master_node#(.ADDRESS(ADDRESS)) node0(
 	.RELEASE_CLK_TO_LAYER_CTRL(RELEASE_CLK_TO_LAYER_CTRL),
 	.RELEASE_RST_TO_LAYER_CTRL(RELEASE_RST_TO_LAYER_CTRL),
 	.RELEASE_ISO_TO_LAYER_CTRL(RELEASE_ISO_TO_LAYER_CTRL),
-	.SLEEP_REQUEST_TO_SLEEP_CTRL(SLEEP_REQUEST_TO_SLEEP_CTRL),
+	.SLEEP_REQUEST_TO_SLEEP_CTRL(SLEEP_REQ),
 	.EXTERNAL_INT(EXTERNAL_INT),
 	.CLR_EXT_INT(CLR_EXT_INT),
 	.ASSIGNED_ADDR_IN(4'h1),

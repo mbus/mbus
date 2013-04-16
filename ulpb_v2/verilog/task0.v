@@ -202,6 +202,72 @@ always @ (posedge clk or negedge resetn) begin
 				state <= TX_WAIT;
 			end
 
+			// All layers sleep
+			TASK18:
+			begin
+				c0_tx_addr <= {28'hf00000, `CHANNEL_POWER};
+				c0_tx_data <= {`CMD_CHANNEL_POWER_ALL_SLEEP, 28'h0};
+				c0_tx_req <= 1;
+				c0_tx_pend <= 0;
+				c0_priority <= 0;
+				state <= TX_WAIT;
+			end
+
+			// All layers wake 
+			TASK19:
+			begin
+				c0_tx_addr <= {28'hf00000, `CHANNEL_POWER};
+				c0_tx_data <= {`CMD_CHANNEL_POWER_ALL_WAKE, 28'h0};
+				c0_tx_req <= 1;
+				c0_tx_pend <= 0;
+				c0_priority <= 0;
+				state <= TX_WAIT;
+			end
+
+			// Invalidate all short address
+			TASK20:
+			begin
+				c0_tx_addr <= {24'he0000, 4'h0, `CHANNEL_ENUM};
+				c0_tx_data <= {`CMD_CHANNEL_ENUM_INVALIDATE, 4'hf, 24'h0}; // 4'hf -> all short address
+				c0_tx_req <= 1;
+				c0_tx_pend <= 0;
+				c0_priority <= 0;
+				state <= TX_WAIT;
+			end
+
+			// Selective sleep N1 using full prefix
+			TASK21:
+			begin
+				c0_tx_addr <= {28'hf00000, `CHANNEL_POWER};
+				c0_tx_data <= {`CMD_CHANNEL_POWER_SEL_SLEEP_FULL, 4'h0, 20'hbbbb1, 4'h0};
+				c0_tx_req <= 1;
+				c0_tx_pend <= 0;
+				c0_priority <= 0;
+				state <= TX_WAIT;
+			end
+
+			// Selective sleep processor using full prefix
+			TASK22:
+			begin
+				c0_tx_addr <= {28'hf00000, `CHANNEL_POWER};
+				c0_tx_data <= {`CMD_CHANNEL_POWER_SEL_SLEEP_FULL, 4'h0, 20'haaaa0, 4'h0};
+				c0_tx_req <= 1;
+				c0_tx_pend <= 0;
+				c0_priority <= 0;
+				state <= TX_WAIT;
+			end
+
+			// n2 querry
+			TASK23:
+			begin
+				n2_tx_addr <= {28'hf00000, `CHANNEL_ENUM};
+				n2_tx_data <= {`CMD_CHANNEL_ENUM_QUERRY, 28'h0};
+				n2_tx_pend <= 0;
+				n2_tx_req <= 1;
+				n2_priority <= 0;
+				state <= TX_WAIT;
+			end
+
       	endcase // case (state)
 	end
 end // always @ (posedge clk or negedge resetn)

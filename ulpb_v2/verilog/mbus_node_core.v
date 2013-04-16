@@ -281,27 +281,30 @@ end
 always @ *
 begin
 	tx_dat_length = LENGTH_4BYTE;
-	case (ADDR[`FUNC_WIDTH-1:0])
-		`CHANNEL_ENUM:
-		begin
-			case (DATA[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH])
-				`CMD_CHANNEL_ENUM_QUERRY: 		begin tx_dat_length = LENGTH_1BYTE; end
-				`CMD_CHANNEL_ENUM_RESPONSE: 	begin tx_dat_length = LENGTH_4BYTE; end
-				`CMD_CHANNEL_ENUM_ENUMERATE: 	begin tx_dat_length = LENGTH_1BYTE; end
-				`CMD_CHANNEL_ENUM_INVALIDATE:	begin tx_dat_length = LENGTH_1BYTE; end
-			endcase
-		end
+	if (tx_broadcast)
+	begin
+		case (ADDR[`FUNC_WIDTH-1:0])
+			`CHANNEL_ENUM:
+			begin
+				case (DATA[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH])
+					`CMD_CHANNEL_ENUM_QUERRY: 		begin tx_dat_length = LENGTH_1BYTE; end
+					`CMD_CHANNEL_ENUM_RESPONSE: 	begin tx_dat_length = LENGTH_4BYTE; end
+					`CMD_CHANNEL_ENUM_ENUMERATE: 	begin tx_dat_length = LENGTH_1BYTE; end
+					`CMD_CHANNEL_ENUM_INVALIDATE:	begin tx_dat_length = LENGTH_1BYTE; end
+				endcase
+			end
 
-		`CHANNEL_POWER:
-		begin
-			case (DATA[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH])
-				`CMD_CHANNEL_POWER_ALL_SLEEP: 	begin tx_dat_length = LENGTH_1BYTE; end
-				`CMD_CHANNEL_POWER_ALL_WAKE: 	begin tx_dat_length = LENGTH_1BYTE; end
-				`CMD_CHANNEL_POWER_SEL_SLEEP: 	begin tx_dat_length = LENGTH_3BYTE; end
-				`CMD_CHANNEL_POWER_SEL_WAKE: 	begin tx_dat_length = LENGTH_3BYTE; end	
-			endcase
-		end
-	endcase
+			`CHANNEL_POWER:
+			begin
+				case (DATA[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH])
+					`CMD_CHANNEL_POWER_ALL_SLEEP: 	begin tx_dat_length = LENGTH_1BYTE; end
+					`CMD_CHANNEL_POWER_ALL_WAKE: 	begin tx_dat_length = LENGTH_1BYTE; end
+					`CMD_CHANNEL_POWER_SEL_SLEEP: 	begin tx_dat_length = LENGTH_3BYTE; end
+					`CMD_CHANNEL_POWER_SEL_WAKE: 	begin tx_dat_length = LENGTH_3BYTE; end	
+				endcase
+			end
+		endcase
+	end
 end
 
 // This block used to determine the received data length.
@@ -703,7 +706,6 @@ begin
 
 		BUS_CONTROL0:
 		begin
-			next_bus_state = BUS_CONTROL0;
 			next_bus_state = BUS_CONTROL1;
 			next_ctrl_bit_buf = DIN;
 
@@ -904,7 +906,7 @@ begin
 		if (CLR_EXT_INT & (~EXTERNAL_INT))
 			CLR_EXT_INT <= 0;
 
-		if (bus_state==BUS_PRIO)
+		if (bus_state==BUS_ADDR)
 		begin
 			if (EXTERNAL_INT)
 			begin

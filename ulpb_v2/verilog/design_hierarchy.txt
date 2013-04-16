@@ -37,6 +37,6 @@ Compile procedure
 		- mbus_master_sleep_ctrl.v
 	2.  - mbus_master_node.v
 		- mbus_regular_node.v
-	3.	- mbus_ctrl_wrapper.v
+	3.	- mbus_ctrl_wrapper.v		(behavior simulation only)
 		- mbus_layer_wrapper.v		(behavior simulation only)
 	4.	- mbus_ctrl_layer_wrapper.v	(behavior simulation only)

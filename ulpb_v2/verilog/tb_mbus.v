@@ -321,41 +321,44 @@ begin
 	n0_tx_resp_ack <= 0;
 end
 
-always @ (negedge n0_rx_fail or negedge n0_rx_req)
-begin
-	if (n0_auto_rx_ack)
-		n0_rx_ack <= 0;
-end
-
 always @ (posedge n0_rx_fail)
-begin
-	if (n0_auto_rx_ack)
-		n0_rx_ack <= 1;
 	$fdisplay(handle, "N0 RX Fail");
-end
 
 always @ (posedge n0_rx_req)
 begin
-	if (n0_auto_rx_ack)
-		n0_rx_ack <= 1;
 	$fdisplay(handle, "N0 RX Success");
    	$fdisplay(handle, "N0 Data out =\t32'h%h", n0_rx_data);
 end
 
-always @ (posedge n0_tx_succ)
+always @ (posedge clk)
 begin
-	n0_tx_resp_ack <= 1;
-	$fdisplay(handle, "N0 TX Success\n");
+	if ((n0_rx_req | n0_rx_fail) & n0_auto_rx_ack)
+		`SD n0_rx_ack <= 1;
+	
+	if (n0_rx_ack & (~n0_rx_req))
+		`SD n0_rx_ack <= 0;
+	
+	if (n0_rx_ack & (~n0_rx_fail))
+		`SD n0_rx_ack <= 0;
 end
+
+always @ (posedge n0_tx_succ)
+	$fdisplay(handle, "N0 TX Success\n");
 
 always @ (posedge n0_tx_fail)
-begin
-	n0_tx_resp_ack <= 1;
 	$fdisplay(handle, "N0 TX Fail\n");
-end
 
-always @ (negedge n0_tx_succ or negedge n0_tx_fail)
-	n0_tx_resp_ack <= 0;
+always @ (posedge clk)
+begin
+	if (n0_tx_succ | n0_tx_fail)
+		`SD n0_tx_resp_ack <= 1;
+
+	if (n0_tx_resp_ack & (~n0_tx_succ))
+		`SD n0_tx_resp_ack <= 0;
+	
+	if (n0_tx_resp_ack & (~n0_tx_fail))
+		`SD n0_tx_resp_ack <= 0;
+end
 // end of n0 rx, tx ack control
 
 // n1 rx tx ack control
@@ -365,41 +368,44 @@ begin
 	n1_tx_resp_ack <= 0;
 end
 
-always @ (negedge n1_rx_fail or negedge n1_rx_req)
-begin
-	if (n1_auto_rx_ack)
-		n1_rx_ack <= 0;
-end
-
 always @ (posedge n1_rx_fail)
-begin
-	if (n1_auto_rx_ack)
-		n1_rx_ack <= 1;
 	$fdisplay(handle, "N1 RX Fail");
-end
 
 always @ (posedge n1_rx_req)
 begin
-	if (n1_auto_rx_ack)
-		n1_rx_ack <= 1;
 	$fdisplay(handle, "N1 RX Success");
    	$fdisplay(handle, "N1 Data out =\t32'h%h", n1_rx_data);
 end
 
-always @ (posedge n1_tx_succ)
+always @ (posedge clk)
 begin
-	n1_tx_resp_ack <= 1;
-	$fdisplay(handle, "N1 TX Success\n");
+	if ((n1_rx_req | n1_rx_fail) & n1_auto_rx_ack)
+		`SD n1_rx_ack <= 1;
+	
+	if (n1_rx_ack & (~n1_rx_req))
+		`SD n1_rx_ack <= 0;
+	
+	if (n1_rx_ack & (~n1_rx_fail))
+		`SD n1_rx_ack <= 0;
 end
+
+always @ (posedge n1_tx_succ)
+	$fdisplay(handle, "N1 TX Success\n");
 
 always @ (posedge n1_tx_fail)
-begin
-	n1_tx_resp_ack <= 1;
 	$fdisplay(handle, "N1 TX Fail\n");
-end
 
-always @ (negedge n1_tx_succ or negedge n1_tx_fail)
-	n1_tx_resp_ack <= 0;
+always @ (posedge clk)
+begin
+	if (n1_tx_succ | n1_tx_fail)
+		`SD n1_tx_resp_ack <= 1;
+
+	if (n1_tx_resp_ack & (~n1_tx_succ))
+		`SD n1_tx_resp_ack <= 0;
+	
+	if (n1_tx_resp_ack & (~n1_tx_fail))
+		`SD n1_tx_resp_ack <= 0;
+end
 // end of n1 rx, tx ack control
 
 // n2 rx tx ack control
@@ -409,41 +415,44 @@ begin
 	n2_tx_resp_ack <= 0;
 end
 
-always @ (negedge n2_rx_fail or negedge n2_rx_req)
-begin
-	if (n2_auto_rx_ack)
-		n2_rx_ack <= 0;
-end
-
 always @ (posedge n2_rx_fail)
-begin
-	if (n2_auto_rx_ack)
-		n2_rx_ack <= 1;
 	$fdisplay(handle, "N2 RX Fail");
-end
 
 always @ (posedge n2_rx_req)
 begin
-	if (n2_auto_rx_ack)
-		n2_rx_ack <= 1;
 	$fdisplay(handle, "N2 RX Success");
    	$fdisplay(handle, "N2 Data out =\t32'h%h", n2_rx_data);
 end
 
-always @ (posedge n2_tx_succ)
+always @ (posedge clk)
 begin
-	n2_tx_resp_ack <= 1;
-	$fdisplay(handle, "N2 TX Success\n");
+	if ((n2_rx_req | n2_rx_fail) & n2_auto_rx_ack)
+		`SD n2_rx_ack <= 1;
+	
+	if (n2_rx_ack & (~n2_rx_req))
+		`SD n2_rx_ack <= 0;
+	
+	if (n2_rx_ack & (~n2_rx_fail))
+		`SD n2_rx_ack <= 0;
 end
+
+always @ (posedge n2_tx_succ)
+	$fdisplay(handle, "N2 TX Success\n");
 
 always @ (posedge n2_tx_fail)
-begin
-	n2_tx_resp_ack <= 1;
 	$fdisplay(handle, "N2 TX Fail\n");
-end
 
-always @ (negedge n2_tx_succ or negedge n2_tx_fail)
-	n2_tx_resp_ack <= 0;
+always @ (posedge clk)
+begin
+	if (n2_tx_succ | n2_tx_fail)
+		`SD n2_tx_resp_ack <= 1;
+
+	if (n2_tx_resp_ack & (~n2_tx_succ))
+		`SD n2_tx_resp_ack <= 0;
+	
+	if (n2_tx_resp_ack & (~n2_tx_fail))
+		`SD n2_tx_resp_ack <= 0;
+end
 // end of n2 rx, tx ack control
 
 // n3 rx tx ack control
@@ -453,43 +462,45 @@ begin
 	n3_tx_resp_ack <= 0;
 end
 
-always @ (negedge n3_rx_fail or negedge n3_rx_req)
-begin
-	if (n3_auto_rx_ack)
-		n3_rx_ack <= 0;
-end
-
 always @ (posedge n3_rx_fail)
-begin
-	if (n3_auto_rx_ack)
-		n3_rx_ack <= 1;
 	$fdisplay(handle, "N3 RX Fail");
-end
 
 always @ (posedge n3_rx_req)
 begin
-	if (n3_auto_rx_ack)
-		n3_rx_ack <= 1;
 	$fdisplay(handle, "N3 RX Success");
    	$fdisplay(handle, "N3 Data out =\t32'h%h", n3_rx_data);
 end
 
-always @ (posedge n3_tx_succ)
+always @ (posedge clk)
 begin
-	n3_tx_resp_ack <= 1;
-	$fdisplay(handle, "N3 TX Success\n");
+	if ((n3_rx_req | n3_rx_fail) & n3_auto_rx_ack)
+		`SD n3_rx_ack <= 1;
+	
+	if (n3_rx_ack & (~n3_rx_req))
+		`SD n3_rx_ack <= 0;
+	
+	if (n3_rx_ack & (~n3_rx_fail))
+		`SD n3_rx_ack <= 0;
 end
+
+always @ (posedge n3_tx_succ)
+	$fdisplay(handle, "N3 TX Success\n");
 
 always @ (posedge n3_tx_fail)
-begin
-	n3_tx_resp_ack <= 1;
 	$fdisplay(handle, "N3 TX Fail\n");
+
+always @ (posedge clk)
+begin
+	if (n3_tx_succ | n3_tx_fail)
+		`SD n3_tx_resp_ack <= 1;
+
+	if (n3_tx_resp_ack & (~n3_tx_succ))
+		`SD n3_tx_resp_ack <= 0;
+	
+	if (n3_tx_resp_ack & (~n3_tx_fail))
+		`SD n3_tx_resp_ack <= 0;
 end
-
-always @ (negedge n3_tx_succ or negedge n3_tx_fail)
-	n3_tx_resp_ack <= 0;
 // end of n3 rx, tx ack control
-
 
 // c0 rx tx ack control
 always @ (negedge resetn)
@@ -498,41 +509,44 @@ begin
 	c0_tx_resp_ack <= 0;
 end
 
-always @ (negedge c0_rx_fail or negedge c0_rx_req)
-begin
-	if (c0_auto_rx_ack)
-		c0_rx_ack <= 0;
-end
-
 always @ (posedge c0_rx_fail)
-begin
-	if (c0_auto_rx_ack)
-		c0_rx_ack <= 1;
 	$fdisplay(handle, "C0 RX Fail");
-end
 
 always @ (posedge c0_rx_req)
 begin
-	if (c0_auto_rx_ack)
-		c0_rx_ack <= 1;
 	$fdisplay(handle, "C0 RX Success");
    	$fdisplay(handle, "C0 Data out =\t32'h%h", c0_rx_data);
 end
 
-always @ (posedge c0_tx_succ)
+always @ (posedge clk)
 begin
-	c0_tx_resp_ack <= 1;
-	$fdisplay(handle, "C0 TX Success\n");
+	if ((c0_rx_req | c0_rx_fail) & c0_auto_rx_ack)
+		`SD c0_rx_ack <= 1;
+	
+	if (c0_rx_ack & (~c0_rx_req))
+		`SD c0_rx_ack <= 0;
+	
+	if (c0_rx_ack & (~c0_rx_fail))
+		`SD c0_rx_ack <= 0;
 end
+
+always @ (posedge c0_tx_succ)
+	$fdisplay(handle, "C0 TX Success\n");
 
 always @ (posedge c0_tx_fail)
-begin
-	c0_tx_resp_ack <= 1;
 	$fdisplay(handle, "C0 TX Fail\n");
-end
 
-always @ (negedge c0_tx_succ or negedge c0_tx_fail)
-	c0_tx_resp_ack <= 0;
+always @ (posedge clk)
+begin
+	if (c0_tx_succ | c0_tx_fail)
+		`SD c0_tx_resp_ack <= 1;
+
+	if (c0_tx_resp_ack & (~c0_tx_succ))
+		`SD c0_tx_resp_ack <= 0;
+	
+	if (c0_tx_resp_ack & (~c0_tx_fail))
+		`SD c0_tx_resp_ack <= 0;
+end
 // end of c0 rx, tx ack control
 
 

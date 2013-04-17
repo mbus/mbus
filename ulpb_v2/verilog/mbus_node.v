@@ -808,7 +808,9 @@ begin
 						end
 					end
 					else
+					begin
 						next_tx_fail = 1;
+					end
 				end
 
 				MODE_RX:

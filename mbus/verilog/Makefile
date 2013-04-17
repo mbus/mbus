@@ -78,7 +78,7 @@ clean:
 	int_simv int_simv.daidir syn_int_simv syn_int_simv.daidir \
 	DVEfiles\
         dve *.vpd *.vcd *.dump ucli.key *.vdb REPORTS .saveDVEfiles .restart* .synopsys_dve* cm.log *.prof \
-	INCA_libs waves.shm irun* nclaunch* ncverilog* result*.txt
+	INCA_libs waves.shm irun* nclaunch* ncverilog* result*.txt .nclaunch* .simvision
 
 nuke:	clean
 	rm -rvf *.vg *.rep *.db *.chk *.log *.out DVEfiles/

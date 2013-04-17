@@ -7,7 +7,7 @@ Design Hierarchy for MBus
 	- mbus_addr_rf.v
 	- mbus_wire_ctrl.v
 	- mbus_ext_int.v
-	- mbus_regular_node.v
+	- mbus_node.v
 		- mbus_swapper.v
 	
 2. mbus_ctrl_layer_wrapper.v
@@ -17,7 +17,7 @@ Design Hierarchy for MBus
 	- mbus_ext_int.v
 	- mbus_ctrl_wrapper.v
 		- mbus_ctrl.v
-		- mbus_master_node.v
+		- mbus_node.v
 			- mbus_swapper.v
 
 3. tb_mbus.v
@@ -34,9 +34,8 @@ Compile procedure
 		- mbus_regular_isolation.v	(behavior simulation only)
 		- mbus_regular_sleep_ctrl.v	(behavior simulation only)
 		- mbus_ctrl.v
-		- mbus_master_sleep_ctrl.v
-	2.  - mbus_master_node.v
-		- mbus_regular_node.v
+		- mbus_master_sleep_ctrl.v	(structural netlist already)
+	2.  - mbus_node.v
 	3.	- mbus_ctrl_wrapper.v		(behavior simulation only)
 		- mbus_layer_wrapper.v		(behavior simulation only)
 	4.	- mbus_ctrl_layer_wrapper.v	(behavior simulation only)

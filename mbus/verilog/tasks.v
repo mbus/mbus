@@ -53,6 +53,11 @@ begin
     state = TASK5;
 	@ (posedge c0_rx_req);
 
+    #10000;
+    $fdisplay(handle, "\nTASK19, All Wake");
+    state = TASK19;
+	@ (posedge c0_tx_succ | c0_tx_fail);
+
     #100000;
     $fdisplay(handle, "\nTASK6, N1 to N0 using long address");
     $fdisplay(handle, "Result: N1 TX Success");
@@ -290,6 +295,11 @@ begin
     $fdisplay(handle, "\nTASK5, Master node enumerate with address 4'h5");
     state = TASK5;
 	@ (posedge c0_rx_req);
+
+    #10000;
+    $fdisplay(handle, "\nTASK24, All Wake");
+    state = TASK24;
+	@ (posedge c0_tx_succ | c0_tx_fail);
 
     #100000;
     $fdisplay(handle, "\nTASK6, N1 sends multiple bytes down to N2 using short address");

@@ -289,6 +289,9 @@ begin
 		wakeup_req = address_match;
 	else
 	begin
+		// master node should wake up for every broadcast message
+		if (MASTER_NODE==1'b1)
+			wakeup_req = address_match;
 		// which channels should wake up
 		case (RX_ADDR[`FUNC_WIDTH-1:0])
 			`CHANNEL_POWER:
@@ -297,7 +300,6 @@ begin
 					`CMD_CHANNEL_POWER_ALL_WAKE: begin wakeup_req = 1; end
 				endcase
 			end
-			`CHANNEL_ENUM: begin wakeup_req = 1; end
 			default: begin end
 		endcase
 	end

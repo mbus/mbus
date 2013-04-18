@@ -432,6 +432,17 @@ always @ (posedge clk or negedge resetn) begin
    	      		$fdisplay(handle, "N2 Data in =\t32'h%h", rand_dat);
 				state <= TX_WAIT;
 			end
+
+			// All layers wake 
+			TASK24:
+			begin
+				c0_tx_addr <= {28'hf00000, `CHANNEL_POWER};
+				c0_tx_data <= {`CMD_CHANNEL_POWER_ALL_WAKE, 28'h0};
+				c0_tx_req <= 1;
+				c0_tx_pend <= 0;
+				c0_priority <= 0;
+				state <= TX_WAIT;
+			end
 		endcase
 	end
 end

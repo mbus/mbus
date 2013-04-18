@@ -2,20 +2,20 @@
 date_o = $(shell date '+%m.%d.%y.%H.%M.%S')
 
 tar_o = \
-	verilog/mbus_addr_rf.v \
-	verilog/mbus_ctrl.v \
-	verilog/mbus_ctrl_layer_wrapper.v \
-	verilog/mbus_ctrl_wrapper.v \
-	verilog/mbus_ext_int.v \
-	verilog/mbus_layer_wrapper.v \
-	verilog/mbus_master_node.v \
-	verilog/mbus_master_sleep_ctrl.v \
-	verilog/mbus_node.v \
-	verilog/mbus_regular_isolation.v \
-	verilog/mbus_regular_sleep_ctrl.v \
-	verilog/mbus_swapper.v \
-	verilog/mbus_wire_ctrl.v \
-	verilog/include/*
+	mbus_addr_rf.v \
+	mbus_ctrl.v \
+	mbus_ctrl_layer_wrapper.v \
+	mbus_ctrl_wrapper.v \
+	mbus_ext_int.v \
+	mbus_layer_wrapper.v \
+	mbus_master_node.v \
+	mbus_master_sleep_ctrl.v \
+	mbus_node.v \
+	mbus_regular_isolation.v \
+	mbus_regular_sleep_ctrl.v \
+	mbus_swapper.v \
+	mbus_wire_ctrl.v \
+	include/*
 
 synth:
 	-cd syn; make synth
@@ -27,7 +27,7 @@ dve:
 	-cd verilog; make dve
 
 tar:	
-	tar -cvf ./tar/mbus_O2A_$(date_o).v.tar $(tar_o)
+	cd verilog && tar -cvf ../tar/mbus_O2A_$(date_o).v.tar $(tar_o)
 
 
 clean:

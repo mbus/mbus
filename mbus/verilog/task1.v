@@ -393,7 +393,7 @@ always @ (posedge clk or negedge resetn) begin
 			begin
 	   			if ((~n0_tx_ack) & (~n0_tx_req)) 
 				begin
-	      			n1_tx_addr <= {24'h0, 4'h5, 4'h3};
+	      			n0_tx_addr <= {24'h0, 4'h5, 4'h3};
 	      			n0_tx_data <= rand_dat;
 	      			n0_tx_pend <= 0;
 	      			n0_tx_req <= 1;
@@ -442,6 +442,25 @@ always @ (posedge clk or negedge resetn) begin
 				c0_tx_pend <= 0;
 				c0_priority <= 0;
 				state <= TX_WAIT;
+			end
+
+			// stuck on TX (too long messages)
+			TASK25:
+			begin
+	   			if ((~n2_tx_ack) & (~n2_tx_req)) 
+				begin
+	      			n2_tx_addr <= {24'h0, 4'h2, 4'h9};
+	      			n2_tx_data <= rand_dat;
+	      			n2_tx_req <= 1;
+   	      			$fdisplay(handle, "N1 Data in =\t32'h%h", rand_dat);
+		 			n2_tx_pend <= 1;
+	   			end
+	   			else if (n2_tx_fail) 
+				begin
+	      			state <= TX_WAIT;
+	      			n2_tx_req <= 0;
+		 			n2_tx_pend <= 0;
+	   			end
 			end
 		endcase
 	end

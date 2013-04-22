@@ -450,6 +450,13 @@ begin
     state = TASK23;
     @ (posedge n2_tx_succ | n2_tx_fail);
 
+    #100000;
+    $fdisplay(handle, "\nTASK25, N2 sends to N0.");
+    $fdisplay(handle, "Result: N2 TX Fail");
+    $fdisplay(handle, "Result: N0 RX Fail");
+    state = TASK25;
+    @ (posedge n2_tx_succ | n2_tx_fail);
+
     #300000;
     $display("*************************************");
     $display("************TASK1 Complete***********");

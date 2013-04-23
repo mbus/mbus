@@ -89,6 +89,12 @@ module tb_mbus();
    	wire 		  				w_n0n1, w_n1n2, w_n2n3, w_n3c0, w_c0n0;
    	wire 		  				w_n0_clk_out, w_n1_clk_out, w_n2_clk_out, w_n3_clk_out;
 
+	// for error injector
+	wire						w_clk_err, w_dat_err;
+	reg	[2:0]					err_type;
+	reg							err_start;
+	reg							err_clk;
+
 
 	// testbench variables
    	reg [31:0] 		  			rand_dat, rand_dat2;
@@ -154,8 +160,12 @@ mbus_layer_wrapper #(.ADDRESS(20'hbbbb2)) n2
 	  .LC_POWER_ON(n2_lc_pwr_on), .LC_RELEASE_CLK(n2_lc_release_clk), .LC_RELEASE_RST(n2_lc_release_rst), .LC_RELEASE_ISO(n2_lc_release_iso),
 	  .REQ_INT(n2_req_int));
 
+mbus_err_inject err0
+( 	.CLK_FAST(err_clk), .RESETn(resetn), .CLK_IN(w_n2_clk_out), .CLK_OUT(w_clk_err), .DIN(w_n2n3), .DOUT(w_dat_err), .ERR_TYPE(err_type), .inject_start(err_start));
+
 mbus_layer_wrapper #(.ADDRESS(20'hbbbb2)) n3
-     (.CLKIN(w_n2_clk_out), .CLKOUT(w_n3_clk_out), .RESETn(resetn), .DIN(w_n2n3), .DOUT(w_n3c0), 
+     //(.CLKIN(w_n2_clk_out), .CLKOUT(w_n3_clk_out), .RESETn(resetn), .DIN(w_n2n3), .DOUT(w_n3c0), 
+     (.CLKIN(w_clk_err), .CLKOUT(w_n3_clk_out), .RESETn(resetn), .DIN(w_dat_err), .DOUT(w_n3c0), 
       .TX_ADDR(n3_tx_addr), .TX_DATA(n3_tx_data), .TX_REQ(n3_tx_req), .TX_ACK(n3_tx_ack), .TX_PEND(n3_tx_pend), .PRIORITY(n3_priority),
       .RX_ADDR(n3_rx_addr), .RX_DATA(n3_rx_data), .RX_REQ(n3_rx_req), .RX_ACK(n3_rx_ack), .RX_FAIL(n3_rx_fail), .RX_PEND(n3_rx_pend),
       .TX_SUCC(n3_tx_succ), .TX_FAIL(n3_tx_fail), .TX_RESP_ACK(n3_tx_resp_ack), .RX_BROADCAST(n3_rx_broadcast),
@@ -171,6 +181,20 @@ mbus_ctrl_layer_wrapper #(.ADDRESS(20'haaaa0)) c0
 	  .REQ_INT(c0_req_int));
 
    initial begin
+
+    clk = 0;
+    resetn = 1;
+
+    @ (posedge clk);
+    @ (posedge clk);
+    @ (posedge clk);
+    `SD resetn = 0;
+    @ (posedge clk);
+    @ (posedge clk);
+    `SD resetn = 1;
+    @ (posedge clk);
+    @ (posedge clk);
+
       //VCD DUMP SECTION
 
 //`ifdef APR
@@ -208,6 +232,8 @@ mbus_ctrl_layer_wrapper #(.ADDRESS(20'haaaa0)) c0
 	task0();
 `elsif TASK1
 	task1();
+`elsif TASK2
+	task2();
 `else
       $display("**************************************");
       $display("************NO TASKS SUPPLIED*********");
@@ -221,11 +247,15 @@ end // initial begin
 //Changed to 400K for primetime calculations
 always #1250 clk = ~clk;
 
+always #50 err_clk = ~err_clk;
+
    
 `ifdef TASK0
 	`include "task0.v"
 `elsif TASK1
 	`include "task1.v"
+`elsif TASK2
+	`include "task2.v"
 `endif
 
 always @ (posedge n0_lc_pwr_on)
@@ -303,6 +333,8 @@ begin
 		c0_auto_rx_ack <= 1;
 		word_counter <= 0;
 
+		err_type <= 0;
+		err_start <= 0;
 	end
 	else
 	begin

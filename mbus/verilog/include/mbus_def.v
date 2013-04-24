@@ -50,7 +50,7 @@
 // Specific Layer Controller Definition
 // Register files
 `define LC_RF_DATA_WIDTH 32
-`define	LC_RF_NUM	32	// should be power of 2
+`define	LC_RF_NUM	32
 
 // Memory
 `define LC_MEM_ADDR_WIDTH 32
@@ -58,4 +58,6 @@
 
 // Sensors
 `define LC_SENSOR_DATA_WIDTH 32
-`define LC_SENSOR_NUM 8	// should be power of 2
+`define LC_SENSOR_NUM 8	
+
+// Commands for Layer controller

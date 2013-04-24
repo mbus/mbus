@@ -1,7 +1,5 @@
 
 `include "include/mbus_def.v"
-`include "include/mbus_func.v"
-`include "include/mbus_extra.v"
 
 module layer_ctrl(
 
@@ -32,9 +30,10 @@ module layer_ctrl(
 	// End of interface
 	
 	// Interface with Registers
-	input		[(`LC_RF_DATA_WIDTH<<(log2(`LC_RF_NUM-1)))-1:0] RF_IN,
-	output		[(`LC_RF_DATA_WIDTH<<(log2(`LC_RF_NUM-1)))-1:0] RF_OUT,
-	output		RF_LOAD,
+	input		[(`LC_RF_DATA_WIDTH*`LC_RF_NUM)-1:0] RF_IN,
+	output reg	RF_OUT,
+	output reg	[`LC_RF_NUM-1:0] RF_MSB_LOAD,
+	output reg	[`LC_RF_NUM-1:0] RF_LSB_LOAD,
 	// End of interface
 	
 	// Interface with MEM
@@ -47,7 +46,7 @@ module layer_ctrl(
 	// End of interface
 	
 	// Interface with Sensors
-	input		[(`LC_SENSOR_DATA_WIDTH<<(log2(`LC_SENSOR_NUM-1)))-1:0] SENSOR_DIN
+	input		[(`LC_SENSOR_DATA_WIDTH*`LC_SENSOR_NUM)-1:0] SENSOR_DIN
 	// End of interface
 );
 
@@ -74,9 +73,24 @@ reg		next_tx_resp_ack;
 
 // RF interface
 wire	[`LC_RF_DATA_WIDTH-1:0] rf_in_array [0:`LC_RF_NUM-1];
-`UNPACK_ARRAY(`LC_RF_DATA_WIDTH,`LC_RF_NUM,RF_IN,rf_in_array)
+genvar pk_idx; 
+genvar unpk_idx; 
+generate 
+	for (unpk_idx=0; unpk_idx<(`LC_RF_NUM); unpk_idx=unpk_idx+1)
+	begin: UNPACK
+		assign rf_in_array[unpk_idx][((`LC_RF_DATA_WIDTH)-1):0] = RF_IN[((`LC_RF_DATA_WIDTH)*(unpk_idx+1)-1):((`LC_RF_DATA_WIDTH)*unpk_idx)]; 
+	end
+endgenerate
+reg		[`LC_RF_NUM-1:0] next_rf_msb_load, next_rf_lsb_load;
+/*
 wire	[`LC_RF_DATA_WIDTH-1:0] rf_out_array [0:`LC_RF_NUM-1];
-`PACK_ARRAY(`LC_RF_DATA_WIDTH,`LC_RF_NUM,rf_out_array,RF_OUT)
+generate 
+	for (pk_idx=0; pk_idx<(`LC_RF_NUM); pk_idx=pk_idx+1)
+	begin: PACK
+		assign RF_OUT[((`LC_RF_DATA_WIDTH)*(pk_idx+1)-1):((`LC_RF_DATA_WIDTH)*pk_idx)] = rf_out_array[pk_idx][((`LC_RF_DATA_WIDTH)-1):0]; 
+	end
+endgenerate
+*/
 
 // Mem interface
 reg		mem_write, next_mem_write, mem_read, next_mem_read;
@@ -85,7 +99,12 @@ assign	MEM_WRITE = mem_write;
 
 // Sensor interface
 wire	[`LC_SENSOR_DATA_WIDTH-1:0] sensor_din_array [0:`LC_SENSOR_NUM-1];
-`UNPACK_ARRAY(`LC_SENSOR_DATA_WIDTH,`LC_SENSOR_NUM,SENSOR_DIN,sensor_din_array)
+generate 
+	for (unpk_idx=0; unpk_idx<(`LC_SENSOR_NUM); unpk_idx=unpk_idx+1)
+	begin: S_UNPACK
+		assign sensor_din_array[unpk_idx][((`LC_SENSOR_DATA_WIDTH)-1):0] = SENSOR_DIN[((`LC_SENSOR_DATA_WIDTH)*(unpk_idx+1)-1):((`LC_SENSOR_DATA_WIDTH)*unpk_idx)]; 
+	end
+endgenerate
 
 always @ (posedge CLK or negedge resetn_local)
 begin
@@ -95,6 +114,7 @@ begin
 		lc_state <= LC_STATE_IDLE;
 		rx_pend_reg <= 0;
 		rx_func_id <= 0;
+		// rx buffers
 		rx_dat_buffer[0] <= 0;
 		rx_dat_buffer[1] <= 0;
 		rx_dat_buffer[2] <= 0;
@@ -107,7 +127,9 @@ begin
 		PRIORITY<= 0;
 		RX_ACK	<= 0;
 		TX_RESP_ACK <= 0;
-		// End of MBus interface
+		// Register file interface
+		RF_MSB_LOAD <= 0;
+		RF_LSB_LOAD <= 0;
 	end
 	else
 	begin
@@ -115,6 +137,7 @@ begin
 		lc_state <= next_lc_state;
 		rx_pend_reg <= next_rx_pend_reg;
 		rx_func_id <= next_rx_func_id;
+		// rx buffers
 		rx_dat_buffer[0] <= next_rx_dat_buffer[0];
 		rx_dat_buffer[1] <= next_rx_dat_buffer[1];
 		rx_dat_buffer[2] <= next_rx_dat_buffer[2];
@@ -127,15 +150,19 @@ begin
 		PRIORITY<= next_priority;
 		RX_ACK	<= next_rx_ack;
 		TX_RESP_ACK <= next_tx_resp_ack;
-		// End of MBus interface
+		// Register file interface
+		RF_MSB_LOAD <= next_rf_msb_load;
+		RF_LSB_LOAD <= next_rf_lsb_load;
 	end
 end
 
 always @ *
 begin
 	// General registers
-	next_lc_state = lc_state;
+	next_lc_state 	= lc_state;
 	next_rx_pend_reg= rx_pend_reg;
+	next_rx_func_id = rx_func_id;
+	// rx buffers
 	next_rx_dat_buffer[0] = rx_dat_buffer[0];
 	next_rx_dat_buffer[1] = rx_dat_buffer[1];
 	next_rx_dat_buffer[2] = rx_dat_buffer[2];
@@ -148,6 +175,9 @@ begin
 	next_priority 	= PRIORITY;
 	next_rx_ack		= RX_ACK;
 	next_tx_resp_ack= TX_RESP_ACK;
+	// RF registers
+	next_rf_msb_load = 0;
+	next_rf_lsb_load = 0;
 
 	// Asynchronized interface
 	if ((~(RX_REQ | RX_FAIL)) & RX_ACK)
@@ -168,7 +198,15 @@ begin
 			begin
 				next_rx_dat_buffer[0] = RX_DATA;
 				next_rx_pend_reg = RX_PEND;
+				next_rx_func_id = RX_ADDR[`FUNC_WIDTH-1:0];
+				next_lc_state = LC_STATE_PROC;
 			end
+		end
+
+		LC_STATE_PROC:
+		begin
+			case (rx_func_id)
+			endcase
 		end
 	endcase
 end

@@ -1,5 +1,7 @@
 
 `include "include/mbus_def.v"
+`include "include/mbus_func.v"
+`include "include/mbus_extra.v"
 
 module layer_ctrl(
 
@@ -26,16 +28,26 @@ module layer_ctrl(
 	input		TX_SUCC, 
 	output reg	TX_RESP_ACK,
 
-	input 		RELEASE_RST_FROM_MBUS
+	input 		RELEASE_RST_FROM_MBUS,
 	// End of interface
 	
 	// Interface with Registers
+	input		[(`LC_RF_DATA_WIDTH<<(log2(`LC_RF_NUM-1)))-1:0] RF_IN,
+	output		[(`LC_RF_DATA_WIDTH<<(log2(`LC_RF_NUM-1)))-1:0] RF_OUT,
+	output		RF_LOAD,
 	// End of interface
 	
 	// Interface with MEM
+	output 		MEM_REQ_OUT,
+	output 		MEM_WRITE,
+	input		MEM_ACK_IN,
+	output reg	[`LC_MEM_DATA_WIDTH-1:0] MEM_DATA_OUT,
+	output reg	[`LC_MEM_ADDR_WIDTH-1:0] MEM_ADDR_OUT,
+	input		[`LC_MEM_DATA_WIDTH-1:0] MEM_DATA_IN,
 	// End of interface
 	
 	// Interface with Sensors
+	input		[(`LC_SENSOR_DATA_WIDTH<<(log2(`LC_SENSOR_NUM-1)))-1:0] SENSOR_DIN
 	// End of interface
 );
 
@@ -59,6 +71,21 @@ reg		next_tx_req;
 reg		next_priority;
 reg		next_rx_ack;
 reg		next_tx_resp_ack;
+
+// RF interface
+wire	[`LC_RF_DATA_WIDTH-1:0] rf_in_array [0:`LC_RF_NUM-1];
+`UNPACK_ARRAY(`LC_RF_DATA_WIDTH,`LC_RF_NUM,RF_IN,rf_in_array)
+wire	[`LC_RF_DATA_WIDTH-1:0] rf_out_array [0:`LC_RF_NUM-1];
+`PACK_ARRAY(`LC_RF_DATA_WIDTH,`LC_RF_NUM,rf_out_array,RF_OUT)
+
+// Mem interface
+reg		mem_write, next_mem_write, mem_read, next_mem_read;
+assign	MEM_REQ_OUT = (mem_write | mem_read);
+assign	MEM_WRITE = mem_write;
+
+// Sensor interface
+wire	[`LC_SENSOR_DATA_WIDTH-1:0] sensor_din_array [0:`LC_SENSOR_NUM-1];
+`UNPACK_ARRAY(`LC_SENSOR_DATA_WIDTH,`LC_SENSOR_NUM,SENSOR_DIN,sensor_din_array)
 
 always @ (posedge CLK or negedge resetn_local)
 begin

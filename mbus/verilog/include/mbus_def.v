@@ -47,3 +47,15 @@
 `define CMD_CHANNEL_POWER_SEL_WAKE			4'h3
 `define CMD_CHANNEL_POWER_SEL_SLEEP_FULL	4'h4
 
+// Specific Layer Controller Definition
+// Register files
+`define LC_RF_DATA_WIDTH 32
+`define	LC_RF_NUM	32	// should be power of 2
+
+// Memory
+`define LC_MEM_ADDR_WIDTH 32
+`define LC_MEM_DATA_WIDTH 32
+
+// Sensors
+`define LC_SENSOR_DATA_WIDTH 32
+`define LC_SENSOR_NUM 8	// should be power of 2

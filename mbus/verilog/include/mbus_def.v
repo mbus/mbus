@@ -49,8 +49,9 @@
 
 // Specific Layer Controller Definition
 // Register files
-`define LC_RF_DATA_WIDTH 32
-`define	LC_RF_NUM	32
+`define LC_RF_DATA_WIDTH 24
+`define LC_RF_ADDR_WIDTH (`DATA_WIDTH-`LC_RF_DATA_WIDTH)
+`define	LC_RF_NUM		256	// 0 ~ 2^`LC_RF_ADDR_WIDTH
 
 // Memory
 `define LC_MEM_ADDR_WIDTH 32
@@ -61,6 +62,9 @@
 `define LC_SENSOR_NUM 8	
 
 // Commands for Layer controller, the width should match `FUNC_WIDTH
-`define LC_CMD_LOAD_SHORT	4'h1
-`define LC_CMD_LOAD_IMMED	4'h2
-`define LC_CMD_LOAD_STRIDE	4'h3
+`define LC_CMD_RF_READ		4'h0
+`define LC_CMD_RF_WRITE		4'h1
+`define LC_CMD_MEM_READ		4'h2
+`define LC_CMD_MEM_WRITE	4'h3
+`define LC_CMD_MEM_DMA_READ	4'h4
+`define	LC_CMD_MEM_DMA_WRITE 4'h5

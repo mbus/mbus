@@ -48,6 +48,8 @@
  * 			at this point.
  * --------------------------------------------------------------------------
  * Update log:
+ * 4/24 '13
+ * change RX_REQ, RX_FAIL and RX_PEND by asynchronize reset from RX_ACK
  * 4/16 '13
  * fixed reset state for control node, since control node has different sleep
  * controller, it resets bus controller before clk chain ticks. Thus, it
@@ -449,6 +451,24 @@ begin
 	end
 end
 
+wire RX_ACK_RSTn = RESETn_local & (~RX_ACK);
+
+always @ (posedge CLKIN or negedge RX_ACK_RSTn)
+begin
+	if (~RX_ACK_RSTn)
+	begin
+		RX_REQ <= 0;
+		RX_PEND <= 0;
+		RX_FAIL <= 0;
+	end
+	else if (~BUS_INT)
+	begin
+		RX_REQ <= next_rx_req;
+		RX_PEND <= next_rx_pend;
+		RX_FAIL <= next_rx_fail;
+	end
+end
+
 
 always @ (posedge CLKIN or negedge RESETn_local)
 begin
@@ -471,9 +491,6 @@ begin
 		rx_data_buf <= 0;
 		// Interface registers
 		TX_ACK <= 0;
-		RX_REQ <= 0;
-		RX_PEND <= 0;
-		RX_FAIL <= 0;
 		`ifdef POWER_GATING
 		// power gated related signal
 		shutdown <= 0;
@@ -495,9 +512,6 @@ begin
 			// Receiver register
 			RX_ADDR <= next_rx_addr;
 			RX_DATA <= next_rx_data;
-			RX_REQ <= next_rx_req;
-			RX_PEND <= next_rx_pend;
-			RX_FAIL <= next_rx_fail;
 		end
 		req_interrupt <= next_req_interrupt;
 		out_reg_pos <= next_out_reg_pos;
@@ -560,17 +574,6 @@ begin
 	// Asynchronous interface
 	if (TX_ACK & (~TX_REQ))
 		next_tx_ack = 0;
-	
-	if (RX_REQ & RX_ACK)
-	begin
-		next_rx_req = 0;
-		next_rx_pend = 0;
-	end
-
-	if (RX_FAIL & RX_ACK)
-	begin
-		next_rx_fail = 0;
-	end
 
 	`ifdef POWER_GATING
 	// power gating signals

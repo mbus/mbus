@@ -60,4 +60,7 @@
 `define LC_SENSOR_DATA_WIDTH 32
 `define LC_SENSOR_NUM 8	
 
-// Commands for Layer controller
+// Commands for Layer controller, the width should match `FUNC_WIDTH
+`define LC_CMD_LOAD_SHORT	4'h1
+`define LC_CMD_LOAD_IMMED	4'h2
+`define LC_CMD_LOAD_STRIDE	4'h3

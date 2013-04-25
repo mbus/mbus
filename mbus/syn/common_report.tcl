@@ -1,6 +1,5 @@
 # Generate report file
 set maxpaths 20
-set rpt_file "${current_design}.dc.rpt"
 
 check_design > $rpt_file
 #Ungroup Hierarchy and report area & cell

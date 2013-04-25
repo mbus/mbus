@@ -4,22 +4,22 @@
 source -verbose "common.tcl"
 
 # Set top level name
-set top_level "ulpb_node32"
+set top_level "mbus_node"
 
 # Read verilog files
-read_verilog "../verilog/ulpb_node32.v ../verilog/ulpb_swapper.v"
-analyze -format verilog "../verilog/ulpb_node32.v ../verilog/ulpb_swapper.v"
-elaborate $top_level -param "ADDRESS=8'hef"
-#current_design $top_level
+read_verilog "../verilog/mbus_node.v ../verilog/mbus_swapper.v"
+analyze -format verilog "../verilog/mbus_node.v ../verilog/mbus_swapper.v"
+elaborate $top_level -param "ADDRESS=20'hbbbb1"
+current_design $top_level
 
 list_designs
 
 # Read timing constrints
 # Set clock names, ports
-source -verbose "ulpb_node_timing.tcl"
+source -verbose "mbus_node_timing.tcl"
 
 # Read common settings
-source -verbose "ulpb_node_common_settings.tcl"
+source -verbose "mbus_node_common_settings.tcl"
 
 # Synthesize the design
 #compile -map_effort medium
@@ -31,14 +31,15 @@ compile_ultra
 source -verbose "namingrules.tcl"
 
 # Generate structural verilog netlist
-write -hierarchy -format verilog -output "${current_design}.nl.v"
+write -hierarchy -format verilog -output "${top_level}_n1.nl.v"
 
 # Generate Standard Delay Format (SDF) file
-write_sdf -context verilog "${current_design}.pt.sdf"
+write_sdf -context verilog "${top_level}_n1.pt.sdf"
 #Write SDC file
-write_sdc "${current_design}.sdc"
+write_sdc "${top_level}_n1.sdc"
 
 #Reporting
+set rpt_file "${top_level}_n1.dc.rpt"
 source -verbose "common_report.tcl"
 
 #Exit dc_shell

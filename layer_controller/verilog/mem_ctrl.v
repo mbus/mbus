@@ -17,27 +17,29 @@ module mem_ctrl(
 
 parameter MEM_DEPTH = 65536;
 
-wire	[log2(MEM_DEPTH-1)-1:0] addr_qeual = ADDR[log2(MEM_DEPTH-1)-1:0];
+wire	[log2(MEM_DEPTH-1)-1:0] addr_equal = ADDR[log2(MEM_DEPTH-1)-1:0];
 
 reg	 [`LC_MEM_DATA_WIDTH-1:0] mem_array [0:MEM_DEPTH-1];
-genvar idx; 
 reg	[1:0] fsm;
 
 parameter IDLE = 2'b00;
 parameter CLEAR = 2'b01;
-parameter MEM_WRITE = 2'b10;
-parameter MEM_READ = 2'b11;
+parameter WRITE = 2'b10;
+parameter READ = 2'b11;
+
+integer idx; 
+initial
+begin
+	for (idx=0; idx<(MEM_DEPTH); idx=idx+1)
+	begin
+		mem_array[idx] <= 0;
+	end
+end
 
 always @ (posedge CLK or negedge RESETn)
 begin
 	if (~RESETn)
 	begin
-		generate 
-			for (idx=0; idx<(MEM_DEPTH); idx=idx+1)
-			begin: RESET
-				mem_array[idx] <= 0;
-			end
-		endgenerate
 		fsm <= IDLE;
 		MEM_ACK_OUT <= 0;
 		DATA_OUT <= 0;
@@ -47,23 +49,23 @@ begin
 		case (fsm)
 			IDLE:
 			begin
-				if ((MEM_REQ) && (ADDR<MEM_DPETH))
+				if ((MEM_REQ) && (ADDR<MEM_DEPTH))
 				begin
 					if (MEM_WRITE)
-						fsm <= MEM_WRITE;
+						fsm <= WRITE;
 					else
-						fsm <= MEM_READ;
+						fsm <= READ;
 				end
 			end
 
-			MEM_WRITE:
+			WRITE:
 			begin
 				mem_array[addr_equal] <= DATA_IN;
 				MEM_ACK_OUT <= 1;
 				fsm <= CLEAR;
 			end
 
-			MEM_READ:
+			READ:
 			begin
 				DATA_OUT <= mem_array[addr_equal];
 				MEM_ACK_OUT <= 1;

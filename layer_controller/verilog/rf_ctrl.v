@@ -12,9 +12,9 @@ module rf_ctrl(
 	output 	[`LC_RF_DATA_WIDTH*`RF_DEPTH-1:0]  DOUT
 );
 
-reg	[`LC_RF_DATA_WIDTH-1:0] rf_array [0:RF_DEPTH-1];
+reg	[`LC_RF_DATA_WIDTH-1:0] rf_array [0:`RF_DEPTH-1];
 
-genvar idx
+genvar idx;
 generate 
 
 	for (idx=0; idx<(`RF_DEPTH); idx=idx+1)

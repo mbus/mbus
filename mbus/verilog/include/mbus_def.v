@@ -31,6 +31,7 @@
 `define CHANNEL_ENUM	4'h0
 `define CHANNEL_POWER 	4'h1
 `define CHANNEL_CTRL	4'h2
+`define CHANNEL_MEMBER_EVENT 4'h3
 
 // Broadcast commands, the width should be consistant with `BROADCAST_CMD_WIDTH
 // Commands for CHANNEL_ENUM

@@ -51,11 +51,12 @@
 // Register files
 `define LC_RF_DATA_WIDTH 24
 `define LC_RF_ADDR_WIDTH (`DATA_WIDTH-`LC_RF_DATA_WIDTH)
-`define	LC_RF_NUM		256	// 0 ~ 2^`LC_RF_ADDR_WIDTH
+`define	LC_RF_DEPTH		256	// 0 ~ 2^`LC_RF_ADDR_WIDTH
 
 // Memory
 `define LC_MEM_ADDR_WIDTH 32	// should ALWAYS less than DATA_WIDTH
 `define LC_MEM_DATA_WIDTH 32	// should ALWAYS less than DATA_WIDTH
+`define LC_MEM_DEPTH	65536
 
 // Sensors
 `define LC_SENSOR_DATA_WIDTH 32

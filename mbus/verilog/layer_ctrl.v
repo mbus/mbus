@@ -39,9 +39,9 @@ module layer_ctrl(
 	output 		MEM_REQ_OUT,
 	output 		MEM_WRITE,
 	input		MEM_ACK_IN,
-	output reg	[`LC_MEM_DATA_WIDTH-1:0] MEM_DATA_OUT,
-	output reg	[`LC_MEM_ADDR_WIDTH-1:0] MEM_ADDR_OUT,
-	input		[`LC_MEM_DATA_WIDTH-1:0] MEM_DATA_IN,
+	output reg	[`LC_MEM_DATA_WIDTH-1:0] MEM_DOUT,
+	input		[`LC_MEM_DATA_WIDTH-1:0] MEM_DIN,
+	output reg	[`LC_MEM_ADDR_WIDTH-1:0] MEM_AOUT,
 	// End of interface
 	
 	// Interrupt
@@ -59,7 +59,7 @@ parameter LC_STATE_IDLE = 0;
 reg		[2:0]	lc_state, next_lc_state;
 reg		rx_pend_reg, next_rx_pend_reg;
 reg		[`FUNC_WIDTH-1:0] 	rx_func_id, next_rx_func_id;
-reg		[`DATA_WIDTH-1:0] 	rx_dat_buffer, next_rx_dat_buffer;
+reg		[`DATA_WIDTH-1:0] 	rx_dat_buffer, next_rx_dat_buffer, rx_dat_buffer2, next_rx_dat_buffer2;
 
 // Interrupt register
 reg		next_clr_int;
@@ -94,6 +94,8 @@ wire	[log2(`LC_RF_NUM-1)-1:0] rf_in_idx = rx_dat_buffer[(`LC_RF_DATA_WIDTH+log2(
 reg		mem_write, next_mem_write, mem_read, next_mem_read;
 assign	MEM_REQ_OUT = (mem_write | mem_read);
 assign	MEM_WRITE = mem_write;
+reg		[`LC_MEM_ADDR_WIDTH-1:0] next_mem_aout;
+reg		[`LC_MEM_DATA_WIDTH-1:0] next_mem_dout;
 
 always @ (posedge CLK or negedge RESETn_local)
 begin
@@ -105,6 +107,7 @@ begin
 		rx_func_id <= 0;
 		// rx buffers
 		rx_dat_buffer <= 0;
+		rx_dat_buffer2 <= 0;
 		// MBus interface
 		TX_ADDR <= 0;
 		TX_DATA <= 0;
@@ -116,6 +119,8 @@ begin
 		// Register file interface
 		RF_LOAD <= 0;
 		RF_DOUT <= 0;
+		// Memory interface
+		MEM_AOUT <= 0;
 		// Interrupt interface
 		CLR_INT <= 0;
 	end
@@ -127,6 +132,7 @@ begin
 		rx_func_id <= next_rx_func_id;
 		// rx buffers
 		rx_dat_buffer <= next_rx_dat_buffer;
+		rx_dat_buffer2 <= next_rx_dat_buffer2;
 		// MBus interface
 		TX_ADDR <= next_tx_addr;
 		TX_DATA <= next_tx_data;
@@ -138,6 +144,8 @@ begin
 		// Register file interface
 		RF_LOAD <= next_rf_load;
 		RF_DOUT <= next_rf_dout;
+		// Memory interface
+		MEM_AOUT <= next_mem_aout;
 		// Interrupt interface
 		CLR_INT <= next_clr_int;
 	end
@@ -151,6 +159,7 @@ begin
 	next_rx_func_id = rx_func_id;
 	// rx buffers
 	next_rx_dat_buffer = rx_dat_buffer;
+	next_rx_dat_buffer2 = rx_dat_buffer2;
 	// MBus registers
 	next_tx_addr 	= TX_ADDR;
 	next_tx_data 	= TX_DATA;
@@ -162,6 +171,9 @@ begin
 	// RF registers
 	next_rf_load 	= 0;
 	next_rf_dout 	= RF_DOUT;
+	// MEM registers
+	next_mem_aout	= MEM_AOUT;
+	next_mem_dout	= MEM_DOUT;
 	// Interrupt registers
 	next_clk_int = CLR_INT;
 
@@ -234,6 +246,12 @@ begin
 
 				`LC_CMD_MEM_WRITE:
 				begin
+					case (mem_substate)
+						0:
+						begin
+							next_mem_aout = rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:0];
+						end
+					endcase
 				end
 
 				`LC_CMD_MEM_DMA_READ:

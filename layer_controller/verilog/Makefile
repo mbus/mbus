@@ -28,7 +28,9 @@ all:    simv
 
 TESTBENCH = tb_layer_ctrl.v
 SIMFILES = 	mem_ctrl.v \
-			layer_ctrl.v
+			rf_ctrl.v \
+			layer_ctrl.v \
+			layer_wrapper.v
 
 SYNFILES = 	../syn/mbus_node32_ab.nl.v \
 		../syn/mbus_node32_cd.nl.v \

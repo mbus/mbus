@@ -54,7 +54,7 @@ module layer_ctrl(
 
 wire	RESETn_local = (RESETn & (~RELEASE_RST_FROM_MBUS));
 
-parameter MAX_DMA_LANGTH = 16;
+parameter MAX_DMA_LENGTH = 16;
 
 parameter LC_STATE_IDLE 		= 4'd0;
 parameter LC_STATE_RF_READ 		= 4'd1;
@@ -98,7 +98,7 @@ endgenerate
 // End of generator
 reg		[`LC_RF_DEPTH-1:0] next_rf_load;
 wire	[`LC_RF_DEPTH-1:0] rf_load_temp = (1'b1<<(rx_dat_buffer[`DATA_WIDTH-1:`LC_RF_DATA_WIDTH]));
-reg		[`LC_RF_DATA_WIDTH-1] next_rf_dout;
+reg		[`LC_RF_DATA_WIDTH-1:0] next_rf_dout;
 // Watch out for aliasing, ex: LC_RF_DEPTH = 32 but CPU accessing register 33,
 // it will loop back to register 0
 wire	[log2(`LC_RF_DEPTH-1)-1:0] rf_in_idx = rx_dat_buffer[(`LC_RF_DATA_WIDTH+log2(`LC_RF_DEPTH-1)-1):`LC_RF_DATA_WIDTH];
@@ -110,7 +110,7 @@ assign	MEM_WRITE = mem_write;
 reg		[`LC_MEM_ADDR_WIDTH-1:0] next_mem_aout;
 reg		[`LC_MEM_DATA_WIDTH-1:0] next_mem_dout;
 
-wire MEM_ACK_RSTn = (RESETn_local & (~MEM_ACK_EN));
+wire MEM_ACK_RSTn = (RESETn_local & (~MEM_ACK_IN));
 always @ (posedge CLK or negedge MEM_ACK_RSTn)
 begin
 	if (~MEM_ACK_RSTn)
@@ -133,7 +133,6 @@ begin
 		lc_state <= LC_STATE_IDLE;
 		lc_return_state <= LC_STATE_IDLE;
 		rx_pend_reg <= 0;
-		rx_func_id <= 0;
 		mem_sub_state <= 0;
 		dma_counter <= 0;
 		// rx buffers
@@ -211,7 +210,7 @@ begin
 	next_mem_write	= mem_write;
 	next_mem_read	= mem_read;
 	// Interrupt registers
-	next_clk_int = CLR_INT;
+	next_clr_int = CLR_INT;
 
 	// Asynchronized interface
 	if ((~(RX_REQ | RX_FAIL)) & RX_ACK)
@@ -236,6 +235,7 @@ begin
 				next_clr_int = 1;
 			end
 			else
+			begin
 				if (RX_REQ | RX_FAIL)
 				begin
 					next_rx_ack = 1;
@@ -263,7 +263,7 @@ begin
 			if ((rx_dat_buffer[`DATA_WIDTH-1:`LC_RF_DATA_WIDTH]) < `LC_RF_DEPTH)
 			begin // RF doesn't support read stride
 				next_tx_data = {{(`LC_RF_ADDR_WIDTH){1'b0}}, rf_in_array[rf_in_idx]};
-				next_tx_addr = {(`ADDR_WIDTH-`FUNC_WIDTH){1'b0}, `CHANNEL_MEMBER_EVENT};
+				next_tx_addr = {{(`ADDR_WIDTH-`FUNC_WIDTH){1'b0}}, `CHANNEL_MEMBER_EVENT};
 				next_tx_req = 1;
 				next_tx_pend = 0;
 				next_lc_state = LC_STATE_BUS_TX;
@@ -285,7 +285,6 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					next_rx_data = 0;
 					if ((~rx_pend_reg)&&(rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:0] < `LC_MEM_DEPTH))
 					begin
 						next_mem_aout = rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:0];
@@ -305,7 +304,7 @@ begin
 					if (MEM_ACK_IN)
 					begin
 						next_tx_data[`LC_MEM_DATA_WIDTH-1:0] = MEM_DIN;
-						next_tx_addr = {(`ADDR_WIDTH-`FUNC_WIDTH){1'b0}, `CHANNEL_MEMBER_EVENT};
+						next_tx_addr = {{(`ADDR_WIDTH-`FUNC_WIDTH){1'b0}}, `CHANNEL_MEMBER_EVENT};
 						next_tx_req = 1;
 						next_tx_pend = 0;
 						next_lc_state = LC_STATE_BUS_TX;
@@ -403,7 +402,7 @@ begin
 							next_tx_pend = 1;
 						else
 							next_tx_pend = 0;
-						next_tx_addr = ?
+						next_tx_addr = {{(`ADDR_WIDTH-`FUNC_WIDTH){1'b0}}, `CHANNEL_MEMBER_EVENT};
 						next_tx_data[`LC_MEM_DATA_WIDTH-1:0] = MEM_DIN;
 						next_lc_state = LC_STATE_BUS_TX;
 						next_lc_return_state = LC_STATE_MEM_DMA_READ;
@@ -466,7 +465,7 @@ begin
 					// write complete
 					if (MEM_ACK_IN)
 					begin
-						if (rx_pend_reg)&&(MAM_AOUT < (`LC_MEM_DEPTH-1'b1))
+						if ((rx_pend_reg)&&(MEM_AOUT<(`LC_MEM_DEPTH-1'b1)))
 						begin
 							next_mem_aout = MEM_AOUT + 1'b1;
 							next_mem_sub_state = 1;
@@ -501,7 +500,7 @@ begin
 		LC_STATE_INT:
 		begin
 			next_tx_data = {4'h0, SHORT_ADDR, 24'hff_ffff};
-			next_tx_addr = {(`ADDR_WIDTH-`FUNC_WIDTH){1'b0}, `CHANNEL_MEMBER_EVENT};
+			next_tx_addr = {{(`ADDR_WIDTH-`FUNC_WIDTH){1'b0}}, `CHANNEL_MEMBER_EVENT};
 			next_tx_req = 1;
 			next_tx_pend = 0;
 			next_lc_state = LC_STATE_BUS_TX;

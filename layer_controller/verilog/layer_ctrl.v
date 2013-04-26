@@ -82,7 +82,7 @@ genvar unpk_idx;
 generate 
 	for (unpk_idx=0; unpk_idx<(`LC_RF_DEPTH); unpk_idx=unpk_idx+1)
 	begin: UNPACK
-		assign rf_in_array[unpk_idx][((`LC_RF_DATA_WIDTH)-1):0] = RF_DIN[((`LC_RF_DATA_WIDTH)*(unpk_idx+1)-1):((`LC_RF_DATA_WIDTH)*unpk_idx)]; 
+		assign rf_in_array[unpk_idx] = RF_DIN[((`LC_RF_DATA_WIDTH)*(unpk_idx+1)-1):((`LC_RF_DATA_WIDTH)*unpk_idx)]; 
 	end
 endgenerate
 // End of generator

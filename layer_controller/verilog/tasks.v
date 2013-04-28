@@ -53,28 +53,12 @@ begin
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
     #100000;
-    $fdisplay(handle, "\nTASK7, write to RF address 1");
+    $fdisplay(handle, "\nTASK7, write to RF address 1-4");
 	rf_addr = 1;
     state = TASK7;
+	word_counter = 3;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-
-    #100000;
-    $fdisplay(handle, "\nTASK7, write to RF address 2");
-	rf_addr = 2;
-    state = TASK7;
-	@ (posedge c0_tx_succ|c0_tx_fail);
-
-    #100000;
-    $fdisplay(handle, "\nTASK7, write to RF address 3");
-	rf_addr = 3;
-    state = TASK7;
-	@ (posedge c0_tx_succ|c0_tx_fail);
-
-    #100000;
-    $fdisplay(handle, "\nTASK7, write to RF address 4");
-	rf_addr = 4;
-    state = TASK7;
-	@ (posedge c0_tx_succ|c0_tx_fail);
+	word_counter = 0;
 
     #100000;
     $fdisplay(handle, "\nTASK7, write to RF address 130 (ROM, not writable)");
@@ -91,36 +75,13 @@ begin
    	$fdisplay(handle, "RF Addr: 8'h%h,\tData: 24'h%h", rf_addr, (c0_rx_data & 32'h00ff_ffff));
 
     #100000;
-    $fdisplay(handle, "\nTASK8, read from RF address 1");
+    $fdisplay(handle, "\nTASK8, read from RF address 1-4");
 	rf_addr = 1;
+	word_counter = 3;	// 3 + 1 = 4
     state = TASK8;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge c0_rx_req|c0_rx_fail);
-   	$fdisplay(handle, "RF Addr: 8'h%h,\tData: 24'h%h", rf_addr, (c0_rx_data & 32'h00ff_ffff));
-
-    #100000;
-    $fdisplay(handle, "\nTASK8, read from RF address 2");
-	rf_addr = 2;
-    state = TASK8;
-	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge c0_rx_req|c0_rx_fail);
-   	$fdisplay(handle, "RF Addr: 8'h%h,\tData: 24'h%h", rf_addr, (c0_rx_data & 32'h00ff_ffff));
-
-    #100000;
-    $fdisplay(handle, "\nTASK8, read from RF address 3");
-	rf_addr = 3;
-    state = TASK8;
-	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge c0_rx_req|c0_rx_fail);
-   	$fdisplay(handle, "RF Addr: 8'h%h,\tData: 24'h%h", rf_addr, (c0_rx_data & 32'h00ff_ffff));
-
-    #100000;
-    $fdisplay(handle, "\nTASK8, read from RF address 4");
-	rf_addr = 4;
-    state = TASK8;
-	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge c0_rx_req|c0_rx_fail);
-   	$fdisplay(handle, "RF Addr: 8'h%h,\tData: 24'h%h", rf_addr, (c0_rx_data & 32'h00ff_ffff));
+	@ (posedge n1_tx_succ|n1_tx_fail);
+	word_counter = 0;
 
     #100000;
     $fdisplay(handle, "\nTASK8, read from RF address 130 (ROM)");
@@ -143,7 +104,8 @@ begin
     state = TASK10;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge c0_rx_req|c0_rx_fail);
-   	$fdisplay(handle, "MEM Addr: 32'h%h,\tData: 24'h%h", mem_addr, c0_rx_data);
+   	$fdisplay(handle, "MEM Addr: 32'h%h,\tData: 32'h%h", mem_addr, c0_rx_data);
+	mem_ptr_set = 0;
 
     #100000;
     $fdisplay(handle, "\nTASK11, sleep N1");
@@ -170,7 +132,8 @@ begin
     state = TASK10;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge c0_rx_req|c0_rx_fail);
-   	$fdisplay(handle, "MEM Addr: 32'h%h,\tData: 24'h%h", mem_addr, c0_rx_data);
+   	$fdisplay(handle, "MEM Addr: 32'h%h,\tData: 32'h%h", mem_addr, c0_rx_data);
+	mem_ptr_set = 0;
 
     #100000;
     $fdisplay(handle, "\nTASK10, read from MEM address 2");
@@ -178,23 +141,26 @@ begin
     state = TASK10;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge c0_rx_req|c0_rx_fail);
-   	$fdisplay(handle, "MEM Addr: 32'h%h,\tData: 24'h%h", mem_addr, c0_rx_data);
-
-    #100000;
-    $fdisplay(handle, "\nTASK12, DMA write to MEM address 3");
-	mem_addr = 3;
-	word_counter = 15;
-    state = TASK12;
-	@ (posedge c0_tx_succ|c0_tx_fail);
+   	$fdisplay(handle, "MEM Addr: 32'h%h,\tData: 32'h%h", mem_addr, c0_rx_data);
 	mem_ptr_set = 0;
 
     #100000;
-    $fdisplay(handle, "\nTASK13, DMA read from MEM address 3");
+    $fdisplay(handle, "\nTASK12, DMA write 16-word to MEM address 3-18");
 	mem_addr = 3;
-	word_counter = 16;
-    state = TASK13;
+	word_counter = 15;
+    state = TASK9;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	word_counter = 0;
+	mem_ptr_set = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK13, DMA read 16-word from MEM address 3-18");
+	mem_addr = 3;
+	word_counter = 15;
+    state = TASK10;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge n1_tx_succ|n1_tx_fail);
+	word_counter = 0;
 	mem_ptr_set = 0;
 
     #100000;

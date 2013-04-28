@@ -82,20 +82,33 @@ always @ (posedge clk or negedge resetn) begin
 			// c0->n1, write RF
 			TASK7:
 			begin
-				c0_tx_addr <= {24'h0, 4'h3, `LC_CMD_RF_WRITE};
-				c0_tx_data <= ((rf_addr<<24) | (rand_dat & 32'h00ff_ffff));
-				c0_tx_pend <= 0;
-				c0_tx_req <= 1;
-				c0_priority <= 0;
-   	      		$fdisplay(handle, "Write RF Addr: 8'h%h,\tData: 24'h%h", rf_addr, (rand_dat & 32'h00ff_ffff));
-				state <= TX_WAIT;
+				if ((~c0_tx_ack) & (~c0_tx_req))
+				begin
+					c0_priority <= 0;
+					c0_tx_addr <= {24'h0, 4'h3, `LC_CMD_RF_WRITE};
+					c0_tx_req <= 1;
+					c0_tx_data <= ((rf_addr<<24) | (rand_dat & 32'h00ff_ffff));
+					if (word_counter)
+					begin
+						c0_tx_pend <= 1;
+						word_counter <= word_counter - 1;
+						rf_addr <= rf_addr + 1;
+   	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", rf_addr, (rand_dat&32'h00ffffff));
+					end
+					else
+					begin
+						c0_tx_pend <= 0;
+   	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", rf_addr, (rand_dat&32'h00ffffff));
+						state <= TX_WAIT;
+					end
+				end
 			end
 
 			// c0->n1, read RF
 			TASK8:
 			begin
 				c0_tx_addr <= {24'h0, 4'h3, `LC_CMD_RF_READ};
-				c0_tx_data <= (rf_addr<<24);
+				c0_tx_data <= (rf_addr<<24 | word_counter<<16);
 				c0_tx_pend <= 0;
 				c0_tx_req <= 1;
 				c0_priority <= 0;
@@ -109,52 +122,6 @@ always @ (posedge clk or negedge resetn) begin
 				begin
 					c0_priority <= 0;
 					c0_tx_addr <= {24'h0, 4'h3, `LC_CMD_MEM_WRITE};
-					c0_tx_req <= 1;
-					if (~mem_ptr_set)
-					begin
-						c0_tx_data <= mem_addr;
-						c0_tx_pend <= 1;
-						mem_ptr_set <= 1;
-					end
-					else
-					begin
-						c0_tx_data <= rand_dat;
-						c0_tx_pend <= 0;
-   	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", mem_addr, rand_dat);
-						state <= TX_WAIT;
-					end
-				end
-			end
-
-			// c0->n1, read MEM
-			TASK10:
-			begin
-				c0_tx_addr <= {24'h0, 4'h3, `LC_CMD_MEM_READ};
-				c0_tx_data <= mem_addr;
-				c0_tx_pend <= 0;
-				c0_tx_req <= 1;
-				c0_priority <= 0;
-				state <= TX_WAIT;
-			end
-
-			// Selective sleep N1 using full prefix
-			TASK11:
-			begin
-				c0_tx_addr <= {28'hf00000, `CHANNEL_POWER};
-				c0_tx_data <= {`CMD_CHANNEL_POWER_SEL_SLEEP_FULL, 4'h0, 20'hbbbb1, 4'h0};
-				c0_tx_req <= 1;
-				c0_tx_pend <= 0;
-				c0_priority <= 0;
-				state <= TX_WAIT;
-			end
-
-			// c0->n1, DMA write MEM
-			TASK12:
-			begin
-				if ((~c0_tx_ack) & (~c0_tx_req))
-				begin
-					c0_priority <= 0;
-					c0_tx_addr <= {24'h0, 4'h3, `LC_CMD_MEM_DMA_WRITE};
 					c0_tx_req <= 1;
 					if (~mem_ptr_set)
 					begin
@@ -179,18 +146,24 @@ always @ (posedge clk or negedge resetn) begin
 				end
 			end
 
-			// c0->n1, DMA read MEM
-			TASK13:
+			// c0->n1, read MEM
+			TASK10:
 			begin
 				if ((~c0_tx_ack) & (~c0_tx_req))
 				begin
 					c0_priority <= 0;
-					c0_tx_addr <= {24'h0, 4'h3, `LC_CMD_MEM_DMA_READ};
+					c0_tx_addr <= {24'h0, 4'h3, `LC_CMD_MEM_READ};
 					c0_tx_req <= 1;
 					if (~mem_ptr_set)
 					begin
 						c0_tx_data <= mem_addr;
-						c0_tx_pend <= 1;
+						if (word_counter)
+							c0_tx_pend <= 1;
+						else
+						begin
+							c0_tx_pend <= 0;
+							state <= TX_WAIT;
+						end
 						mem_ptr_set <= 1;
 					end
 					else
@@ -201,6 +174,17 @@ always @ (posedge clk or negedge resetn) begin
 					end
 				end
 			end
+			// Selective sleep N1 using full prefix
+			TASK11:
+			begin
+				c0_tx_addr <= {28'hf00000, `CHANNEL_POWER};
+				c0_tx_data <= {`CMD_CHANNEL_POWER_SEL_SLEEP_FULL, 4'h0, 20'hbbbb1, 4'h0};
+				c0_tx_req <= 1;
+				c0_tx_pend <= 0;
+				c0_priority <= 0;
+				state <= TX_WAIT;
+			end
+
 
 			// n1 assert ext_int
 			TASK14:

@@ -56,21 +56,19 @@ wire	RESETn_local = (RESETn & (~RELEASE_RST_FROM_MBUS));
 
 parameter MAX_DMA_LENGTH = 16;
 
-parameter LC_STATE_IDLE 		= 4'd0;
-parameter LC_STATE_RF_READ 		= 4'd1;
-parameter LC_STATE_RF_WRITE 	= 4'd2;
-parameter LC_STATE_MEM_READ 	= 4'd3;
-parameter LC_STATE_MEM_WRITE 	= 4'd4;
-parameter LC_STATE_MEM_DMA_READ	= 4'd5;
-parameter LC_STATE_MEM_DMA_WRITE= 4'd6;
-parameter LC_STATE_BUS_TX		= 4'd7;
-parameter LC_STATE_WAIT_CPL		= 4'd8;
-parameter LC_STATE_INT			= 4'd9;
+parameter LC_STATE_IDLE 		= 3'd0;
+parameter LC_STATE_RF_READ 		= 3'd1;
+parameter LC_STATE_RF_WRITE 	= 3'd2;
+parameter LC_STATE_MEM_READ 	= 3'd3;
+parameter LC_STATE_MEM_WRITE 	= 3'd4;
+parameter LC_STATE_BUS_TX		= 3'd5;
+parameter LC_STATE_WAIT_CPL		= 3'd6;
+parameter LC_STATE_INT			= 3'd7;
 
 // General registers
-reg		[3:0]	lc_state, next_lc_state, lc_return_state, next_lc_return_state;
+reg		[2:0]	lc_state, next_lc_state, lc_return_state, next_lc_return_state;
 reg		rx_pend_reg, next_rx_pend_reg;
-reg		[1:0]	mem_sub_state, next_mem_sub_state;
+reg		[2:0]	mem_sub_state, next_mem_sub_state;
 reg		[`DATA_WIDTH-1:0] 	rx_dat_buffer, next_rx_dat_buffer;
 reg		[MAX_DMA_LENGTH-1:0] dma_counter, next_dma_counter;
 
@@ -99,9 +97,10 @@ endgenerate
 reg		[`LC_RF_DEPTH-1:0] next_rf_load;
 wire	[`LC_RF_DEPTH-1:0] rf_load_temp = (1'b1<<(rx_dat_buffer[`DATA_WIDTH-1:`LC_RF_DATA_WIDTH]));
 reg		[`LC_RF_DATA_WIDTH-1:0] next_rf_dout;
+wire	[`LC_RF_ADDR_WIDTH-1:0] rf_dma_length = rx_dat_buffer[`LC_RF_DATA_WIDTH-1:`LC_RF_DATA_WIDTH-`LC_RF_ADDR_WIDTH];
 // Watch out for aliasing, ex: LC_RF_DEPTH = 32 but CPU accessing register 33,
-// it will loop back to register 0
-wire	[log2(`LC_RF_DEPTH-1)-1:0] rf_in_idx = rx_dat_buffer[(`LC_RF_DATA_WIDTH+log2(`LC_RF_DEPTH-1)-1):`LC_RF_DATA_WIDTH];
+wire	[log2(`LC_RF_DEPTH-1)-1:0] rf_idx_temp = rx_dat_buffer[(`LC_RF_DATA_WIDTH+log2(`LC_RF_DEPTH-1)-1):`LC_RF_DATA_WIDTH];
+reg		[log2(`LC_RF_DEPTH-1)-1:0] rf_idx, next_rf_idx;
 
 // Mem interface
 reg		mem_write, next_mem_write, mem_read, next_mem_read;
@@ -148,6 +147,7 @@ begin
 		// Register file interface
 		RF_LOAD <= 0;
 		RF_DOUT <= 0;
+		rf_idx <= 0;
 		// Memory interface
 		MEM_AOUT <= 0;
 		MEM_DOUT <= 0;
@@ -175,6 +175,7 @@ begin
 		// Register file interface
 		RF_LOAD <= next_rf_load;
 		RF_DOUT <= next_rf_dout;
+		rf_idx <= next_rf_idx;
 		// Memory interface
 		MEM_AOUT <= next_mem_aout;
 		MEM_DOUT <= next_mem_dout;
@@ -204,6 +205,7 @@ begin
 	// RF registers
 	next_rf_load 	= 0;
 	next_rf_dout 	= RF_DOUT;
+	next_rf_idx		= rf_idx;
 	// MEM registers
 	next_mem_aout	= MEM_AOUT;
 	next_mem_dout	= MEM_DOUT;
@@ -253,8 +255,6 @@ begin
 						`LC_CMD_RF_WRITE: begin next_lc_state = LC_STATE_RF_WRITE; end
 						`LC_CMD_MEM_READ: begin next_lc_state = LC_STATE_MEM_READ; end
 						`LC_CMD_MEM_WRITE: begin next_lc_state = LC_STATE_MEM_WRITE; end
-						`LC_CMD_MEM_DMA_READ: begin next_lc_state = LC_STATE_MEM_DMA_READ; end
-						`LC_CMD_MEM_DMA_WRITE: begin next_lc_state = LC_STATE_MEM_DMA_WRITE; end
 					endcase
 				end
 				next_mem_sub_state = 0;
@@ -263,24 +263,82 @@ begin
 
 		LC_STATE_RF_READ:
 		begin
-			if ((rx_dat_buffer[`DATA_WIDTH-1:`LC_RF_DATA_WIDTH]) < `LC_RF_DEPTH)
-			begin // RF doesn't support read stride
-				next_tx_data = {{(`LC_RF_ADDR_WIDTH){1'b0}}, rf_in_array[rf_in_idx]};
-				next_tx_addr = {{(`ADDR_WIDTH-`FUNC_WIDTH){1'b0}}, `CHANNEL_MEMBER_EVENT};
-				next_tx_req = 1;
-				next_tx_pend = 0;
-				next_lc_state = LC_STATE_BUS_TX;
-			end
-			else
-				next_lc_state = LC_STATE_IDLE;
+			case (mem_sub_state)
+				0:
+				begin
+					if ((rx_dat_buffer[`DATA_WIDTH-1:`LC_RF_DATA_WIDTH]) < `LC_RF_DEPTH)	// prevent aliasing
+					begin 
+						next_dma_counter = {{(MAX_DMA_LENGTH-`LC_RF_ADDR_WIDTH){1'b0}}, rf_dma_length};
+						next_rf_idx = rf_idx_temp;
+						next_mem_sub_state = 1;
+					end
+					else
+						next_lc_state = LC_STATE_IDLE;
+				end
+
+				1:
+				begin
+					next_tx_data = {{(`LC_RF_ADDR_WIDTH){1'b0}}, rf_in_array[rf_idx]};
+					next_tx_addr = {{(`ADDR_WIDTH-`FUNC_WIDTH){1'b0}}, `CHANNEL_MEMBER_EVENT};
+					next_tx_req = 1;
+					next_lc_state = LC_STATE_BUS_TX;
+					next_mem_sub_state = 2;
+					next_lc_return_state = LC_STATE_RF_READ;
+					if (dma_counter)
+						next_tx_pend = 1;
+					else
+						next_tx_pend = 0;
+				end
+
+				2:
+				begin
+					if (rf_idx < (`LC_RF_DEPTH-1'b1))
+					begin
+						next_rf_idx = rf_idx + 1'b1;
+						next_mem_sub_state = 1;
+						next_dma_counter = (dma_counter - 1'b1);
+					end
+					else
+						next_lc_state = LC_STATE_IDLE;
+				end
+			endcase
 		end
 
 		LC_STATE_RF_WRITE:
 		begin
-			// check address
-			next_rf_dout = rx_dat_buffer[`LC_RF_DATA_WIDTH-1:0];
-			next_rf_load = rf_load_temp;
-			next_lc_state = LC_STATE_IDLE;
+			case (mem_sub_state)
+				0:
+				begin
+					if ((rx_dat_buffer[`DATA_WIDTH-1:`LC_RF_DATA_WIDTH]) < `LC_RF_DEPTH)
+					begin
+						next_rf_dout = rx_dat_buffer[`LC_RF_DATA_WIDTH-1:0];
+						next_rf_load = rf_load_temp;
+						if (rx_pend_reg)
+							next_mem_sub_state = 1;
+						else
+							next_lc_state = LC_STATE_IDLE;
+					end
+					else
+						next_lc_state = LC_STATE_IDLE;
+				end
+
+				1:
+				begin
+					if (RX_REQ & (~RX_ACK))
+					begin
+						next_rx_ack = 1;
+						next_mem_sub_state = 0;
+						next_rx_dat_buffer = RX_DATA;
+						next_rx_pend_reg = RX_PEND;
+					end
+					else if ((RX_FAIL) & (~RX_ACK))
+					begin
+						next_rx_ack = 1;
+						next_lc_state = LC_STATE_IDLE;
+					end
+				end
+			endcase
+
 		end
 
 		LC_STATE_MEM_READ:
@@ -288,14 +346,14 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					if ((~rx_pend_reg)&&(rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:0] < `LC_MEM_DEPTH))
+					if ((rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:0] < `LC_MEM_DEPTH))
 					begin
 						next_mem_aout = rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:0];
-						if (~MEM_REQ_OUT)
-						begin
-							next_mem_read = 1;
+						next_dma_counter = 0;
+						if (rx_pend_reg)	// DMA access
 							next_mem_sub_state = 1;
-						end
+						else
+							next_mem_sub_state = 2;
 					end
 					else // Error handling
 						next_lc_state = LC_STATE_IDLE;
@@ -303,15 +361,59 @@ begin
 
 				1:
 				begin
-					// read complete
+					if (RX_REQ & (~RX_ACK))
+					begin
+						next_rx_ack = 1;
+						next_rx_pend_reg = RX_PEND;
+						next_mem_sub_state = 2;
+						next_dma_counter = RX_DATA[MAX_DMA_LENGTH-1:0];	
+					end
+					else if (RX_FAIL & (~RX_ACK))
+					begin
+						next_rx_ack = 1;
+						next_lc_state = LC_STATE_IDLE;
+					end
+				end
+
+				2:
+				begin
+					if (~MEM_REQ_OUT)
+					begin
+						next_mem_read = 1;
+						next_mem_sub_state = 3;
+					end
+				end
+
+				3:
+				begin
+					// Read complete
 					if (MEM_ACK_IN)
 					begin
-						next_tx_data[`LC_MEM_DATA_WIDTH-1:0] = MEM_DIN;
-						next_tx_addr = {{(`ADDR_WIDTH-`FUNC_WIDTH){1'b0}}, `CHANNEL_MEMBER_EVENT};
 						next_tx_req = 1;
-						next_tx_pend = 0;
+						next_tx_addr = {{(`ADDR_WIDTH-`FUNC_WIDTH){1'b0}}, `CHANNEL_MEMBER_EVENT};
+						next_tx_data[`LC_MEM_DATA_WIDTH-1:0] = MEM_DIN;
 						next_lc_state = LC_STATE_BUS_TX;
+						next_lc_return_state = LC_STATE_MEM_READ;
+						next_mem_sub_state = 4;
+						if (dma_counter)
+						begin
+							next_tx_pend = 1;
+							next_dma_counter = dma_counter - 1'b1;
+						end
+						else
+							next_tx_pend = 0;
 					end
+				end
+
+				4:	// increment address
+				begin
+					if (MEM_AOUT < (`LC_MEM_DEPTH-1'b1))
+					begin
+						next_mem_aout = MEM_AOUT + 1'b1;
+						next_mem_sub_state = 2;
+					end
+					else
+						next_lc_state = LC_STATE_IDLE;
 				end
 			endcase
 		end
@@ -324,14 +426,7 @@ begin
 					if ((rx_pend_reg)&&(rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:0] < `LC_MEM_DEPTH))
 					begin
 						next_mem_aout = rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:0];
-						if (RX_REQ & (~RX_ACK))
-						begin
-							next_rx_ack = 1;
-							next_mem_sub_state = 1;
-							next_rx_dat_buffer = RX_DATA;
-							next_mem_dout = RX_DATA[`LC_MEM_DATA_WIDTH-1:0];
-							next_rx_pend_reg = RX_PEND;
-						end
+						next_mem_sub_state = 1;
 					end
 					else // Error handling
 						next_lc_state = LC_STATE_IDLE;
@@ -339,118 +434,14 @@ begin
 
 				1:
 				begin
-					if (~rx_pend_reg)
+					if (RX_REQ & (~RX_ACK))
 					begin
-						if (~MEM_REQ_OUT)
-						begin
-							next_mem_write = 1;
-							next_mem_sub_state = 2;
-						end
-					end
-					else // Error handling
-						next_lc_state = LC_STATE_IDLE;
-				end
-
-				2:
-				begin
-					// write complete
-					if (MEM_ACK_IN)
-						next_lc_state = LC_STATE_IDLE;
-				end
-			endcase
-		end
-
-		LC_STATE_MEM_DMA_READ:
-		begin
-			case (mem_sub_state)
-				0:
-				begin
-					if ((rx_pend_reg)&&(rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:0] < `LC_MEM_DEPTH))
-					begin
-						next_mem_aout = rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:0];
-						if (RX_REQ & (~RX_ACK))
-						begin
-							next_rx_ack = 1;
-							next_rx_pend_reg = RX_PEND;
-							if (RX_DATA[MAX_DMA_LENGTH-1:0]>0)	// length cannot be 0
-							begin
-								next_mem_sub_state = 1;
-								next_dma_counter = RX_DATA[MAX_DMA_LENGTH-1:0];	
-							end
-							else
-								next_lc_state = LC_STATE_IDLE;
-						end
-					end
-					else // Error handling
-						next_lc_state = LC_STATE_IDLE;
-				end
-
-				1:
-				begin
-					if (~MEM_REQ_OUT)
-					begin
-						next_mem_read = 1;
+						next_rx_ack = 1;
 						next_mem_sub_state = 2;
-						next_dma_counter = dma_counter - 1'b1;
+						next_mem_dout = RX_DATA[`LC_MEM_DATA_WIDTH-1:0];
+						next_rx_pend_reg = RX_PEND;
 					end
-				end
-
-				2:
-				begin
-					// Read complete
-					if (MEM_ACK_IN)
-					begin
-						next_tx_req = 1;
-						if (dma_counter)
-							next_tx_pend = 1;
-						else
-							next_tx_pend = 0;
-						next_tx_addr = {{(`ADDR_WIDTH-`FUNC_WIDTH){1'b0}}, `CHANNEL_MEMBER_EVENT};
-						next_tx_data[`LC_MEM_DATA_WIDTH-1:0] = MEM_DIN;
-						next_lc_state = LC_STATE_BUS_TX;
-						next_lc_return_state = LC_STATE_MEM_DMA_READ;
-						next_mem_sub_state = 3;
-					end
-				end
-
-				3:	// increment address
-				begin
-					if (MEM_AOUT < (`LC_MEM_DEPTH-1'b1))
-					begin
-						next_mem_aout = MEM_AOUT + 1'b1;
-						next_mem_sub_state = 1;
-					end
-				end
-			endcase
-		end
-
-		LC_STATE_MEM_DMA_WRITE:
-		begin
-			case (mem_sub_state)
-				0:
-				begin
-					if ((rx_pend_reg)&&(rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:0] < `LC_MEM_DEPTH))
-					begin
-						next_mem_aout = rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:0];
-						next_mem_sub_state = 1;
-					end
-					else // Error handling
-						next_lc_state = LC_STATE_IDLE;
-				end
-
-				1:
-				begin
-					if (rx_pend_reg) 
-					begin
-						if (RX_REQ & (~RX_ACK))
-						begin
-							next_rx_ack = 1;
-							next_mem_sub_state = 2;
-							next_mem_dout = RX_DATA[`LC_MEM_DATA_WIDTH-1:0];
-							next_rx_pend_reg = RX_PEND;
-						end
-					end
-					else // Error handling
+					else if (RX_FAIL & (~RX_ACK))
 						next_lc_state = LC_STATE_IDLE;
 				end
 

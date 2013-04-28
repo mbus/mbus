@@ -32,8 +32,11 @@ module layer_wrapper(
 	input	INTERRUPT,
 	output	CLR_INT,
 
-	input	[`FUNC_WIDTH-1:0] SHORT_ADDR 
-);
+	input	[`DYNA_WIDTH-1:0] SHORT_ADDR 
+); 
+
+parameter RF_DEPTH = 128;
+parameter ROM_DEPTH = 128;
 
 wire	mem_req_out, mem_write, mem_ack_f_mem;
 wire	[`LC_MEM_ADDR_WIDTH-1:0] mem_aout;
@@ -41,9 +44,9 @@ wire	[`LC_MEM_DATA_WIDTH-1:0] mem_dat_f_lc, mem_dat_f_mem;
 
 wire	[`LC_RF_DATA_WIDTH-1:0] rf_dat_f_lc;
 wire	[`LC_RF_DEPTH-1:0] rf_load_f_lc;
-wire	[`LC_RF_DATA_WIDTH*`RF_DEPTH-1:0] rf_dat_f_rf;
+wire	[`LC_RF_DATA_WIDTH*RF_DEPTH-1:0] rf_dat_f_rf;
 
-wire	[(`ROM_DEPTH*`LC_RF_DATA_WIDTH)-1:0] sensor_dat_f_rom;
+wire	[`LC_RF_DATA_WIDTH*ROM_DEPTH-1:0] sensor_dat_f_rom;
 
 
 layer_ctrl lc0(
@@ -95,14 +98,14 @@ mem_ctrl mem0(
 	.MEM_ACK_OUT(mem_ack_f_mem)
 );
 
-rf_ctrl rf0(
+rf_ctrl #(.RF_DEPTH(RF_DEPTH)) rf0(
 	.RESETn(RESETn),
 	.DIN(rf_dat_f_lc),
-	.LOAD(rf_load_f_lc[`RF_DEPTH-1:0]),
+	.LOAD(rf_load_f_lc[RF_DEPTH-1:0]),
 	.DOUT(rf_dat_f_rf)
 );
 
-sensor_rom(
+sensor_rom #(.ROM_DEPTH(ROM_DEPTH)) r0(
 	.DOUT(sensor_dat_f_rom)
 );
 

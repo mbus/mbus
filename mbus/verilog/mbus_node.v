@@ -48,6 +48,8 @@
  * 			at this point.
  * --------------------------------------------------------------------------
  * Update log:
+ * 4/28 '13
+ * fixed streaming broadcast RX_REQ asserts in between
  * 4/24 '13
  * change RX_REQ, RX_FAIL and RX_PEND by asynchronize reset from RX_ACK
  * 4/16 '13
@@ -763,7 +765,16 @@ begin
 		begin
 			next_bit_position = bit_position - 1'b1;
 			next_rx_data_buf = {rx_data_buf[`DATA_WIDTH:0], DIN};
-			next_rx_req = 1;
+			if (RX_BROADCAST)
+			begin
+				if (CPU_LAYER==1'b1)
+					next_rx_req = 1;
+				else
+					next_rx_req = 0;
+			end
+			else
+				next_rx_req = 1;
+			//next_rx_req = 1;
 			next_rx_pend = 1;
 			next_rx_data = rx_data_buf[`DATA_WIDTH+1:2];
 			next_bus_state = BUS_DATA;

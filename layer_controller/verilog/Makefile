@@ -27,7 +27,20 @@ all:    simv
 #####
 
 TESTBENCH = tb_layer_ctrl.v
-SIMFILES = 	mem_ctrl.v \
+SIMFILES = 	mbus_addr_rf.v \
+			mbus_swapper.v \
+			mbus_ext_int.v \
+			mbus_wire_ctrl.v \
+			mbus_clk_sim.v \
+			mbus_regular_isolation.v \
+			mbus_regular_sleep_ctrl.v \
+			mbus_ctrl.v \
+			mbus_master_sleep_ctrl.v \
+			mbus_node.v \
+			mbus_ctrl_wrapper.v \
+			mbus_layer_wrapper.v \
+			mbus_ctrl_layer_wrapper.v \
+			mem_ctrl.v \
 			rf_ctrl.v \
 			layer_ctrl.v \
 			layer_wrapper.v

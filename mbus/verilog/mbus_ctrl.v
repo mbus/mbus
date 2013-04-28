@@ -82,11 +82,11 @@ begin
 			if (~DIN)
 				next_bus_state = BUS_WAIT_START;	
 			next_start_cycle_cnt = START_CYCLES - 1'b1;
-			next_threshold_cnt = 0;
 		end
 
 		BUS_WAIT_START:
 		begin
+			next_threshold_cnt = 0;
 			if (start_cycle_cnt)
 				next_start_cycle_cnt = start_cycle_cnt - 1'b1;
 			else

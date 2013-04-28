@@ -48,7 +48,7 @@ module layer_ctrl(
 	input		INTERRUPT,
 	output reg	CLR_INT,
 
-	input	[`FUNC_WIDTH-1:0] SHORT_ADDR 
+	input	[`DYNA_WIDTH-1:0] SHORT_ADDR 
 );
 `include "include/mbus_func.v"
 
@@ -221,6 +221,9 @@ begin
 
 	if (TX_ACK & TX_REQ)
 		next_tx_req = 0;
+
+	if (TX_SUCC | TX_FAIL)
+		next_tx_resp_ack = 1;
 
 	if ((~(TX_SUCC | TX_FAIL)) & TX_RESP_ACK)
 		next_tx_resp_ack = 0;
@@ -491,10 +494,7 @@ begin
 		LC_STATE_WAIT_CPL:
 		begin
 			if (TX_SUCC | TX_FAIL)
-			begin
-				next_tx_resp_ack = 1;
 				next_lc_state = LC_STATE_IDLE;
-			end
 		end
 
 		LC_STATE_INT:

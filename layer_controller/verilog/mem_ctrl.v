@@ -75,7 +75,10 @@ begin
 			CLEAR:
 			begin
 				if (~MEM_REQ)
+				begin
 					fsm <= IDLE;
+					MEM_ACK_OUT <= 0;
+				end
 			end
 		endcase
 	end

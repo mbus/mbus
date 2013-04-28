@@ -774,7 +774,6 @@ begin
 			end
 			else
 				next_rx_req = 1;
-			//next_rx_req = 1;
 			next_rx_pend = 1;
 			next_rx_data = rx_data_buf[`DATA_WIDTH+1:2];
 			next_bus_state = BUS_DATA;

@@ -64,9 +64,7 @@
 `define LC_SENSOR_NUM 8	
 
 // Commands for Layer controller, the width should match `FUNC_WIDTH
-`define LC_CMD_RF_READ		4'h0
-`define LC_CMD_RF_WRITE		4'h1
-`define LC_CMD_MEM_READ		4'h2
-`define LC_CMD_MEM_WRITE	4'h3
-`define LC_CMD_MEM_DMA_READ	4'h4
-`define	LC_CMD_MEM_DMA_WRITE 4'h5
+`define LC_CMD_RF_WRITE		4'h0
+`define LC_CMD_RF_READ		4'h1
+`define LC_CMD_MEM_WRITE	4'h2
+`define LC_CMD_MEM_READ		4'h3

@@ -101,9 +101,10 @@ module tb_mbus();
    	reg [4:0] 		  			state;
    	reg [5:0] 		  			word_counter;
 	reg [7:0]					rf_addr;
-	reg [31:0]					mem_addr;
+	reg [29:0]					mem_addr;
 	reg							mem_ptr_set;
 	reg	[`SHORT_ADDR_WIDTH-1:0]	relay_addr;
+	reg	[31:0]					addr_increment;
    	integer 		  			handle;
 
    parameter 		  TASK0=0;
@@ -197,6 +198,7 @@ mbus_ctrl_layer_wrapper #(.ADDRESS(20'haaaa0)) c0
 	mem_addr = 0;
 	mem_ptr_set = 0;
 	relay_addr = 0;
+	addr_increment = 0;
 
     @ (posedge clk);
     @ (posedge clk);

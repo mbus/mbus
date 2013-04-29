@@ -125,22 +125,24 @@ always @ (posedge clk or negedge resetn) begin
 					c0_tx_req <= 1;
 					if (~mem_ptr_set)
 					begin
-						c0_tx_data <= mem_addr;
+						c0_tx_data <= ((mem_addr<<2) | 2'b0);
 						c0_tx_pend <= 1;
 						mem_ptr_set <= 1;
+						addr_increment <= 0;
 					end
 					else if (word_counter)
 					begin
 						c0_tx_data <= rand_dat;
 						c0_tx_pend <= 1;
 						word_counter <= word_counter - 1;
-   	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", mem_addr, rand_dat);
+						addr_increment <= addr_increment + 1;
+   	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", (mem_addr+addr_increment), rand_dat);
 					end
 					else
 					begin
 						c0_tx_data <= rand_dat;
 						c0_tx_pend <= 0;
-   	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", mem_addr, rand_dat);
+   	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", (mem_addr+addr_increment), rand_dat);
 						state <= TX_WAIT;
 					end
 				end
@@ -156,7 +158,7 @@ always @ (posedge clk or negedge resetn) begin
 					c0_tx_req <= 1;
 					if (~mem_ptr_set)
 					begin
-						c0_tx_data <= mem_addr;
+						c0_tx_data <= ((mem_addr<<2) | 2'b0);
 						c0_tx_pend <= 1;
 						mem_ptr_set <= 1;
 					end

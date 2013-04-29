@@ -61,8 +61,8 @@ begin
 	word_counter = 0;
 
     #100000;
-    $fdisplay(handle, "\nTASK7, write to RF address 130 (ROM, not writable)");
-	rf_addr = 130;
+    $fdisplay(handle, "\nTASK7, write to RF address 67 (ROM, not writable)");
+	rf_addr = 67;
     state = TASK7;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
@@ -70,6 +70,7 @@ begin
     $fdisplay(handle, "\nTASK8, read from RF address 0");
 	rf_addr = 0;
     state = TASK8;
+	relay_addr = 8'h03;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge c0_rx_req|c0_rx_fail);
    	$fdisplay(handle, "RF Addr: 8'h%h,\tData: 24'h%h", rf_addr, (c0_rx_data & 32'h00ff_ffff));
@@ -79,14 +80,16 @@ begin
 	rf_addr = 1;
 	word_counter = 3;	// 3 + 1 = 4
     state = TASK8;
+	relay_addr = 8'h03;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge n1_tx_succ|n1_tx_fail);
 	word_counter = 0;
 
     #100000;
-    $fdisplay(handle, "\nTASK8, read from RF address 130 (ROM)");
-	rf_addr = 130;
+    $fdisplay(handle, "\nTASK8, read from RF address 67 (ROM)");
+	rf_addr = 67;
     state = TASK8;
+	relay_addr = 8'h03;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge c0_rx_req|c0_rx_fail);
    	$fdisplay(handle, "RF Addr: 8'h%h,\tData: 24'h%h", rf_addr, (c0_rx_data & 32'h00ff_ffff));
@@ -176,6 +179,39 @@ begin
     $fdisplay(handle, "\nN1 request interrupt");
     state = TASK14;
 	@ (posedge c0_rx_req|c0_rx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK9, write to Maximum MEM address");
+	mem_addr = (`LC_MEM_DEPTH-1'b1);
+    state = TASK9;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	mem_ptr_set = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK10, DMA read over boundary");
+	mem_addr = (`LC_MEM_DEPTH-1'b1);
+	word_counter = 1;
+    state = TASK10;
+	relay_addr = 8'h03;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge n1_tx_succ|n1_tx_fail);
+	word_counter = 0;
+	mem_ptr_set = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK7, write to maximum RF address");
+	rf_addr = `LC_RF_DEPTH-1'b1;
+    state = TASK7;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK8, read from RF over boundary");
+	rf_addr = `LC_RF_DEPTH-1'b1;
+	word_counter = 1;	// 3 + 1 = 4
+    state = TASK8;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge n1_tx_succ|n1_tx_fail);
+	word_counter = 0;
 
     #300000;
     $display("*************************************");

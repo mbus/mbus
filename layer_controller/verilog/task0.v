@@ -108,7 +108,7 @@ always @ (posedge clk or negedge resetn) begin
 			TASK8:
 			begin
 				c0_tx_addr <= {24'h0, 4'h3, `LC_CMD_RF_READ};
-				c0_tx_data <= (rf_addr<<24 | word_counter<<16);
+				c0_tx_data <= (rf_addr<<24 | word_counter<<16 | relay_addr<<8 | 8'h0);
 				c0_tx_pend <= 0;
 				c0_tx_req <= 1;
 				c0_priority <= 0;
@@ -136,13 +136,13 @@ always @ (posedge clk or negedge resetn) begin
 						c0_tx_pend <= 1;
 						word_counter <= word_counter - 1;
 						addr_increment <= addr_increment + 1;
-   	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", (mem_addr+addr_increment), rand_dat);
+   	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", (mem_addr+addr_increment)<<2, rand_dat);
 					end
 					else
 					begin
 						c0_tx_data <= rand_dat;
 						c0_tx_pend <= 0;
-   	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", (mem_addr+addr_increment), rand_dat);
+   	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", (mem_addr+addr_increment)<<2, rand_dat);
 						state <= TX_WAIT;
 					end
 				end

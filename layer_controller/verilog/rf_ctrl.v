@@ -5,7 +5,7 @@
 
 module rf_ctrl( RESETn, DIN, LOAD, DOUT);
 
-parameter RF_DEPTH = 128; // this depth SHOULD less or equal than `LC_RF_DEPTH
+parameter RF_DEPTH = 64; // this depth SHOULD less or equal than `LC_RF_DEPTH
 
 input	RESETn;
 input	[`LC_RF_DATA_WIDTH-1:0] DIN;
@@ -39,7 +39,7 @@ endmodule
 
 module sensor_rom(DOUT);
 
-parameter ROM_DEPTH = 128;
+parameter ROM_DEPTH = 64;
 
 output [(ROM_DEPTH*`LC_RF_DATA_WIDTH)-1:0] DOUT;
 

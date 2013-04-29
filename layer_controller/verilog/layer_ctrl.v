@@ -56,21 +56,22 @@ wire	RESETn_local = (RESETn & (~RELEASE_RST_FROM_MBUS));
 
 parameter MAX_DMA_LENGTH = 24; // cannot greater than `DATA_WIDTH - `SHORT_ADDR_WIDTH
 
-parameter LC_STATE_IDLE 		= 3'd0;
-parameter LC_STATE_RF_READ 		= 3'd1;
-parameter LC_STATE_RF_WRITE 	= 3'd2;
-parameter LC_STATE_MEM_READ 	= 3'd3;
-parameter LC_STATE_MEM_WRITE 	= 3'd4;
-parameter LC_STATE_BUS_TX		= 3'd5;
-parameter LC_STATE_WAIT_CPL		= 3'd6;
-parameter LC_STATE_INT			= 3'd7;
+parameter LC_STATE_IDLE 		= 4'd0;
+parameter LC_STATE_RF_READ 		= 4'd1;
+parameter LC_STATE_RF_WRITE 	= 4'd2;
+parameter LC_STATE_MEM_READ 	= 4'd3;
+parameter LC_STATE_MEM_WRITE 	= 4'd4;
+parameter LC_STATE_BUS_TX		= 4'd5;
+parameter LC_STATE_WAIT_CPL		= 4'd6;
+parameter LC_STATE_INT			= 4'd7;
+parameter LC_STATE_ERROR		= 4'd8;
 
 // Double latching registers
 reg		TX_ACK_DL1, TX_ACK_DL2;
 reg		RX_REQ_DL1, RX_REQ_DL2;
 
 // General registers
-reg		[2:0]	lc_state, next_lc_state, lc_return_state, next_lc_return_state;
+reg		[3:0]	lc_state, next_lc_state, lc_return_state, next_lc_return_state;
 reg		rx_pend_reg, next_rx_pend_reg;
 reg		[2:0]	mem_sub_state, next_mem_sub_state;
 reg		[`DATA_WIDTH-1:0] 	rx_dat_buffer, next_rx_dat_buffer;
@@ -276,6 +277,7 @@ begin
 						`LC_CMD_RF_WRITE: begin next_lc_state = LC_STATE_RF_WRITE; end
 						`LC_CMD_MEM_READ: begin next_lc_state = LC_STATE_MEM_READ; end
 						`LC_CMD_MEM_WRITE: begin next_lc_state = LC_STATE_MEM_WRITE; end
+						default: begin if (RX_PEND) next_lc_state = LC_STATE_ERROR; end	// Invalid message
 					endcase
 				end
 				next_mem_sub_state = 0;
@@ -287,14 +289,19 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					if ((rx_dat_buffer[`DATA_WIDTH-1:`LC_RF_DATA_WIDTH]) < `LC_RF_DEPTH)	// prevent aliasing
+					if ((~rx_pend_reg)&&((rx_dat_buffer[`DATA_WIDTH-1:`LC_RF_DATA_WIDTH]) < `LC_RF_DEPTH))	// prevent aliasing
 					begin 
 						next_dma_counter = {{(MAX_DMA_LENGTH-`LC_RF_ADDR_WIDTH){1'b0}}, rf_dma_length};
 						next_rf_idx = rf_idx_temp;
 						next_mem_sub_state = 1;
 						next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, rf_relay_addr};
 					end
-					else
+					else if (rx_pend_reg)	// invalid message
+					begin
+						next_lc_state = LC_STATE_ERROR;
+						next_mem_sub_state = 0;
+					end
+					else					// invalid address
 						next_lc_state = LC_STATE_IDLE;
 				end
 
@@ -339,6 +346,11 @@ begin
 						else
 							next_lc_state = LC_STATE_IDLE;
 					end
+					else if (rx_pend_reg)	// Invalid address
+					begin
+						next_lc_state = LC_STATE_ERROR;
+						next_mem_sub_state = 0;
+					end
 					else
 						next_lc_state = LC_STATE_IDLE;
 				end
@@ -367,13 +379,18 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					if ((rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:2] < `LC_MEM_DEPTH))
+					if ((rx_pend_reg)&&(rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:2] < `LC_MEM_DEPTH))
 					begin
 						next_mem_aout = rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:2];
 						next_dma_counter = 0;
 						next_mem_sub_state = 1;
 					end
-					else // Error handling
+					else if (rx_pend_reg)	// Invalid address
+					begin
+						next_lc_state = LC_STATE_ERROR;
+						next_mem_sub_state = 0;
+					end
+					else 					// Invalid message
 						next_lc_state = LC_STATE_IDLE;
 				end
 
@@ -441,7 +458,12 @@ begin
 						next_mem_aout = rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:2];
 						next_mem_sub_state = 1;
 					end
-					else // Error handling
+					else if (rx_pend_reg)	// Invalid Address
+					begin
+						next_lc_state = LC_STATE_ERROR;
+						next_mem_sub_state = 0;
+					end
+					else 					// Invalid message
 						next_lc_state = LC_STATE_IDLE;
 				end
 
@@ -480,6 +502,11 @@ begin
 							next_mem_aout = MEM_AOUT + 1'b1;
 							next_mem_sub_state = 1;
 						end
+						else if (rx_pend_reg)	// Invalid Address
+						begin
+							next_lc_state = LC_STATE_ERROR;
+							next_mem_sub_state = 0;
+						end
 						else
 							next_lc_state = LC_STATE_IDLE;
 					end
@@ -514,6 +541,37 @@ begin
 			next_tx_pend = 0;
 			next_lc_state = LC_STATE_BUS_TX;
 		end
+
+		// This state handles errors, junk message coming in. disgarding all
+		// the message before return idle state
+		LC_STATE_ERROR:
+		begin
+			case (mem_sub_state)
+				0:
+				begin
+					if (RX_REQ_DL2 & (~RX_ACK))
+					begin
+						next_rx_pend_reg = RX_PEND;
+						next_mem_sub_state = 1;
+					end
+				end
+
+				1:
+				begin
+					if (rx_pend_reg & RX_FAIL)
+					begin
+						next_rx_ack = 1;
+						next_lc_state = LC_STATE_IDLE;
+					end
+					else if (~rx_pend_reg)
+					begin
+						next_rx_ack = 1;
+						next_lc_state = LC_STATE_IDLE;
+					end
+				end
+			endcase
+		end
+
 	endcase
 end
 

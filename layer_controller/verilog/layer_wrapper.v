@@ -35,8 +35,8 @@ module layer_wrapper(
 	input	[`DYNA_WIDTH-1:0] SHORT_ADDR 
 ); 
 
-parameter RF_DEPTH = 128;
-parameter ROM_DEPTH = 128;
+parameter RF_DEPTH = 64;
+parameter ROM_DEPTH = 64;
 
 wire	mem_req_out, mem_write, mem_ack_f_mem;
 wire	[`LC_MEM_ADDR_WIDTH-3:0] mem_aout;

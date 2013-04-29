@@ -188,7 +188,15 @@ begin
 	mem_ptr_set = 0;
 
     #100000;
-    $fdisplay(handle, "\nTASK10, DMA read over boundary");
+    $fdisplay(handle, "\nTASK10, DMA read from invalid MEM address");
+	mem_addr = `LC_MEM_DEPTH;
+    state = TASK10;
+	relay_addr = 8'h03;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	mem_ptr_set = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK10, DMA read from invalid MEM address, part 2");
 	mem_addr = (`LC_MEM_DEPTH-1'b1);
 	word_counter = 1;
     state = TASK10;
@@ -199,19 +207,145 @@ begin
 	mem_ptr_set = 0;
 
     #100000;
+    $fdisplay(handle, "\nTASK10, DMA read from invalid MEM address, part 3");
+	mem_addr = (`LC_MEM_DEPTH-1'b1);
+	word_counter = 2;
+    state = TASK10;
+	relay_addr = 8'h03;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge n1_tx_succ|n1_tx_fail);
+	word_counter = 0;
+	mem_ptr_set = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK10, DMA read from invalid MEM address, part 4");
+	mem_addr = (`LC_MEM_DEPTH-1'b1);
+	word_counter = 3;
+    state = TASK10;
+	relay_addr = 8'h03;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge n1_tx_succ|n1_tx_fail);
+	word_counter = 0;
+	mem_ptr_set = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK10, DMA read from invalid MEM address, part 5");
+	mem_addr = `LC_MEM_DEPTH;
+	word_counter = 1;
+    state = TASK10;
+	relay_addr = 8'h03;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	word_counter = 0;
+	mem_ptr_set = 0;
+
+    #100000;
     $fdisplay(handle, "\nTASK7, write to maximum RF address");
 	rf_addr = `LC_RF_DEPTH-1'b1;
     state = TASK7;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
     #100000;
-    $fdisplay(handle, "\nTASK8, read from RF over boundary");
+    $fdisplay(handle, "\nTASK8, read from an invalid RF address");
+	rf_addr = `LC_RF_DEPTH;
+	word_counter = 0;
+	relay_addr = 8'h03;
+    state = TASK8;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK8, read from an invalid RF address, part 2");
 	rf_addr = `LC_RF_DEPTH-1'b1;
-	word_counter = 1;	// 3 + 1 = 4
+	word_counter = 1;
+	relay_addr = 8'h03;
     state = TASK8;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge n1_tx_succ|n1_tx_fail);
 	word_counter = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK8, read from an invalid RF address, part 3");
+	rf_addr = `LC_RF_DEPTH-1'b1;
+	word_counter = 2;
+	relay_addr = 8'h03;
+    state = TASK8;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge n1_tx_succ|n1_tx_fail);
+	word_counter = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK8, read from an invalid RF address, part 4");
+	rf_addr = `LC_RF_DEPTH-1'b1;
+	word_counter = 3;
+	relay_addr = 8'h03;
+    state = TASK8;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge n1_tx_succ|n1_tx_fail);
+	word_counter = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK7, write to an invalid RF address");
+	rf_addr = `LC_RF_DEPTH;
+    state = TASK7;
+	word_counter = 0;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK7, write to an invalid RF address, part 2");
+	rf_addr = `LC_RF_DEPTH-1'b1;
+    state = TASK7;
+	word_counter = 1;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	word_counter = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK7, write to an invalid RF address, part 3");
+	rf_addr = `LC_RF_DEPTH-1'b1;
+    state = TASK7;
+	word_counter = 2;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	word_counter = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK7, write to an invalid RF address, part 4");
+	rf_addr = `LC_RF_DEPTH-1'b1;
+    state = TASK7;
+	word_counter = 3;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	word_counter = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK9, write to invalid MEM address");
+	mem_addr = `LC_MEM_DEPTH;
+    state = TASK9;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	mem_ptr_set = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK9, write to invalid MEM address, part 2");
+	mem_addr = `LC_MEM_DEPTH - 1'b1;
+    state = TASK9;
+	word_counter = 1;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	word_counter = 0;
+	mem_ptr_set = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK9, write to invalid MEM address, part 3");
+	mem_addr = `LC_MEM_DEPTH - 1'b1;
+    state = TASK9;
+	word_counter = 2;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	word_counter = 0;
+	mem_ptr_set = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK9, write to invalid MEM address, part 4");
+	mem_addr = `LC_MEM_DEPTH - 1'b1;
+    state = TASK9;
+	word_counter = 3;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	word_counter = 0;
+	mem_ptr_set = 0;
 
     #300000;
     $display("*************************************");

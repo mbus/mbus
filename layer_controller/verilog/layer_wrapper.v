@@ -39,7 +39,7 @@ parameter RF_DEPTH = 128;
 parameter ROM_DEPTH = 128;
 
 wire	mem_req_out, mem_write, mem_ack_f_mem;
-wire	[`LC_MEM_ADDR_WIDTH-1:0] mem_aout;
+wire	[`LC_MEM_ADDR_WIDTH-3:0] mem_aout;
 wire	[`LC_MEM_DATA_WIDTH-1:0] mem_dat_f_lc, mem_dat_f_mem;
 
 wire	[`LC_RF_DATA_WIDTH-1:0] rf_dat_f_lc;

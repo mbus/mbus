@@ -5,7 +5,7 @@
 module mem_ctrl(
 	input 	CLK,
 	input	RESETn,
-	input	[`LC_MEM_ADDR_WIDTH-1:0]	ADDR,
+	input	[`LC_MEM_ADDR_WIDTH-3:0]	ADDR,
 	input	[`LC_MEM_DATA_WIDTH-1:0]	DATA_IN,
 	input	MEM_REQ,
 	input	MEM_WRITE,

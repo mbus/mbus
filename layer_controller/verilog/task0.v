@@ -157,18 +157,12 @@ always @ (posedge clk or negedge resetn) begin
 					if (~mem_ptr_set)
 					begin
 						c0_tx_data <= mem_addr;
-						if (word_counter)
-							c0_tx_pend <= 1;
-						else
-						begin
-							c0_tx_pend <= 0;
-							state <= TX_WAIT;
-						end
+						c0_tx_pend <= 1;
 						mem_ptr_set <= 1;
 					end
 					else
 					begin
-						c0_tx_data <= word_counter;
+						c0_tx_data <= ((relay_addr<<24) | word_counter);
 						c0_tx_pend <= 0;
 						state <= TX_WAIT;
 					end

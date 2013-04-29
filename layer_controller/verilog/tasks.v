@@ -102,6 +102,7 @@ begin
     $fdisplay(handle, "\nTASK10, read from MEM address 0");
 	mem_addr = 0;
     state = TASK10;
+	relay_addr = 8'h03;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge c0_rx_req|c0_rx_fail);
    	$fdisplay(handle, "MEM Addr: 32'h%h,\tData: 32'h%h", mem_addr, c0_rx_data);
@@ -130,6 +131,7 @@ begin
     $fdisplay(handle, "\nTASK10, read from MEM address 1");
 	mem_addr = 1;
     state = TASK10;
+	relay_addr = 8'h03;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge c0_rx_req|c0_rx_fail);
    	$fdisplay(handle, "MEM Addr: 32'h%h,\tData: 32'h%h", mem_addr, c0_rx_data);
@@ -139,13 +141,14 @@ begin
     $fdisplay(handle, "\nTASK10, read from MEM address 2");
 	mem_addr = 2;
     state = TASK10;
+	relay_addr = 8'h03;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge c0_rx_req|c0_rx_fail);
    	$fdisplay(handle, "MEM Addr: 32'h%h,\tData: 32'h%h", mem_addr, c0_rx_data);
 	mem_ptr_set = 0;
 
     #100000;
-    $fdisplay(handle, "\nTASK12, DMA write 16-word to MEM address 3-18");
+    $fdisplay(handle, "\nTASK9, DMA write 16-word to MEM address 3-18");
 	mem_addr = 3;
 	word_counter = 15;
     state = TASK9;
@@ -154,10 +157,11 @@ begin
 	mem_ptr_set = 0;
 
     #100000;
-    $fdisplay(handle, "\nTASK13, DMA read 16-word from MEM address 3-18");
+    $fdisplay(handle, "\nTASK10, DMA read 16-word from MEM address 3-18");
 	mem_addr = 3;
 	word_counter = 15;
     state = TASK10;
+	relay_addr = 8'h03;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge n1_tx_succ|n1_tx_fail);
 	word_counter = 0;

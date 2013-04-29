@@ -284,22 +284,19 @@ begin
 					next_lc_state = LC_STATE_BUS_TX;
 					next_mem_sub_state = 2;
 					next_lc_return_state = LC_STATE_RF_READ;
-					if (dma_counter)
+					if ((dma_counter)&&(rf_idx < (`LC_RF_DEPTH-1'b1)))
+					begin
 						next_tx_pend = 1;
+						next_dma_counter = dma_counter - 1'b1;
+					end
 					else
 						next_tx_pend = 0;
 				end
 
 				2:
 				begin
-					if (rf_idx < (`LC_RF_DEPTH-1'b1))
-					begin
-						next_rf_idx = rf_idx + 1'b1;
-						next_mem_sub_state = 1;
-						next_dma_counter = (dma_counter - 1'b1);
-					end
-					else
-						next_lc_state = LC_STATE_IDLE;
+					next_rf_idx = rf_idx + 1'b1;
+					next_mem_sub_state = 1;
 				end
 			endcase
 		end
@@ -395,7 +392,7 @@ begin
 						next_lc_state = LC_STATE_BUS_TX;
 						next_lc_return_state = LC_STATE_MEM_READ;
 						next_mem_sub_state = 4;
-						if (dma_counter)
+						if ((dma_counter)&&(MEM_AOUT < (`LC_MEM_DEPTH-1'b1)))
 						begin
 							next_tx_pend = 1;
 							next_dma_counter = dma_counter - 1'b1;
@@ -407,13 +404,8 @@ begin
 
 				4:	// increment address
 				begin
-					if (MEM_AOUT < (`LC_MEM_DEPTH-1'b1))
-					begin
-						next_mem_aout = MEM_AOUT + 1'b1;
-						next_mem_sub_state = 2;
-					end
-					else
-						next_lc_state = LC_STATE_IDLE;
+					next_mem_aout = MEM_AOUT + 1'b1;
+					next_mem_sub_state = 2;
 				end
 			endcase
 		end

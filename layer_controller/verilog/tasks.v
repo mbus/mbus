@@ -82,7 +82,7 @@ begin
     state = TASK8;
 	relay_addr = 8'h03;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge n1_tx_succ|n1_tx_fail);
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
 	word_counter = 0;
 
     #100000;
@@ -166,7 +166,7 @@ begin
     state = TASK10;
 	relay_addr = 8'h03;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge n1_tx_succ|n1_tx_fail);
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
 	word_counter = 0;
 	mem_ptr_set = 0;
 
@@ -176,9 +176,9 @@ begin
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
     #100000;
-    $fdisplay(handle, "\nN1 request interrupt");
-    state = TASK14;
-	@ (posedge c0_rx_req|c0_rx_fail);
+    $fdisplay(handle, "\nN1 request interrupt with vecto 8'h1");
+	n1_int_vector <= 8'h1;
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
 
     #100000;
     $fdisplay(handle, "\nTASK9, write to Maximum MEM address");
@@ -202,7 +202,7 @@ begin
     state = TASK10;
 	relay_addr = 8'h03;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge n1_tx_succ|n1_tx_fail);
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
 	word_counter = 0;
 	mem_ptr_set = 0;
 
@@ -213,7 +213,7 @@ begin
     state = TASK10;
 	relay_addr = 8'h03;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge n1_tx_succ|n1_tx_fail);
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
 	word_counter = 0;
 	mem_ptr_set = 0;
 
@@ -224,7 +224,7 @@ begin
     state = TASK10;
 	relay_addr = 8'h03;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge n1_tx_succ|n1_tx_fail);
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
 	word_counter = 0;
 	mem_ptr_set = 0;
 
@@ -259,7 +259,7 @@ begin
 	relay_addr = 8'h03;
     state = TASK8;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge n1_tx_succ|n1_tx_fail);
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
 	word_counter = 0;
 
     #100000;
@@ -269,7 +269,7 @@ begin
 	relay_addr = 8'h03;
     state = TASK8;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge n1_tx_succ|n1_tx_fail);
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
 	word_counter = 0;
 
     #100000;
@@ -279,7 +279,7 @@ begin
 	relay_addr = 8'h03;
     state = TASK8;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge n1_tx_succ|n1_tx_fail);
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
 	word_counter = 0;
 
     #100000;
@@ -346,6 +346,47 @@ begin
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	word_counter = 0;
 	mem_ptr_set = 0;
+
+    #100000;
+    $fdisplay(handle, "\nN1 request interrupt with vecto 8'h2");
+	n1_int_vector <= 8'h2;
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nN1 request interrupt with vecto 8'h4");
+	n1_int_vector <= 8'h4;
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nN1 request interrupt with vecto 8'h8");
+	n1_int_vector <= 8'h8;
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nN1 request interrupt with vecto 8'h10");
+	n1_int_vector <= 8'h10;
+    #300000;
+
+    #100000;
+    $fdisplay(handle, "\nN1 request interrupt with vecto 8'h20");
+	n1_int_vector <= 8'h20;
+    #300000;
+
+    #100000;
+    $fdisplay(handle, "\nN1 request interrupt with vecto 8'h40");
+	n1_int_vector <= 8'h40;
+    #300000;
+
+    #100000;
+    $fdisplay(handle, "\nN1 request interrupt with vecto 8'h80");
+	n1_int_vector <= 8'h80;
+    #300000;
+
+    #100000;
+    $fdisplay(handle, "\nN1 request interrupt with vecto 8'h5");
+	n1_int_vector <= 8'h5;
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
 
     #300000;
     $display("*************************************");

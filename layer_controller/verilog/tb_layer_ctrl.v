@@ -10,72 +10,29 @@
 
 `include "include/mbus_def.v"
 
-module tb_mbus();
+module tb_layer_ctrl();
 
    reg		         clk, resetn;
    wire 		 SCLK;
 
 	// n0 connections
-	reg		[`ADDR_WIDTH-1:0] 	n0_tx_addr;
-	reg		[`DATA_WIDTH-1:0]	n0_tx_data;
-	reg							n0_tx_req, n0_priority, n0_tx_pend, n0_tx_resp_ack, n0_req_int;
-	wire						n0_tx_ack, n0_tx_succ, n0_tx_fail;
-
-	wire	[`ADDR_WIDTH-1:0]	n0_rx_addr;
-	wire	[`DATA_WIDTH-1:0]	n0_rx_data;
-	wire						n0_rx_req, n0_rx_fail, n0_rx_pend, n0_rx_broadcast;
-	reg							n0_rx_ack;
-	wire	[`DYNA_WIDTH-1:0]	n0_short_addr;
-
-   	wire						n0_lc_pwr_on, n0_lc_release_clk, n0_lc_release_rst, n0_lc_release_iso;
+	reg		[`LC_INT_DEPTH-1:0] n0_int_vector;
+	wire	[`LC_INT_DEPTH-1:0]	n0_clr_int;
 	// end of n0 connections
 
 	// n1 connections
-	wire	[`ADDR_WIDTH-1:0] 	n1_tx_addr;
-	wire	[`DATA_WIDTH-1:0]	n1_tx_data;
-	wire						n1_tx_req, n1_priority, n1_tx_pend, n1_tx_resp_ack; 
-	wire						n1_tx_ack, n1_tx_succ, n1_tx_fail;
-	reg							n1_req_int;
-
-	wire	[`ADDR_WIDTH-1:0]	n1_rx_addr;
-	wire	[`DATA_WIDTH-1:0]	n1_rx_data;
-	wire						n1_rx_req, n1_rx_fail, n1_rx_pend, n1_rx_broadcast;
-	wire						n1_rx_ack;
-	wire	[`DYNA_WIDTH-1:0]	n1_short_addr;
-
-   	wire						n1_lc_pwr_on, n1_lc_release_clk, n1_lc_release_rst, n1_lc_release_iso;
-
-	wire						n1_clr_int;
+	reg		[`LC_INT_DEPTH-1:0] n1_int_vector;
+	wire	[`LC_INT_DEPTH-1:0]	n1_clr_int;
 	// end of n1 connections
 	
 	// n2 connections
-	reg		[`ADDR_WIDTH-1:0] 	n2_tx_addr;
-	reg		[`DATA_WIDTH-1:0]	n2_tx_data;
-	reg							n2_tx_req, n2_priority, n2_tx_pend, n2_tx_resp_ack, n2_req_int;
-	wire						n2_tx_ack, n2_tx_succ, n2_tx_fail;
-
-	wire	[`ADDR_WIDTH-1:0]	n2_rx_addr;
-	wire	[`DATA_WIDTH-1:0]	n2_rx_data;
-	wire						n2_rx_req, n2_rx_fail, n2_rx_pend, n2_rx_broadcast;
-	reg							n2_rx_ack;
-	wire	[`DYNA_WIDTH-1:0]	n2_short_addr;
-
-   	wire						n2_lc_pwr_on, n2_lc_release_clk, n2_lc_release_rst, n2_lc_release_iso;
+	reg		[`LC_INT_DEPTH-1:0] n2_int_vector;
+	wire	[`LC_INT_DEPTH-1:0]	n2_clr_int;
 	// end of n2 connections
 	
 	// n3 connections
-	reg		[`ADDR_WIDTH-1:0] 	n3_tx_addr;
-	reg		[`DATA_WIDTH-1:0]	n3_tx_data;
-	reg							n3_tx_req, n3_priority, n3_tx_pend, n3_tx_resp_ack, n3_req_int;
-	wire						n3_tx_ack, n3_tx_succ, n3_tx_fail;
-
-	wire	[`ADDR_WIDTH-1:0]	n3_rx_addr;
-	wire	[`DATA_WIDTH-1:0]	n3_rx_data;
-	wire						n3_rx_req, n3_rx_fail, n3_rx_pend, n3_rx_broadcast;
-	reg							n3_rx_ack;
-	wire	[`DYNA_WIDTH-1:0]	n3_short_addr;
-
-   	wire						n3_lc_pwr_on, n3_lc_release_clk, n3_lc_release_rst, n3_lc_release_iso;
+	reg		[`LC_INT_DEPTH-1:0] n3_int_vector;
+	wire	[`LC_INT_DEPTH-1:0]	n3_clr_int;
 	// end of n3 connections
 	
 	// c0 connections
@@ -138,49 +95,36 @@ module tb_mbus();
    
    parameter 		  TX_WAIT=31;
 
-   reg 			  n0_auto_rx_ack, n2_auto_rx_ack, n3_auto_rx_ack, c0_auto_rx_ack;
+   reg	c0_auto_rx_ack;
 
 
-mbus_layer_wrapper #(.ADDRESS(20'hbbbb0)) n0
-     (.CLKIN(SCLK), .CLKOUT(w_n0_clk_out), .RESETn(resetn), .DIN(w_c0n0), .DOUT(w_n0n1), 
-      .TX_ADDR(n0_tx_addr), .TX_DATA(n0_tx_data), .TX_REQ(n0_tx_req), .TX_ACK(n0_tx_ack), .TX_PEND(n0_tx_pend), .PRIORITY(n0_priority),
-      .RX_ADDR(n0_rx_addr), .RX_DATA(n0_rx_data), .RX_REQ(n0_rx_req), .RX_ACK(n0_rx_ack), .RX_FAIL(n0_rx_fail), .RX_PEND(n0_rx_pend),
-      .TX_SUCC(n0_tx_succ), .TX_FAIL(n0_tx_fail), .TX_RESP_ACK(n0_tx_resp_ack), .RX_BROADCAST(n0_rx_broadcast),
-	  .LC_POWER_ON(n0_lc_pwr_on), .LC_RELEASE_CLK(n0_lc_release_clk), .LC_RELEASE_RST(n0_lc_release_rst), .LC_RELEASE_ISO(n0_lc_release_iso),
-	  .REQ_INT(n0_req_int), .SHORT_ADDR(n0_short_addr));
+layer_wrapper #(.ADDRESS(20'hbbbb0)) layer0(
+	.CLK(clk), .RESETn(resetn),
+	.INT_VECTOR(n0_int_vector),
+	.CLR_INT_EXTERNAL(n0_clr_int),
+	// mbus
+	.CLKIN(SCLK), .CLKOUT(w_n0_clk_out), .DIN(w_c0n0), .DOUT(w_n0n1)); 
 
-mbus_layer_wrapper #(.ADDRESS(20'hbbbb1)) n1
-     (.CLKIN(w_n0_clk_out), .CLKOUT(w_n1_clk_out), .RESETn(resetn), .DIN(w_n0n1), .DOUT(w_n1n2), 
-      .TX_ADDR(n1_tx_addr), .TX_DATA(n1_tx_data), .TX_REQ(n1_tx_req), .TX_ACK(n1_tx_ack), .TX_PEND(n1_tx_pend), .PRIORITY(n1_priority),
-      .RX_ADDR(n1_rx_addr), .RX_DATA(n1_rx_data), .RX_REQ(n1_rx_req), .RX_ACK(n1_rx_ack), .RX_FAIL(n1_rx_fail), .RX_PEND(n1_rx_pend),
-      .TX_SUCC(n1_tx_succ), .TX_FAIL(n1_tx_fail), .TX_RESP_ACK(n1_tx_resp_ack), .RX_BROADCAST(n1_rx_broadcast),
-	  .LC_POWER_ON(n1_lc_pwr_on), .LC_RELEASE_CLK(n1_lc_release_clk), .LC_RELEASE_RST(n1_lc_release_rst), .LC_RELEASE_ISO(n1_lc_release_iso),
-	  .REQ_INT(n1_req_int), .SHORT_ADDR(n1_short_addr));
+layer_wrapper #(.ADDRESS(20'hbbbb1)) layer1(
+	.CLK(clk), .RESETn(resetn),
+	.INT_VECTOR(n1_int_vector),
+	.CLR_INT_EXTERNAL(n1_clr_int),
+	// mbus
+	.CLKIN(w_n0_clk_out), .CLKOUT(w_n1_clk_out), .DIN(w_n0n1), .DOUT(w_n1n2)); 
 
-layer_wrapper lw1( 
-	.CLK((clk&(~n1_lc_release_clk))), .RESETn(resetn), 
-	// Interface with MBus
-	.TX_ADDR(n1_tx_addr), .TX_DATA(n1_tx_data), .TX_PEND(n1_tx_pend), .TX_REQ(n1_tx_req), .TX_ACK(n1_tx_ack), .PRIORITY(n1_priority),
-	.RX_ADDR(n1_rx_addr), .RX_DATA(n1_rx_data), .RX_PEND(n1_rx_pend), .RX_REQ(n1_rx_req), .RX_ACK(n1_rx_ack), .RX_BROADCAST(n1_rx_broadcast), 
-	.RX_FAIL(n1_rx_fail), .TX_FAIL(n1_tx_fail), .TX_SUCC(n1_tx_succ), .TX_RESP_ACK(n1_tx_resp_ack), .RELEASE_RST_FROM_MBUS(n1_lc_release_rst),
-	.INTERRUPT(n1_req_int), .CLR_INT(n1_clr_int), .SHORT_ADDR(n1_short_addr)); 
+layer_wrapper #(.ADDRESS(20'hbbbb2)) layer2(
+	.CLK(clk), .RESETn(resetn),
+	.INT_VECTOR(n2_int_vector),
+	.CLR_INT_EXTERNAL(n2_clr_int),
+	// mbus
+	.CLKIN(w_n1_clk_out), .CLKOUT(w_n2_clk_out), .DIN(w_n1n2), .DOUT(w_n2n3)); 
 
-mbus_layer_wrapper #(.ADDRESS(20'hbbbb2)) n2
-     (.CLKIN(w_n1_clk_out), .CLKOUT(w_n2_clk_out), .RESETn(resetn), .DIN(w_n1n2), .DOUT(w_n2n3), 
-      .TX_ADDR(n2_tx_addr), .TX_DATA(n2_tx_data), .TX_REQ(n2_tx_req), .TX_ACK(n2_tx_ack), .TX_PEND(n2_tx_pend), .PRIORITY(n2_priority),
-      .RX_ADDR(n2_rx_addr), .RX_DATA(n2_rx_data), .RX_REQ(n2_rx_req), .RX_ACK(n2_rx_ack), .RX_FAIL(n2_rx_fail), .RX_PEND(n2_rx_pend),
-      .TX_SUCC(n2_tx_succ), .TX_FAIL(n2_tx_fail), .TX_RESP_ACK(n2_tx_resp_ack), .RX_BROADCAST(n2_rx_broadcast),
-	  .LC_POWER_ON(n2_lc_pwr_on), .LC_RELEASE_CLK(n2_lc_release_clk), .LC_RELEASE_RST(n2_lc_release_rst), .LC_RELEASE_ISO(n2_lc_release_iso),
-	  .REQ_INT(n2_req_int), .SHORT_ADDR(n2_short_addr));
-
-
-mbus_layer_wrapper #(.ADDRESS(20'hbbbb2)) n3
-     (.CLKIN(w_n2_clk_out), .CLKOUT(w_n3_clk_out), .RESETn(resetn), .DIN(w_n2n3), .DOUT(w_n3c0), 
-      .TX_ADDR(n3_tx_addr), .TX_DATA(n3_tx_data), .TX_REQ(n3_tx_req), .TX_ACK(n3_tx_ack), .TX_PEND(n3_tx_pend), .PRIORITY(n3_priority),
-      .RX_ADDR(n3_rx_addr), .RX_DATA(n3_rx_data), .RX_REQ(n3_rx_req), .RX_ACK(n3_rx_ack), .RX_FAIL(n3_rx_fail), .RX_PEND(n3_rx_pend),
-      .TX_SUCC(n3_tx_succ), .TX_FAIL(n3_tx_fail), .TX_RESP_ACK(n3_tx_resp_ack), .RX_BROADCAST(n3_rx_broadcast),
-	  .LC_POWER_ON(n3_lc_pwr_on), .LC_RELEASE_CLK(n3_lc_release_clk), .LC_RELEASE_RST(n3_lc_release_rst), .LC_RELEASE_ISO(n3_lc_release_iso),
-	  .REQ_INT(n3_req_int), .SHORT_ADDR(n3_short_addr));
+layer_wrapper #(.ADDRESS(20'hbbbb2)) layer3(
+	.CLK(clk), .RESETn(resetn),
+	.INT_VECTOR(n3_int_vector),
+	.CLR_INT_EXTERNAL(n3_clr_int),
+	// mbus
+	.CLKIN(w_n2_clk_out), .CLKOUT(w_n3_clk_out), .DIN(w_n2n3), .DOUT(w_n3c0)); 
 
 mbus_ctrl_layer_wrapper #(.ADDRESS(20'haaaa0)) c0 
      (.CLK_EXT(clk), .CLKIN(w_n3_clk_out), .CLKOUT(SCLK), .RESETn(resetn), .DIN(w_n3c0), .DOUT(w_c0n0), 
@@ -190,8 +134,9 @@ mbus_ctrl_layer_wrapper #(.ADDRESS(20'haaaa0)) c0
 	  .LC_POWER_ON(c0_lc_pwr_on), .LC_RELEASE_CLK(c0_lc_release_clk), .LC_RELEASE_RST(c0_lc_release_rst), .LC_RELEASE_ISO(c0_lc_release_iso),
 	  .REQ_INT(c0_req_int));
 
-   initial begin
-
+`include "tasks.v"
+initial 
+begin
     clk = 0;
     resetn = 1;
 	rf_addr = 0;
@@ -271,31 +216,31 @@ always #1250 clk = ~clk;
 	`include "task2.v"
 `endif
 
-always @ (posedge n0_lc_pwr_on)
+always @ (posedge layer0.lc_pwr_on)
 	$fdisplay(handle, "N0 LC Sleep");
 
-always @ (posedge n1_lc_pwr_on)
+always @ (posedge layer1.lc_pwr_on)
 	$fdisplay(handle, "N1 LC Sleep");
 
-always @ (posedge n2_lc_pwr_on)
+always @ (posedge layer2.lc_pwr_on)
 	$fdisplay(handle, "N2 LC Sleep");
 
-always @ (posedge n3_lc_pwr_on)
+always @ (posedge layer3.lc_pwr_on)
 	$fdisplay(handle, "N3 LC Sleep");
 
 always @ (posedge c0_lc_pwr_on)
 	$fdisplay(handle, "Processor Sleep");
 
-always @ (negedge n0_lc_pwr_on)
+always @ (negedge layer0.lc_pwr_on)
 	$fdisplay(handle, "N0 LC Wakeup");
 
-always @ (negedge n1_lc_pwr_on)
+always @ (negedge layer1.lc_pwr_on)
 	$fdisplay(handle, "N1 LC Wakeup");
 
-always @ (negedge  n2_lc_pwr_on)
+always @ (negedge layer2.lc_pwr_on)
 	$fdisplay(handle, "N2 LC Wakeup");
 
-always @ (negedge  n3_lc_pwr_on)
+always @ (negedge layer3.lc_pwr_on)
 	$fdisplay(handle, "N3 LC Wakeup");
 
 always @ (negedge c0_lc_pwr_on)
@@ -305,32 +250,11 @@ always @ (posedge clk or negedge resetn)
 begin
 	if (~resetn)
 	begin
-		n0_tx_addr  <= 0;
-		n0_tx_data  <= 0;
-		n0_tx_pend  <= 0;
-		n0_tx_req   <= 0;
-		n0_priority <= 0;
-		n0_req_int	<= 0;
-		n0_auto_rx_ack <= 1;
-      
-	  	n1_req_int	<= 0;
+	  	n0_int_vector <= 0;
+	  	n1_int_vector <= 0;
+	  	n2_int_vector <= 0;
+	  	n3_int_vector <= 0;
 
-		n2_tx_addr  <= 0;
-		n2_tx_data  <= 0;
-		n2_tx_pend  <= 0;
-		n2_tx_req   <= 0;
-		n2_priority <= 0;
-		n2_req_int	<= 0;
-		n2_auto_rx_ack <= 1;
-		
-		n3_tx_addr  <= 0;
-		n3_tx_data  <= 0;
-		n3_tx_pend  <= 0;
-		n3_tx_req   <= 0;
-		n3_priority <= 0;
-		n3_req_int	<= 0;
-		n3_auto_rx_ack <= 1;
-		
 		c0_tx_addr  <= 0;
 		c0_tx_data  <= 0;
 		c0_tx_pend  <= 0;
@@ -343,176 +267,106 @@ begin
 	end
 	else
 	begin
-		if (n0_tx_ack) n0_tx_req <= 0;
-		if (n2_tx_ack) n2_tx_req <= 0;
-		if (n3_tx_ack) n3_tx_req <= 0;
 		if (c0_tx_ack) c0_tx_req <= 0;
 	end
 end
 
+// n0 interrupt control
+wire	[`LC_INT_DEPTH-1:0] n0_int_clr_mask = (n0_clr_int & n0_int_vector);
 always @ (posedge clk)
 begin
-	if (n1_clr_int)
-		n1_req_int <= `SD 0;
+	if (n0_int_clr_mask)
+		n0_int_vector <= `SD (n0_int_vector & (~n0_int_clr_mask));
 end
 
-// n0 rx tx ack control
-always @ (negedge resetn)
-begin
-	n0_rx_ack <= 0;
-	n0_tx_resp_ack <= 0;
-end
-
-always @ (posedge n0_rx_fail)
+always @ (posedge layer0.rx_fail)
 	$fdisplay(handle, "N0 RX Fail");
 
-always @ (posedge n0_rx_req)
+always @ (posedge layer0.rx_req)
 begin
 	$fdisplay(handle, "N0 RX Success");
-   	$fdisplay(handle, "N0 Data out =\t32'h%h", n0_rx_data);
+   	$fdisplay(handle, "N0 Data out =\t32'h%h", layer0.rx_data);
 end
 
-always @ (posedge clk)
-begin
-	if ((n0_rx_req | n0_rx_fail) & n0_auto_rx_ack)
-		`SD n0_rx_ack <= 1;
-	
-	if (n0_rx_ack & (~n0_rx_req))
-		`SD n0_rx_ack <= 0;
-	
-	if (n0_rx_ack & (~n0_rx_fail))
-		`SD n0_rx_ack <= 0;
-end
-
-always @ (posedge n0_tx_succ)
+always @ (posedge layer0.tx_succ)
 	$fdisplay(handle, "N0 TX Success\n");
 
-always @ (posedge n0_tx_fail)
+always @ (posedge layer0.tx_fail)
 	$fdisplay(handle, "N0 TX Fail\n");
+// end of n0 interrupt control
 
+// n1 interrupt control
+wire	[`LC_INT_DEPTH-1:0] n1_int_clr_mask = (n1_clr_int & n1_int_vector);
 always @ (posedge clk)
 begin
-	if (n0_tx_succ | n0_tx_fail)
-		`SD n0_tx_resp_ack <= 1;
-
-	if (n0_tx_resp_ack & (~n0_tx_succ))
-		`SD n0_tx_resp_ack <= 0;
-	
-	if (n0_tx_resp_ack & (~n0_tx_fail))
-		`SD n0_tx_resp_ack <= 0;
+	if (n1_int_clr_mask)
+		n1_int_vector <= `SD (n1_int_vector & (~n1_int_clr_mask));
 end
-// end of n0 rx, tx ack control
 
-// n1 rx tx ack control
-always @ (posedge n1_rx_fail)
+always @ (posedge layer1.rx_fail)
 	$fdisplay(handle, "N1 RX Fail");
 
-always @ (posedge n1_rx_req)
+always @ (posedge layer1.rx_req)
 begin
 	$fdisplay(handle, "N1 RX Success");
-   	$fdisplay(handle, "N1 Data out =\t32'h%h", n1_rx_data);
+   	$fdisplay(handle, "N1 Data out =\t32'h%h", layer1.rx_data);
 end
 
-always @ (posedge n1_tx_succ)
+always @ (posedge layer1.tx_succ)
 	$fdisplay(handle, "N1 TX Success\n");
 
-always @ (posedge n1_tx_fail)
+always @ (posedge layer1.tx_fail)
 	$fdisplay(handle, "N1 TX Fail\n");
-// end of n1 rx, tx ack control
+// end of n1 interrupt control
 
-// n2 rx tx ack control
-always @ (negedge resetn)
+// n2 interrupt control
+wire	[`LC_INT_DEPTH-1:0] n2_int_clr_mask = (n2_clr_int & n2_int_vector);
+always @ (posedge clk)
 begin
-	n2_rx_ack <= 0;
-	n2_tx_resp_ack <= 0;
+	if (n2_int_clr_mask)
+		n2_int_vector <= `SD (n2_int_vector & (~n2_int_clr_mask));
 end
 
-always @ (posedge n2_rx_fail)
+always @ (posedge layer2.rx_fail)
 	$fdisplay(handle, "N2 RX Fail");
 
-always @ (posedge n2_rx_req)
+always @ (posedge layer2.rx_req)
 begin
 	$fdisplay(handle, "N2 RX Success");
-   	$fdisplay(handle, "N2 Data out =\t32'h%h", n2_rx_data);
+   	$fdisplay(handle, "N2 Data out =\t32'h%h", layer2.rx_data);
 end
 
-always @ (posedge clk)
-begin
-	if ((n2_rx_req | n2_rx_fail) & n2_auto_rx_ack)
-		`SD n2_rx_ack <= 1;
-	
-	if (n2_rx_ack & (~n2_rx_req))
-		`SD n2_rx_ack <= 0;
-	
-	if (n2_rx_ack & (~n2_rx_fail))
-		`SD n2_rx_ack <= 0;
-end
-
-always @ (posedge n2_tx_succ)
+always @ (posedge layer2.tx_succ)
 	$fdisplay(handle, "N2 TX Success\n");
 
-always @ (posedge n2_tx_fail)
+always @ (posedge layer2.tx_fail)
 	$fdisplay(handle, "N2 TX Fail\n");
+// end of n2 interrupt control
 
+// n3 interrupt control
+wire	[`LC_INT_DEPTH-1:0] n3_int_clr_mask = (n3_clr_int & n3_int_vector);
 always @ (posedge clk)
 begin
-	if (n2_tx_succ | n2_tx_fail)
-		`SD n2_tx_resp_ack <= 1;
-
-	if (n2_tx_resp_ack & (~n2_tx_succ))
-		`SD n2_tx_resp_ack <= 0;
-	
-	if (n2_tx_resp_ack & (~n2_tx_fail))
-		`SD n2_tx_resp_ack <= 0;
-end
-// end of n2 rx, tx ack control
-
-// n3 rx tx ack control
-always @ (negedge resetn)
-begin
-	n3_rx_ack <= 0;
-	n3_tx_resp_ack <= 0;
+	if (n3_int_clr_mask)
+		n3_int_vector <= `SD (n3_int_vector & (~n3_int_clr_mask));
 end
 
-always @ (posedge n3_rx_fail)
+always @ (posedge layer3.rx_fail)
 	$fdisplay(handle, "N3 RX Fail");
 
-always @ (posedge n3_rx_req)
+always @ (posedge layer3.rx_req)
 begin
 	$fdisplay(handle, "N3 RX Success");
-   	$fdisplay(handle, "N3 Data out =\t32'h%h", n3_rx_data);
+   	$fdisplay(handle, "N3 Data out =\t32'h%h", layer3.rx_data);
 end
 
-always @ (posedge clk)
-begin
-	if ((n3_rx_req | n3_rx_fail) & n3_auto_rx_ack)
-		`SD n3_rx_ack <= 1;
-	
-	if (n3_rx_ack & (~n3_rx_req))
-		`SD n3_rx_ack <= 0;
-	
-	if (n3_rx_ack & (~n3_rx_fail))
-		`SD n3_rx_ack <= 0;
-end
-
-always @ (posedge n3_tx_succ)
+always @ (posedge layer3.tx_succ)
 	$fdisplay(handle, "N3 TX Success\n");
 
-always @ (posedge n3_tx_fail)
+always @ (posedge layer3.tx_fail)
 	$fdisplay(handle, "N3 TX Fail\n");
+// end of n3 interrupt control
 
-always @ (posedge clk)
-begin
-	if (n3_tx_succ | n3_tx_fail)
-		`SD n3_tx_resp_ack <= 1;
-
-	if (n3_tx_resp_ack & (~n3_tx_succ))
-		`SD n3_tx_resp_ack <= 0;
-	
-	if (n3_tx_resp_ack & (~n3_tx_fail))
-		`SD n3_tx_resp_ack <= 0;
-end
-// end of n3 rx, tx ack control
 
 // c0 rx tx ack control
 always @ (negedge resetn)
@@ -574,5 +428,4 @@ end
    end
    
 
-`include "tasks.v"
-endmodule // tb_ulpb_node32
+endmodule // tb_layer_ctrl

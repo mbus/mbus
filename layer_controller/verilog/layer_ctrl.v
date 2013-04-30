@@ -48,9 +48,7 @@ module layer_ctrl(
 	input		[`LC_INT_DEPTH-1:0] INT_VECTOR,
 	output reg	[`LC_INT_DEPTH-1:0] CLR_INT,
 	input		[`FUNC_WIDTH*`LC_INT_DEPTH-1:0] INT_CMD_FUNC_ID,
-	input		[(`DATA_WIDTH<<1)*`LC_INT_DEPTH-1:0] INT_CMD_PAYLOAD,
-
-	input	[`DYNA_WIDTH-1:0] SHORT_ADDR 
+	input		[(`DATA_WIDTH<<1)*`LC_INT_DEPTH-1:0] INT_CMD_PAYLOAD
 );
 `include "include/mbus_func.v"
 
@@ -283,7 +281,7 @@ begin
 		begin
 			next_mem_sub_state = 0;
 			next_layer_interrupted = 0;
-			if (INT_VECTOR)
+			if ((INT_VECTOR>0) && (CLR_INT==0))
 			begin
 				next_int_vector_copied = INT_VECTOR;
 				next_lc_state = LC_STATE_INT_ARBI;

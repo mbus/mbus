@@ -185,7 +185,7 @@ always @ (posedge clk or negedge resetn) begin
 			// n1 assert ext_int
 			TASK14:
 			begin
-				n1_req_int <= 1;
+				n1_int_vector <= 8'h1;
 				state <= TX_WAIT;
 			end
 
@@ -219,29 +219,6 @@ always @ (posedge clk or negedge resetn) begin
 				c0_tx_req <= 1;
 				c0_tx_pend <= 0;
 				c0_priority <= 0;
-				state <= TX_WAIT;
-			end
-
-			// n2 querry
-			TASK23:
-			begin
-				n2_tx_addr <= {28'hf00000, `CHANNEL_ENUM};
-				n2_tx_data <= {`CMD_CHANNEL_ENUM_QUERRY, 28'h0};
-				n2_tx_pend <= 0;
-				n2_tx_req <= 1;
-				n2_priority <= 0;
-				state <= TX_WAIT;
-			end
-
-			// n2 sends to control
-			TASK24:
-			begin
-				n2_tx_addr <= {28'hf00000, `CHANNEL_CTRL};
-				n2_tx_data <= rand_dat;
-				n2_tx_pend <= 0;
-				n2_tx_req <= 1;
-				n2_priority <= 0;
-   	      		$fdisplay(handle, "N2 Data in =\t32'h%h", rand_dat);
 				state <= TX_WAIT;
 			end
 

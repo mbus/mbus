@@ -45,8 +45,10 @@ module layer_ctrl(
 	// End of interface
 	
 	// Interrupt
-	input		INTERRUPT,
-	output reg	CLR_INT,
+	input		[`LC_INT_DEPTH-1:0] INT_VECTOR,
+	output reg	[`LC_INT_DEPTH-1:0] CLR_INT,
+	input		[`FUNC_WIDTH*`LC_INT_DEPTH-1:0] INT_CMD_FUNC_ID,
+	input		[(`DATA_WIDTH<<1)*`LC_INT_DEPTH-1:0] INT_CMD_PAYLOAD,
 
 	input	[`DYNA_WIDTH-1:0] SHORT_ADDR 
 );
@@ -63,8 +65,9 @@ parameter LC_STATE_MEM_READ 	= 4'd3;
 parameter LC_STATE_MEM_WRITE 	= 4'd4;
 parameter LC_STATE_BUS_TX		= 4'd5;
 parameter LC_STATE_WAIT_CPL		= 4'd6;
-parameter LC_STATE_INT			= 4'd7;
-parameter LC_STATE_ERROR		= 4'd8;
+parameter LC_STATE_ERROR		= 4'd7;
+parameter LC_STATE_INT_ARBI		= 4'd8;
+parameter LC_STATE_INT_HANDLED	= 4'd9;
 
 // Double latching registers
 reg		TX_ACK_DL1, TX_ACK_DL2;
@@ -74,11 +77,10 @@ reg		RX_REQ_DL1, RX_REQ_DL2;
 reg		[3:0]	lc_state, next_lc_state, lc_return_state, next_lc_return_state;
 reg		rx_pend_reg, next_rx_pend_reg;
 reg		[2:0]	mem_sub_state, next_mem_sub_state;
-reg		[`DATA_WIDTH-1:0] 	rx_dat_buffer, next_rx_dat_buffer;
 reg		[MAX_DMA_LENGTH-1:0] dma_counter, next_dma_counter;
 
-// Interrupt register
-reg		next_clr_int;
+// rx buffers
+reg		[`DATA_WIDTH-1:0] 	rx_dat_buffer, next_rx_dat_buffer;
 
 // Mbus interface
 reg		[`ADDR_WIDTH-1:0] 	next_tx_addr;
@@ -98,12 +100,10 @@ generate
 		assign rf_in_array[unpk_idx] = RF_DIN[((`LC_RF_DATA_WIDTH)*(unpk_idx+1)-1):((`LC_RF_DATA_WIDTH)*unpk_idx)]; 
 	end
 endgenerate
-// End of generator
 reg		[`LC_RF_DEPTH-1:0] next_rf_load;
 wire	[`LC_RF_DEPTH-1:0] rf_load_temp = (1'b1<<(rx_dat_buffer[`DATA_WIDTH-1:`LC_RF_DATA_WIDTH]));
 reg		[`LC_RF_DATA_WIDTH-1:0] next_rf_dout;
 wire	[`LC_RF_ADDR_WIDTH-1:0] rf_dma_length = rx_dat_buffer[`LC_RF_DATA_WIDTH-1:`LC_RF_DATA_WIDTH-`LC_RF_ADDR_WIDTH];
-// Watch out for aliasing, ex: LC_RF_DEPTH = 32 but CPU accessing register 33,
 wire	[log2(`LC_RF_DEPTH-1)-1:0] rf_idx_temp = rx_dat_buffer[(`LC_RF_DATA_WIDTH+log2(`LC_RF_DEPTH-1)-1):`LC_RF_DATA_WIDTH];
 wire	[`SHORT_ADDR_WIDTH-1:0] rf_relay_addr = rx_dat_buffer[`LC_RF_DATA_WIDTH-`LC_RF_ADDR_WIDTH-1:`LC_RF_DATA_WIDTH-`LC_RF_ADDR_WIDTH-`SHORT_ADDR_WIDTH];
 reg		[log2(`LC_RF_DEPTH-1)-1:0] rf_idx, next_rf_idx;
@@ -114,6 +114,20 @@ assign	MEM_REQ_OUT = (mem_write | mem_read);
 assign	MEM_WRITE = mem_write;
 reg		[`LC_MEM_ADDR_WIDTH-3:0] next_mem_aout;
 reg		[`LC_MEM_DATA_WIDTH-1:0] next_mem_dout;
+
+// Interrupt register
+reg		[`LC_INT_DEPTH-1:0] next_clr_int, int_vector_copied, next_int_vector_copied;
+reg		[log2(`LC_INT_DEPTH-1)-1:0] int_idx, next_int_idx;
+reg		next_layer_interrupted, layer_interrupted;
+wire	[`FUNC_WIDTH-1:0] interrupt_functional_id [0:`LC_INT_DEPTH-1];
+wire	[(`DATA_WIDTH<<1)-1:0] interrupt_payload [0:`LC_INT_DEPTH-1];
+generate
+	for (unpk_idx=0; unpk_idx<(`LC_INT_DEPTH); unpk_idx=unpk_idx+1)
+	begin: UNPACK_INT
+		assign interrupt_functional_id[unpk_idx] = INT_CMD_FUNC_ID[((`FUNC_WIDTH)*(unpk_idx+1)-1):((`FUNC_WIDTH)*unpk_idx)]; 
+		assign interrupt_payload[unpk_idx] = INT_CMD_PAYLOAD[((`DATA_WIDTH<<1)*(unpk_idx+1)-1):((`DATA_WIDTH<<1)*unpk_idx)]; 
+	end
+endgenerate
 
 wire MEM_ACK_RSTn = (RESETn_local & (~MEM_ACK_IN));
 always @ (posedge CLK or negedge MEM_ACK_RSTn)
@@ -177,6 +191,9 @@ begin
 		MEM_DOUT <= 0;
 		// Interrupt interface
 		CLR_INT <= 0;
+		int_idx <= 0;
+		int_vector_copied <= 0;
+		layer_interrupted <= 0;
 	end
 	else
 	begin
@@ -205,6 +222,9 @@ begin
 		MEM_DOUT <= next_mem_dout;
 		// Interrupt interface
 		CLR_INT <= next_clr_int;
+		int_idx <= next_int_idx;
+		int_vector_copied <= next_int_vector_copied;
+		layer_interrupted <= next_layer_interrupted;
 	end
 end
 
@@ -237,12 +257,15 @@ begin
 	next_mem_read	= mem_read;
 	// Interrupt registers
 	next_clr_int = CLR_INT;
+	next_int_idx = int_idx;
+	next_int_vector_copied = int_vector_copied;
+	next_layer_interrupted = layer_interrupted;
 
 	// Asynchronized interface
 	if ((~(RX_REQ_DL2 | RX_FAIL)) & RX_ACK)
 		next_rx_ack = 0;
 	
-	if (CLR_INT & (~INTERRUPT))
+	if (CLR_INT & (~INT_VECTOR))
 		next_clr_int = 0;
 
 	if (TX_ACK_DL2 & TX_REQ)
@@ -258,10 +281,13 @@ begin
 	case (lc_state)
 		LC_STATE_IDLE:
 		begin
-			if (INTERRUPT)
+			next_mem_sub_state = 0;
+			next_layer_interrupted = 0;
+			if (INT_VECTOR)
 			begin
-				next_lc_state = LC_STATE_INT;
-				next_clr_int = 1;
+				next_int_vector_copied = INT_VECTOR;
+				next_lc_state = LC_STATE_INT_ARBI;
+				next_int_idx = 0;
 			end
 			else
 			begin
@@ -280,7 +306,6 @@ begin
 						default: begin if (RX_PEND) next_lc_state = LC_STATE_ERROR; end	// Invalid message
 					endcase
 				end
-				next_mem_sub_state = 0;
 			end
 		end
 
@@ -385,7 +410,7 @@ begin
 						next_dma_counter = 0;
 						next_mem_sub_state = 1;
 					end
-					else if (rx_pend_reg)	// Invalid address
+					else if (rx_pend_reg & (~layer_interrupted))	// Invalid address
 					begin
 						next_lc_state = LC_STATE_ERROR;
 						next_mem_sub_state = 0;
@@ -396,18 +421,28 @@ begin
 
 				1:
 				begin
-					if (RX_REQ_DL2 & (~RX_ACK))
+					if (layer_interrupted)
 					begin
-						next_rx_ack = 1;
-						next_rx_pend_reg = RX_PEND;
+						next_rx_pend_reg = 0;
 						next_mem_sub_state = 2;
-						next_dma_counter = RX_DATA[MAX_DMA_LENGTH-1:0];	
-						next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, RX_DATA[`DATA_WIDTH-1:`DATA_WIDTH-`SHORT_ADDR_WIDTH]};
+						next_dma_counter = interrupt_payload[int_idx][MAX_DMA_LENGTH-1:0];	
+						next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, interrupt_payload[int_idx][`DATA_WIDTH-1:`DATA_WIDTH-`SHORT_ADDR_WIDTH]};
 					end
-					else if (RX_FAIL & (~RX_ACK))
+					else
 					begin
-						next_rx_ack = 1;
-						next_lc_state = LC_STATE_IDLE;
+						if (RX_REQ_DL2 & (~RX_ACK))
+						begin
+							next_rx_ack = 1;
+							next_rx_pend_reg = RX_PEND;
+							next_mem_sub_state = 2;
+							next_dma_counter = RX_DATA[MAX_DMA_LENGTH-1:0];	
+							next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, RX_DATA[`DATA_WIDTH-1:`DATA_WIDTH-`SHORT_ADDR_WIDTH]};
+						end
+						else if (RX_FAIL & (~RX_ACK))
+						begin
+							next_rx_ack = 1;
+							next_lc_state = LC_STATE_IDLE;
+						end
 					end
 				end
 
@@ -533,13 +568,29 @@ begin
 				next_lc_state = LC_STATE_IDLE;
 		end
 
-		LC_STATE_INT:
+		LC_STATE_INT_ARBI:
 		begin
-			next_tx_data = {4'h0, SHORT_ADDR, 24'hff_ffff};
-			next_tx_addr = {{(`ADDR_WIDTH-`FUNC_WIDTH){1'b0}}, `CHANNEL_MEMBER_EVENT};
-			next_tx_req = 1;
-			next_tx_pend = 0;
-			next_lc_state = LC_STATE_BUS_TX;
+			if (int_vector_copied[0])
+			begin
+				next_lc_state = LC_STATE_INT_HANDLED;
+			end
+			else
+			begin
+				next_int_vector_copied = (int_vector_copied>>1);
+				next_int_idx = int_idx + 1;
+			end
+		end
+
+		LC_STATE_INT_HANDLED:
+		begin
+			next_clr_int = (1'b1 << int_idx);	// clear interrupt
+			next_rx_dat_buffer = interrupt_payload[int_idx][(`DATA_WIDTH<<1)-1:`DATA_WIDTH];
+			next_layer_interrupted = 1;
+			case (interrupt_functional_id[int_idx])
+				`LC_CMD_RF_READ: begin next_lc_state = LC_STATE_RF_READ; next_rx_pend_reg = 0; end
+				`LC_CMD_MEM_READ: begin next_lc_state = LC_STATE_MEM_READ; next_rx_pend_reg = 1; end
+				default: begin next_lc_state = LC_STATE_IDLE; end	// Invalid interrupt message
+			endcase
 		end
 
 		// This state handles errors, junk message coming in. disgarding all

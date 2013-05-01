@@ -59,9 +59,8 @@
 `define LC_MEM_DATA_WIDTH 32	// should ALWAYS less than DATA_WIDTH
 `define LC_MEM_DEPTH	65536	// 1 ~ 2^30
 
-// Sensors
-`define LC_SENSOR_DATA_WIDTH 32
-`define LC_SENSOR_NUM 8	
+// Interrupt vector
+`define LC_INT_DEPTH 8
 
 // Commands for Layer controller, the width should match `FUNC_WIDTH
 `define LC_CMD_RF_WRITE		4'h0

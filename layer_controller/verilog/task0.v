@@ -79,13 +79,16 @@ always @ (posedge clk or negedge resetn) begin
 			end
 
 
-			// c0->n1, write RF
+			// C0 writes random data to layer X's RF
+			// layer X: dest_short_addr
+			// addr: 	rf_addr
+			// length: 	word_counter
 			TASK7:
 			begin
 				if ((~c0_tx_ack) & (~c0_tx_req))
 				begin
 					c0_priority <= 0;
-					c0_tx_addr <= {24'h0, 4'h3, `LC_CMD_RF_WRITE};
+					c0_tx_addr <= {24'h0, dest_short_addr, `LC_CMD_RF_WRITE};
 					c0_tx_req <= 1;
 					c0_tx_data <= ((rf_addr<<24) | (rand_dat & 32'h00ff_ffff));
 					if (word_counter)
@@ -93,21 +96,26 @@ always @ (posedge clk or negedge resetn) begin
 						c0_tx_pend <= 1;
 						word_counter <= word_counter - 1;
 						rf_addr <= rf_addr + 1;
-   	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", rf_addr, (rand_dat&32'h00ffffff));
+   	      				$fdisplay(handle, "Write RF addr: 8'h%h,\tData: 24'h%h", rf_addr, (rand_dat&32'h00ffffff));
 					end
 					else
 					begin
 						c0_tx_pend <= 0;
-   	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", rf_addr, (rand_dat&32'h00ffffff));
+   	      				$fdisplay(handle, "Write RF addr: 8'h%h,\tData: 24'h%h", rf_addr, (rand_dat&32'h00ffffff));
 						state <= TX_WAIT;
 					end
 				end
 			end
 
-			// c0->n1, read RF
+			// C0 reads data from layer X's RF and relay to layer Y with
+			// channel Z
+			// layer X: dest_short_addr
+			// layer Y, channel Z: delay_addr (4'hY, 4'hZ)
+			// addr: 	rf_addr
+			// length: 	word_counter
 			TASK8:
 			begin
-				c0_tx_addr <= {24'h0, 4'h3, `LC_CMD_RF_READ};
+				c0_tx_addr <= {24'h0, dest_short_addr, `LC_CMD_RF_READ};
 				c0_tx_data <= (rf_addr<<24 | word_counter<<16 | relay_addr<<8 | 8'h0);
 				c0_tx_pend <= 0;
 				c0_tx_req <= 1;
@@ -115,13 +123,16 @@ always @ (posedge clk or negedge resetn) begin
 				state <= TX_WAIT;
 			end
 
-			// c0->n1, write MEM
+			// C0 writes random data to layer X's MEM
+			// layer X: dest_short_addr
+			// addr: 	mem_addr
+			// length: 	word_counter
 			TASK9:
 			begin
 				if ((~c0_tx_ack) & (~c0_tx_req))
 				begin
 					c0_priority <= 0;
-					c0_tx_addr <= {24'h0, 4'h3, `LC_CMD_MEM_WRITE};
+					c0_tx_addr <= {24'h0, dest_short_addr, `LC_CMD_MEM_WRITE};
 					c0_tx_req <= 1;
 					if (~mem_ptr_set)
 					begin
@@ -148,13 +159,18 @@ always @ (posedge clk or negedge resetn) begin
 				end
 			end
 
-			// c0->n1, read MEM
+			// C0 reads data from layer X's MEM and relay to layer Y with
+			// channel Z
+			// layer X: dest_short_addr
+			// layer Y, channel Z: delay_addr (4'hY, 4'hZ)
+			// addr: 	mem_addr
+			// length: 	word_counter
 			TASK10:
 			begin
 				if ((~c0_tx_ack) & (~c0_tx_req))
 				begin
 					c0_priority <= 0;
-					c0_tx_addr <= {24'h0, 4'h3, `LC_CMD_MEM_READ};
+					c0_tx_addr <= {24'h0, dest_short_addr, `LC_CMD_MEM_READ};
 					c0_tx_req <= 1;
 					if (~mem_ptr_set)
 					begin
@@ -170,6 +186,7 @@ always @ (posedge clk or negedge resetn) begin
 					end
 				end
 			end
+
 			// Selective sleep N1 using full prefix
 			TASK11:
 			begin
@@ -181,12 +198,51 @@ always @ (posedge clk or negedge resetn) begin
 				state <= TX_WAIT;
 			end
 
-
-			// n1 assert ext_int
-			TASK14:
+			// C0 writes 3-byte data to layer X's RF
+			// layer X: dest_short_addr
+			// addr: 	rf_addr
+			// data:	rf_data
+			TASK12:
 			begin
-				n1_int_vector <= 8'h1;
-				state <= TX_WAIT;
+				if ((~c0_tx_ack) & (~c0_tx_req))
+				begin
+					c0_priority <= 0;
+					c0_tx_addr <= {24'h0, dest_short_addr, `LC_CMD_RF_WRITE};
+					c0_tx_req <= 1;
+					c0_tx_data <= ((rf_addr<<24) | rf_data);
+					c0_tx_pend <= 0;
+   	      			$fdisplay(handle, "Write RF addr: 8'h%h,\tData: 24'h%h", rf_addr, rf_data);
+					state <= TX_WAIT;
+				end
+			end
+
+			// C0 writes 1-word data to layer X's MEM
+			// layer X: dest_short_addr
+			// addr: 	mem_addr
+			// length: 	word_counter
+			// data:	mem_data
+			TASK13:
+			begin
+				if ((~c0_tx_ack) & (~c0_tx_req))
+				begin
+					c0_priority <= 0;
+					c0_tx_addr <= {24'h0, dest_short_addr, `LC_CMD_MEM_WRITE};
+					c0_tx_req <= 1;
+					if (~mem_ptr_set)
+					begin
+						c0_tx_data <= ((mem_addr<<2) | 2'b0);
+						c0_tx_pend <= 1;
+						mem_ptr_set <= 1;
+						addr_increment <= 0;
+					end
+					else
+					begin
+						c0_tx_data <= mem_data;
+						c0_tx_pend <= 0;
+   	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", (mem_addr+addr_increment)<<2, mem_data);
+						state <= TX_WAIT;
+					end
+				end
 			end
 
 			// All layers sleep

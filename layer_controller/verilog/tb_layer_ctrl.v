@@ -62,6 +62,9 @@ module tb_layer_ctrl();
 	reg							mem_ptr_set;
 	reg	[`SHORT_ADDR_WIDTH-1:0]	relay_addr;
 	reg	[31:0]					addr_increment;
+	reg	[3:0]					dest_short_addr;
+	reg [23:0]					rf_data;
+	reg [31:0]					mem_data;
    	integer 		  			handle;
 
    parameter 		  TASK0=0;
@@ -144,6 +147,8 @@ begin
 	mem_ptr_set = 0;
 	relay_addr = 0;
 	addr_increment = 0;
+	rf_data = 0;
+	mem_data = 0;
 
     @ (posedge clk);
     @ (posedge clk);
@@ -211,9 +216,7 @@ always #1250 clk = ~clk;
 `ifdef TASK0
 	`include "task0.v"
 `elsif TASK1
-	`include "task1.v"
-`elsif TASK2
-	`include "task2.v"
+	`include "task0.v"
 `endif
 
 always @ (posedge layer0.lc_pwr_on)

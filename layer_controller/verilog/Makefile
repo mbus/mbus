@@ -40,6 +40,7 @@ SIMFILES = 	mbus_addr_rf.v \
 			mbus_ctrl_wrapper.v \
 			mbus_layer_wrapper.v \
 			mbus_ctrl_layer_wrapper.v \
+			mbus_busy_ctrl.v \
 			mem_ctrl.v \
 			layer_ctrl_isolation.v \
 			rf_ctrl.v \

@@ -154,6 +154,7 @@ always @ (posedge clk or negedge resetn) begin
 						c0_tx_data <= rand_dat;
 						c0_tx_pend <= 0;
    	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", (mem_addr+addr_increment)<<2, rand_dat);
+						mem_ptr_set <= 0;
 						state <= TX_WAIT;
 					end
 				end
@@ -183,6 +184,7 @@ always @ (posedge clk or negedge resetn) begin
 						c0_tx_data <= ((relay_addr<<24) | word_counter);
 						c0_tx_pend <= 0;
 						state <= TX_WAIT;
+						mem_ptr_set <= 0;
 					end
 				end
 			end
@@ -240,6 +242,47 @@ always @ (posedge clk or negedge resetn) begin
 						c0_tx_data <= mem_data;
 						c0_tx_pend <= 0;
    	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", (mem_addr+addr_increment)<<2, mem_data);
+						mem_ptr_set <= 0;
+						state <= TX_WAIT;
+					end
+				end
+			end
+
+			// C0 writes random data to layer X's MEM in RF write format
+			// 8-bit addr, 24-bit data
+			// layer X: dest_short_addr
+			// addr: 	mem_addr
+			// rf-addr: rf_addr
+			// length: 	word_counter
+			TASK14:
+			begin
+				if ((~c0_tx_ack) & (~c0_tx_req))
+				begin
+					c0_priority <= 0;
+					c0_tx_addr <= {24'h0, dest_short_addr, `LC_CMD_MEM_WRITE};
+					c0_tx_req <= 1;
+					if (~mem_ptr_set)
+					begin
+						c0_tx_data <= ((mem_addr<<2) | 2'b0);
+						c0_tx_pend <= 1;
+						mem_ptr_set <= 1;
+						addr_increment <= 0;
+					end
+					else if (word_counter)
+					begin
+						c0_tx_data <= ((rf_addr<<24) | (rand_dat & 32'h00ff_ffff));
+						c0_tx_pend <= 1;
+						word_counter <= word_counter - 1;
+						addr_increment <= addr_increment + 1;
+						rf_addr <= rf_addr + 1;
+   	      				$fdisplay(handle, "Write MEM addr: 32'h%h,\tData: 32'h%h", (mem_addr+addr_increment)<<2, ((rf_addr<<24) | (rand_dat&32'h00ffffff)));
+					end
+					else
+					begin
+						c0_tx_data <= ((rf_addr<<24) | (rand_dat & 32'h00ff_ffff));
+						c0_tx_pend <= 0;
+   	      				$fdisplay(handle, "Write MEM addr: 32'h%h,\tData: 32'h%h", (mem_addr+addr_increment)<<2, ((rf_addr<<24) | (rand_dat&32'h00ffffff)));
+						mem_ptr_set <= 0;
 						state <= TX_WAIT;
 					end
 				end

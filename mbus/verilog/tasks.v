@@ -157,14 +157,12 @@ begin
     $fdisplay(handle, "\nTASK18, All sleep");
     state = TASK18;
 	@ (posedge c0_tx_succ | c0_tx_fail);
-	sc_clr_busy = 1;
 
     #100000;
     $fdisplay(handle, "\nTASK0, Master node and Processor wake up");
     state = TASK0;
 	@ (posedge SCLK);
 	c0_req_int = 0;
-	sc_clr_busy = 0;
     #50000;
 
     #100000;
@@ -179,14 +177,12 @@ begin
     $fdisplay(handle, "\nTASK18, All sleep");
     state = TASK18;
 	@ (posedge c0_tx_succ | c0_tx_fail);
-	sc_clr_busy = 1;
 
     #100000;
     $fdisplay(handle, "\nTASK0, Master node and Processor wake up");
     state = TASK0;
 	@ (posedge SCLK);
 	c0_req_int = 0;
-	sc_clr_busy = 0;
     #50000;
 
     #10000;

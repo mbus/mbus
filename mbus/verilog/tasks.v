@@ -263,6 +263,19 @@ begin
     #50000;
 	n3_req_int = 0;
 
+    #100000;
+    $fdisplay(handle, "\nTASK18, All sleep");
+    state = TASK18;
+	@ (posedge c0_tx_succ | c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nBoth N1 and N2 assert interrupt");
+	n1_req_int = 1;
+	#33800;
+	n2_req_int = 1;
+    #50000;
+	n1_req_int = 0;
+	n2_req_int = 0;
 
     #300000;
     $display("*************************************");

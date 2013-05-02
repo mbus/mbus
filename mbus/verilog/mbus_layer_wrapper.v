@@ -54,7 +54,7 @@ wire	[`ADDR_WIDTH-1:0] n0_rx_addr_t_iso;
 wire	[`DATA_WIDTH-1:0] n0_rx_data_t_iso;
 wire	n0_tx_ack_t_iso, n0_rx_req_t_iso, n0_rx_bcast_t_iso, n0_rx_fail_t_iso, n0_rx_pend_t_iso, n0_tx_succ_t_iso, n0_tx_fail_t_iso, n0_pwr_on_t_iso, n0_rel_clk_t_iso, n0_rel_rst_t_iso, n0_rel_iso_t_iso;
 
-wire	ext_int_to_bus, ext_int_to_wire, clr_ext_int;
+wire	ext_int_to_bus, ext_int_to_wire, clr_ext_int, clr_busy, bus_busyn, sleep_ctrl_clr_busy; 
 
 wire	[`DYNA_WIDTH-1:0] rf_addr_out_to_node, rf_addr_in_from_node;
 wire	rf_addr_valid, rf_addr_write, rf_addr_rstn;
@@ -81,14 +81,14 @@ mbus_node#(.ADDRESS(ADDRESS)) n0
       .TX_SUCC(n0_tx_succ_t_iso), .TX_FAIL(n0_tx_fail_t_iso), .TX_RESP_ACK(n0_tx_resp_ack_t_bc),
 	  .RELEASE_RST_FROM_SLEEP_CTRL(n0_release_rst), .SLEEP_REQUEST_TO_SLEEP_CTRL(n0_sleep_req), 
 	  .POWER_ON_TO_LAYER_CTRL(n0_pwr_on_t_iso), .RELEASE_CLK_TO_LAYER_CTRL(n0_rel_clk_t_iso), .RELEASE_RST_TO_LAYER_CTRL(n0_rel_rst_t_iso), .RELEASE_ISO_TO_LAYER_CTRL(n0_rel_iso_t_iso),
-	  .EXTERNAL_INT(ext_int_to_bus), .CLR_EXT_INT(clr_ext_int),
+	  .EXTERNAL_INT(ext_int_to_bus), .CLR_EXT_INT(clr_ext_int), .CLR_BUSY(clr_busy),
 	  .ASSIGNED_ADDR_IN(rf_addr_out_to_node), .ASSIGNED_ADDR_OUT(rf_addr_in_from_node), 
 	  .ASSIGNED_ADDR_VALID(rf_addr_valid), .ASSIGNED_ADDR_WRITE(rf_addr_write), .ASSIGNED_ADDR_INVALIDn(rf_addr_rstn));
 
 // always on block
 mbus_regular_sleep_ctrl sc0
 	(.CLKIN(CLKIN), .RESETn(RESETn),
-	 .SLEEP_REQ(n0_sleep_req), .POWER_ON(n0_power_on), .RELEASE_CLK(), .RELEASE_RST(n0_release_rst), .RELEASE_ISO(n0_release_iso_from_sc));
+	 .SLEEP_REQ(n0_sleep_req), .POWER_ON(n0_power_on), .RELEASE_CLK(), .RELEASE_RST(n0_release_rst), .RELEASE_ISO(n0_release_iso_from_sc), .BC_PG_CLR_BUSY(sleep_ctrl_clr_busy));
 
 // always on wire controller
 mbus_wire_ctrl lc0
@@ -103,6 +103,9 @@ mbus_ext_int int0(
 	.CLKIN(CLKIN), 
 	.RESETn(RESETn),
 	.REQ_INT(REQ_INT), 
+	.BUS_BUSYn(bus_busyn),
+	.BC_PWR_ON(n0_power_on),
+	.LC_PWR_ON(LC_POWER_ON),
 	.EXTERNAL_INT_TO_WIRE(ext_int_to_wire), 
 	.EXTERNAL_INT_TO_BUS(ext_int_to_bus), 
 	.CLR_EXT_INT(clr_ext_int));
@@ -118,6 +121,14 @@ mbus_addr_rf rf0(
 	.ADDR_CLRn(rf_addr_rstn)
 );
 
+// always on busy controller
+mbus_busy_ctrl mbc0(
+	.MBUS_CLK(CLKIN),
+	.RESETn(RESETn),
+	.BC_RELEASE_ISO(n0_release_iso_from_sc),
+	.SC_CLR_BUSY(sleep_ctrl_clr_busy),
+	.CLR_BUSY(clr_busy),
+	.BUS_BUSYn(bus_busyn));
 
 always @ *
 begin

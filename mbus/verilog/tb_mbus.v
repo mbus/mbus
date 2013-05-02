@@ -95,7 +95,6 @@ module tb_mbus();
 	reg							err_start;
 	reg							err_clk;
 
-
 	// testbench variables
    	reg [31:0] 		  			rand_dat, rand_dat2;
    	reg [4:0] 		  			state;
@@ -184,6 +183,7 @@ mbus_ctrl_layer_wrapper #(.ADDRESS(20'haaaa0)) c0
 
     clk = 0;
     resetn = 1;
+	err_clk = 0;
 
     @ (posedge clk);
     @ (posedge clk);

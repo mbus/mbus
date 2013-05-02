@@ -40,6 +40,7 @@ SIMFILES = 	mbus_addr_rf.v \
 			mbus_ctrl_wrapper.v \
 			mbus_layer_wrapper.v \
 			mbus_ctrl_layer_wrapper.v \
+			mbus_busy_ctrl.v \
 			mbus_err_inject.v
 
 SYNFILES = 	../syn/mbus_node32_ab.nl.v \

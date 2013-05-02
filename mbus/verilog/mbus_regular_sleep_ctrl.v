@@ -6,7 +6,8 @@ module mbus_regular_sleep_ctrl(
 	output	reg POWER_ON,
 	output	reg RELEASE_CLK,
 	output	reg RELEASE_RST,
-	output	reg RELEASE_ISO
+	output	reg RELEASE_ISO,
+	output	reg	BC_PG_CLR_BUSY
 );
 
 `include "include/mbus_def.v"
@@ -53,6 +54,7 @@ begin
 		RELEASE_CLK_POS <= RELEASE;
 		RELEASE_ISO_POS <= HOLD;
 		RELEASE_RST_POS <= RELEASE;
+		BC_PG_CLR_BUSY <= 0;
 	end
 	else
 	begin
@@ -62,6 +64,7 @@ begin
 				POWER_ON_POS <= RELEASE;
 				RELEASE_CLK_POS <= RELEASE;
 				fsm_pos <= 1;
+				BC_PG_CLR_BUSY <= 0;
 			end
 
 			1:
@@ -86,6 +89,7 @@ begin
 				RELEASE_RST_POS <= HOLD;
 				POWER_ON_POS <= HOLD;
 				RELEASE_CLK_POS <= HOLD;
+				BC_PG_CLR_BUSY <= 1;
 			end
 
 		endcase

@@ -48,6 +48,8 @@
  * 			at this point.
  * --------------------------------------------------------------------------
  * Update log:
+ * 5/1 '13
+ * Add CLR_BUSY Port
  * 4/28 '13
  * fixed streaming broadcast RX_REQ asserts in between
  * 4/24 '13
@@ -114,6 +116,7 @@ module mbus_node(
 	// External interrupt
 	input 		EXTERNAL_INT,
 	output 	reg CLR_EXT_INT,
+	output	reg	CLR_BUSY,
 	`endif
 	// interface with local register files (RF)
 	input		[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_IN,
@@ -176,6 +179,7 @@ reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state, bus_state_neg;
 reg		[log2(`DATA_WIDTH-1)-1:0] bit_position, next_bit_position; 
 reg		req_interrupt, next_req_interrupt;
 reg		out_reg_pos, next_out_reg_pos, out_reg_neg;
+reg		next_clr_busy;
 
 // tx registers
 reg		[`ADDR_WIDTH-1:0] ADDR, next_addr;
@@ -481,6 +485,7 @@ begin
 		bit_position <= `ADDR_WIDTH - 1'b1;
 		req_interrupt <= 0;
 		out_reg_pos <= 0;
+		CLR_BUSY <= 0;
 		// Transmitter registers
 		ADDR <= 0;
 		DATA <= 0;
@@ -517,6 +522,7 @@ begin
 		end
 		req_interrupt <= next_req_interrupt;
 		out_reg_pos <= next_out_reg_pos;
+		CLR_BUSY <= next_clr_busy;
 		// Transmitter registers
 		ADDR <= next_addr;
 		DATA <= next_data;
@@ -545,6 +551,7 @@ begin
 	next_bit_position = bit_position;
 	next_req_interrupt = req_interrupt;
 	next_out_reg_pos = out_reg_pos;
+	next_clr_busy = CLR_BUSY;
 
 	// Transmitter registers
 	next_addr = ADDR;
@@ -601,6 +608,7 @@ begin
 
 		BUS_PRIO:
 		begin
+			next_clr_busy = 0;
 			next_mode = mode_temp;
 			next_bus_state = BUS_ADDR;
 			// no matter this node wins the arbitration or not, must clear
@@ -967,6 +975,7 @@ begin
 
 		BUS_BACK_TO_IDLE:
 		begin
+			next_clr_busy = 1;
 			next_bus_state = BUS_IDLE;
 			next_req_interrupt = 0;
 			next_mode = MODE_RX;
@@ -1066,22 +1075,9 @@ begin
 					end
 				end
 
-				/*
 				BUS_BACK_TO_IDLE:
 				begin
-					// These signals should be taken care in isolation blocks
-					// i.e. SLEEP_REQUEST_TO_SLEEP_CTRL asserted, isolation
-					// asserts these
-					//
-					// only useful to simulate a layer w/o isolation block
-					if (shutdown)
-					begin
-						POWER_ON_TO_LAYER_CTRL <= `IO_HOLD;
-						RELEASE_CLK_TO_LAYER_CTRL <= `IO_HOLD;
-						RELEASE_RST_TO_LAYER_CTRL <= `IO_HOLD;
-					end
 				end
-				*/
 			endcase
 		end
 	end

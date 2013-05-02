@@ -157,12 +157,14 @@ begin
     $fdisplay(handle, "\nTASK18, All sleep");
     state = TASK18;
 	@ (posedge c0_tx_succ | c0_tx_fail);
+	sc_clr_busy = 1;
 
     #100000;
     $fdisplay(handle, "\nTASK0, Master node and Processor wake up");
     state = TASK0;
 	@ (posedge SCLK);
 	c0_req_int = 0;
+	sc_clr_busy = 0;
     #50000;
 
     #100000;
@@ -177,12 +179,14 @@ begin
     $fdisplay(handle, "\nTASK18, All sleep");
     state = TASK18;
 	@ (posedge c0_tx_succ | c0_tx_fail);
+	sc_clr_busy = 1;
 
     #100000;
     $fdisplay(handle, "\nTASK0, Master node and Processor wake up");
     state = TASK0;
 	@ (posedge SCLK);
 	c0_req_int = 0;
+	sc_clr_busy = 0;
     #50000;
 
     #10000;
@@ -223,6 +227,45 @@ begin
     $fdisplay(handle, "Result: C0 should NOT assert RX_REQ, the message should be handled in mbus_ctrl_wrapper");
     state = TASK24;
     #300000;
+
+    #10000;
+    $fdisplay(handle, "\nTASK19, All Wake");
+    state = TASK19;
+	@ (posedge c0_tx_succ | c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK15, N2 asserts ext_int");
+    $fdisplay(handle, "Result: C0, N0, N1, N3 RX Fail");
+    state = TASK15;
+    #50000;
+	n2_req_int = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK18, All sleep");
+    state = TASK18;
+	@ (posedge c0_tx_succ | c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK0, Master node and Processor wake up");
+    state = TASK0;
+	@ (posedge SCLK);
+	c0_req_int = 0;
+    #50000;
+
+    #100000;
+    $fdisplay(handle, "\nTASK15, N2 asserts ext_int");
+    $fdisplay(handle, "Result: C0, N0, N1, N3 RX Fail");
+    state = TASK15;
+    #50000;
+	n2_req_int = 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK25, N3 asserts ext_int between transmission");
+	word_counter = 4;
+    state = TASK25;
+	@ (posedge n2_tx_succ | n2_tx_fail);
+    #50000;
+	n3_req_int = 0;
 
 
     #300000;

@@ -35,6 +35,7 @@ module mbus_ctrl_wrapper(
 	// wake up bus controller
 	input 	EXTERNAL_INT,
 	output	CLR_EXT_INT,
+	output	CLR_BUSY,
 	// wake up processor
 	output	reg SLEEP_REQUEST_TO_SLEEP_CTRL
 );
@@ -123,6 +124,7 @@ mbus_node#(.ADDRESS(ADDRESS), .MASTER_NODE(1'b1), .CPU_LAYER(1'b1)) node0(
 	.SLEEP_REQUEST_TO_SLEEP_CTRL(SLEEP_REQ),
 	.EXTERNAL_INT(EXTERNAL_INT),
 	.CLR_EXT_INT(CLR_EXT_INT),
+	.CLR_BUSY(CLR_BUSY),
 	.ASSIGNED_ADDR_IN(4'h1),
 	.ASSIGNED_ADDR_OUT(),
 	.ASSIGNED_ADDR_VALID(1'b1),

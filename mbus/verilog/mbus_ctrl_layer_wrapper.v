@@ -35,7 +35,7 @@ module mbus_ctrl_layer_wrapper(
 
 parameter ADDRESS = 20'haaaaa;
 
-wire	m0_power_on;
+wire	m0_power_on, m0_power_onb;
 wire	CLK_GEN;
 wire	release_iso_from_s0, release_rst_from_s0;
 wire	sleep_req_from_m0;
@@ -45,7 +45,7 @@ SLEEP_CONTROLv4 s0(
 	.MBC_ISOLATE_B(), 
 	.MBC_RESET(release_rst_from_s0),
     .MBC_RESET_B(), 
-	.MBC_SLEEP(),
+	.MBC_SLEEP(m0_power_onb),
 	.MBC_SLEEP_B(m0_power_on), 
 	.SYSTEM_ACTIVE(),
     .WAKEUP_REQ_ORED(),
@@ -65,8 +65,7 @@ mbus_clk_sim mcs0(
 );
 
 wire	w_m0wc0_clk_out, w_m0wc0;
-wire	ext_int_to_wire, ext_int_to_bus, clr_ext_int;
-
+wire	ext_int_to_wire, ext_int_to_bus, clr_ext_int, bus_busyn, clr_busy;
 
 reg		m0_tx_ack_f_bc;
 reg		[`ADDR_WIDTH-1:0] m0_rx_addr_f_bc;
@@ -114,7 +113,7 @@ mbus_ctrl_wrapper #(.ADDRESS(ADDRESS)) m0(
 	.RELEASE_CLK_TO_LAYER_CTRL(m0_rel_clk_t_iso),
 	.RELEASE_RST_TO_LAYER_CTRL(m0_rel_rst_t_iso),
 	.RELEASE_ISO_TO_LAYER_CTRL(m0_rel_iso_t_iso),
-	.EXTERNAL_INT(ext_int_to_bus), .CLR_EXT_INT(clr_ext_int),
+	.EXTERNAL_INT(ext_int_to_bus), .CLR_EXT_INT(clr_ext_int), .CLR_BUSY(clr_busy),
 	.SLEEP_REQUEST_TO_SLEEP_CTRL(sleep_req_from_m0)
 );
 
@@ -132,9 +131,21 @@ mbus_ext_int int0(
 	.CLKIN(CLKIN), 
 	.RESETn(RESETn),
 	.REQ_INT(REQ_INT), 
+	.BUS_BUSYn(bus_busyn),
+	.BC_PWR_ON(~m0_power_on),
+	.LC_PWR_ON(LC_POWER_ON),
 	.EXTERNAL_INT_TO_WIRE(ext_int_to_wire), 
 	.EXTERNAL_INT_TO_BUS(ext_int_to_bus), 
 	.CLR_EXT_INT(clr_ext_int));
+
+// always on busy controller
+mbus_busy_ctrl mbc0(
+	.MBUS_CLK(CLKIN),
+	.RESETn(RESETn),
+	.BC_RELEASE_ISO(release_iso_from_s0),
+	.SC_CLR_BUSY(m0_power_onb),
+	.CLR_BUSY(clr_busy),
+	.BUS_BUSYn(bus_busyn));
 
 always @ *
 begin

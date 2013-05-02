@@ -271,7 +271,7 @@ begin
     #100000;
     $fdisplay(handle, "\nBoth N1 and N2 assert interrupt");
 	n1_req_int = 1;
-	#33800;
+	#33600;
 	n2_req_int = 1;
     #50000;
 	n1_req_int = 0;

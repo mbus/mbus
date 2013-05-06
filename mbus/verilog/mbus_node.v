@@ -41,12 +41,9 @@
  * i.e. ADDRESS_MASK = 8'hf0, compare only upper 4-bit of address (from MSB)
  * 
  *
- * Last modified date: 04/09 '13
+ * Last modified date: 05/06 '13
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
- * --------------------------------------------------------------------------
- * IMPORTANT: This module only works for RX only layers, not able to transmit
- * 			at this point.
- * --------------------------------------------------------------------------
+ *
  * Update log:
  * 5/6 '13
  * Rename PRIORITY -> TX_PRIORITY

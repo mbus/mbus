@@ -1,4 +1,61 @@
-
+/* Verilog implementation of Generic Layer Controller
+ *
+ * This layer controller is a interface between MBus and layer peripherials.
+ * It has 4 major IO banks
+ * 1. IOs with MBus
+ * 2. IOs with Register Files (RF)
+ * 3. IOs with Memory controller
+ * 4. IOs with interrupt configuration
+ *
+ * Layer controller configuration:
+ * Register Files
+ * 1. LC_RF_DATA_WIDTH; 1 ~ 24 (24 default)
+ * 2. LC_RF_DEPTH; 1~256
+ *
+ * Memory
+ * 1. LC_MEM_ADDR_WIDTH; 1~32 (32 default)
+ * 2. LC_MEM_DATA_WIDTH; 1~32 (32 default)
+ * 3. LC_MEM_DEPTH; 1~2^30
+ *
+ * Interrupt
+ * 1. LC_INT_DEPTH;
+ *
+ * In normal application, users need to configure LC_RF_DEPTH, LC_MEM_DEPTH,
+ * LC_INT_DEPTH for their application. Changing the width causes bits waste
+ * on the MBus; thus, it's not recommended.
+ *
+ * IMPORTANT:
+ * 1. The memory interface is WORD address. Thus, the width of MEM_ADDR is
+ * 2-bit less than MEM_RD_DATA or MEM_WR_DATA.
+ * e.g. 0x00000000 and 0x00000001 address two different WORD in memory.
+ * If a user has byte address memory controller, remember to pad two 0s at the
+ * LSB in layer_wrapper.v
+ *
+ * 2. Interrupt Commands and Functional ID only work with RF_READ or MEM_READ
+ * commands, any other command will be rejected.
+ *
+ * 3. Unused IO, Don't be panic if synthesis tool reports Warning messages
+ *   a) RX_ADDR[31:4] (default 32-bit width)
+ *   b) TX_ADDR[31:8] (default 32-bit width)
+ *   c) TX_PRIORITY
+ *
+ * 4. For more information, please refer to layer controller document
+ *
+ * Error Handling:
+ * The layer controller supports MEM/RF Error handling. If users accenditally
+ * read or write to a memory/RF location which is not exist. The read
+ * operation will automatically stops. If users initiate a DMA write which
+ * beyond the memory location, the layer controller will try to interrupt the
+ * BMus transaction by holding the RX_REQ low (rx overflow fault) if possible.
+ * However, user should be aware of the memory/RF depth at any time.
+ * 
+ *
+ * Last modified date: 05/06 '13
+ * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
+ * Update log:
+ * 5/6 '13
+ * first added
+ * */
 `include "include/mbus_def.v"
 
 module layer_ctrl(
@@ -30,25 +87,25 @@ module layer_ctrl(
 	// End of interface
 	
 	// Interface with Registers
-	input		[(`LC_RF_DATA_WIDTH*`LC_RF_DEPTH)-1:0] RF_DIN,
-	output reg	[`LC_RF_DATA_WIDTH-1:0] RF_DOUT,
-	output reg	[`LC_RF_DEPTH-1:0] RF_LOAD,
+	input		[(`LC_RF_DATA_WIDTH*`LC_RF_DEPTH)-1:0] REG_RD_DATA,
+	output reg	[`LC_RF_DATA_WIDTH-1:0] REG_WR_DATA,
+	output reg	[`LC_RF_DEPTH-1:0] REG_WR_EN,
 	// End of interface
 	
 	// Interface with MEM
 	output 		MEM_REQ_OUT,
 	output 		MEM_WRITE,
 	input		MEM_ACK_IN,
-	output reg	[`LC_MEM_DATA_WIDTH-1:0] MEM_DOUT,
-	input		[`LC_MEM_DATA_WIDTH-1:0] MEM_DIN,
-	output reg	[`LC_MEM_ADDR_WIDTH-3:0] MEM_AOUT,
+	output reg	[`LC_MEM_DATA_WIDTH-1:0] MEM_WR_DATA,
+	input		[`LC_MEM_DATA_WIDTH-1:0] MEM_RD_DATA,
+	output reg	[`LC_MEM_ADDR_WIDTH-3:0] MEM_ADDR,
 	// End of interface
 	
 	// Interrupt
 	input		[`LC_INT_DEPTH-1:0] INT_VECTOR,
 	output reg	[`LC_INT_DEPTH-1:0] CLR_INT,
-	input		[`FUNC_WIDTH*`LC_INT_DEPTH-1:0] INT_CMD_FUNC_ID,
-	input		[(`DATA_WIDTH<<1)*`LC_INT_DEPTH-1:0] INT_CMD_PAYLOAD
+	input		[`FUNC_WIDTH*`LC_INT_DEPTH-1:0] INT_FU_ID,
+	input		[(`DATA_WIDTH<<1)*`LC_INT_DEPTH-1:0] INT_CMD
 );
 `include "include/mbus_func.v"
 
@@ -95,7 +152,7 @@ genvar unpk_idx;
 generate 
 	for (unpk_idx=0; unpk_idx<(`LC_RF_DEPTH); unpk_idx=unpk_idx+1)
 	begin: UNPACK
-		assign rf_in_array[unpk_idx] = RF_DIN[((`LC_RF_DATA_WIDTH)*(unpk_idx+1)-1):((`LC_RF_DATA_WIDTH)*unpk_idx)]; 
+		assign rf_in_array[unpk_idx] = REG_RD_DATA[((`LC_RF_DATA_WIDTH)*(unpk_idx+1)-1):((`LC_RF_DATA_WIDTH)*unpk_idx)]; 
 	end
 endgenerate
 reg		[`LC_RF_DEPTH-1:0] next_rf_load;
@@ -122,8 +179,8 @@ wire	[(`DATA_WIDTH<<1)-1:0] interrupt_payload [0:`LC_INT_DEPTH-1];
 generate
 	for (unpk_idx=0; unpk_idx<(`LC_INT_DEPTH); unpk_idx=unpk_idx+1)
 	begin: UNPACK_INT
-		assign interrupt_functional_id[unpk_idx] = INT_CMD_FUNC_ID[((`FUNC_WIDTH)*(unpk_idx+1)-1):((`FUNC_WIDTH)*unpk_idx)]; 
-		assign interrupt_payload[unpk_idx] = INT_CMD_PAYLOAD[((`DATA_WIDTH<<1)*(unpk_idx+1)-1):((`DATA_WIDTH<<1)*unpk_idx)]; 
+		assign interrupt_functional_id[unpk_idx] = INT_FU_ID[((`FUNC_WIDTH)*(unpk_idx+1)-1):((`FUNC_WIDTH)*unpk_idx)]; 
+		assign interrupt_payload[unpk_idx] = INT_CMD[((`DATA_WIDTH<<1)*(unpk_idx+1)-1):((`DATA_WIDTH<<1)*unpk_idx)]; 
 	end
 endgenerate
 
@@ -181,12 +238,12 @@ begin
 		RX_ACK	<= 0;
 		TX_RESP_ACK <= 0;
 		// Register file interface
-		RF_LOAD <= 0;
-		RF_DOUT <= 0;
+		REG_WR_EN <= 0;
+		REG_WR_DATA <= 0;
 		rf_idx <= 0;
 		// Memory interface
-		MEM_AOUT <= 0;
-		MEM_DOUT <= 0;
+		MEM_ADDR <= 0;
+		MEM_WR_DATA <= 0;
 		// Interrupt interface
 		CLR_INT <= 0;
 		int_idx <= 0;
@@ -208,16 +265,16 @@ begin
 		TX_DATA <= next_tx_data;
 		TX_REQ <= next_tx_req;
 		TX_PEND <= next_tx_pend;
-		TX_PRIORITY<= next_priority;
+		TX_PRIORITY <= next_priority;
 		RX_ACK	<= next_rx_ack;
 		TX_RESP_ACK <= next_tx_resp_ack;
 		// Register file interface
-		RF_LOAD <= next_rf_load;
-		RF_DOUT <= next_rf_dout;
+		REG_WR_EN <= next_rf_load;
+		REG_WR_DATA <= next_rf_dout;
 		rf_idx <= next_rf_idx;
 		// Memory interface
-		MEM_AOUT <= next_mem_aout;
-		MEM_DOUT <= next_mem_dout;
+		MEM_ADDR <= next_mem_aout;
+		MEM_WR_DATA <= next_mem_dout;
 		// Interrupt interface
 		CLR_INT <= next_clr_int;
 		int_idx <= next_int_idx;
@@ -246,11 +303,11 @@ begin
 	next_tx_resp_ack= TX_RESP_ACK;
 	// RF registers
 	next_rf_load 	= 0;
-	next_rf_dout 	= RF_DOUT;
+	next_rf_dout 	= REG_WR_DATA;
 	next_rf_idx		= rf_idx;
 	// MEM registers
-	next_mem_aout	= MEM_AOUT;
-	next_mem_dout	= MEM_DOUT;
+	next_mem_aout	= MEM_ADDR;
+	next_mem_dout	= MEM_WR_DATA;
 	next_mem_write	= mem_write;
 	next_mem_read	= mem_read;
 	// Interrupt registers
@@ -464,11 +521,11 @@ begin
 					if (MEM_ACK_IN & (~TX_REQ))
 					begin
 						next_tx_req = 1;
-						next_tx_data[`LC_MEM_DATA_WIDTH-1:0] = MEM_DIN;
+						next_tx_data[`LC_MEM_DATA_WIDTH-1:0] = MEM_RD_DATA;
 						next_lc_state = LC_STATE_BUS_TX;
 						next_lc_return_state = LC_STATE_MEM_READ;
 						next_mem_sub_state = 4;
-						if ((dma_counter)&&(MEM_AOUT < (`LC_MEM_DEPTH-1'b1)))
+						if ((dma_counter)&&(MEM_ADDR < (`LC_MEM_DEPTH-1'b1)))
 						begin
 							next_tx_pend = 1;
 							next_dma_counter = dma_counter - 1'b1;
@@ -480,7 +537,7 @@ begin
 
 				4:	// increment address
 				begin
-					next_mem_aout = MEM_AOUT + 1'b1;
+					next_mem_aout = MEM_ADDR + 1'b1;
 					next_mem_sub_state = 2;
 				end
 			endcase
@@ -535,9 +592,9 @@ begin
 					// write complete
 					if (MEM_ACK_IN)
 					begin
-						if ((rx_pend_reg)&&(MEM_AOUT<(`LC_MEM_DEPTH-1'b1)))
+						if ((rx_pend_reg)&&(MEM_ADDR<(`LC_MEM_DEPTH-1'b1)))
 						begin
-							next_mem_aout = MEM_AOUT + 1'b1;
+							next_mem_aout = MEM_ADDR + 1'b1;
 							next_mem_sub_state = 1;
 						end
 						else if (rx_pend_reg)	// Invalid Address

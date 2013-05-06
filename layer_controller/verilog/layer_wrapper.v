@@ -146,21 +146,21 @@ layer_ctrl lc0(
 	.TX_RESP_ACK(tx_resp_ack),
 	.RELEASE_RST_FROM_MBUS(lc_release_rst),
 	// Interface with Registers
-	.RF_DIN({sensor_dat_f_rom, rf_dout_f_rf}),
-	.RF_DOUT(rf_dout),
-	.RF_LOAD(rf_load),
+	.REG_RD_DATA({sensor_dat_f_rom, rf_dout_f_rf}),
+	.REG_WR_DATA(rf_dout),
+	.REG_WR_EN(rf_load),
 	// Interface with MEM
 	.MEM_REQ_OUT(mem_req_out),
 	.MEM_WRITE(mem_write),
 	.MEM_ACK_IN(mem_ack_f_mem),
-	.MEM_DOUT(mem_dout),
-	.MEM_DIN(mem_data_f_mem),
-	.MEM_AOUT(mem_aout),
+	.MEM_WR_DATA(mem_dout),
+	.MEM_RD_DATA(mem_data_f_mem),
+	.MEM_ADDR(mem_aout),
 	// Interrupt
 	.INT_VECTOR(INT_VECTOR),
 	.CLR_INT(clr_int),
-	.INT_CMD_FUNC_ID(int_func_id_f_rom),
-	.INT_CMD_PAYLOAD(int_payload_f_rom)
+	.INT_FU_ID(int_func_id_f_rom),
+	.INT_CMD(int_payload_f_rom)
 );
 
 mbus_layer_wrapper #(.ADDRESS(ADDRESS)) mbus_node0

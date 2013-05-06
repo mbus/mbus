@@ -49,10 +49,28 @@ SIMFILES = 	mbus_addr_rf.v \
 			layer_ctrl.v \
 			layer_wrapper.v
 
-SYNFILES = 	../syn/mbus_node32_ab.nl.v \
-		../syn/mbus_node32_cd.nl.v \
-		../syn/mbus_node32_ef.nl.v \
-		../syn/mbus_ctrl_wrapper.nl.v
+SYNFILES = 	mbus_addr_rf.v \
+			mbus_swapper.v \
+			mbus_ext_int.v \
+			mbus_wire_ctrl.v \
+			mbus_clk_sim.v \
+			mbus_regular_isolation.v \
+			mbus_regular_sleep_ctrl.v \
+			mbus_ctrl.v \
+			mbus_master_sleep_ctrl.v \
+			mbus_node.v \
+			mbus_ctrl_wrapper.v \
+			mbus_layer_wrapper.v \
+			mbus_ctrl_layer_wrapper.v \
+			mbus_busy_ctrl.v \
+			mbus_int_ctrl.v \
+			mem_ctrl.v \
+			layer_ctrl_isolation.v \
+			rf_ctrl.v \
+			int_action_rom.v \
+			../syn/layer_ctrl.nl.v \
+			layer_wrapper.v
+
 APRFILES = 	../apr/mbus_node32_ab/mbus_node32_ab.apr.v \
 		../apr/mbus_node32_cd/mbus_node32_cd.apr.v \
 		../apr/mbus_node32_ef/mbus_node32_ef.apr.v \
@@ -65,7 +83,7 @@ simv:		$(SIMFILES) $(TESTBENCH)
 		$(VCS) $(VCSFLAGS) $(TESTBENCH) $(SIMFILES) -o simv -cm line+cond+fsm+tgl -R | tee program.out
 		urg -dir simv.vdb -report ./REPORTS
 
-syn_simv:	$(SIMFILES) $(TESTBENCH)
+syn_simv:	$(SYNFILES) $(TESTBENCH)
 		$(SYNVCS) $(VCSFLAGS) $(TESTBENCH) $(SYNFILES) -o syn_simv -cm line+cond+fsm+tgl -R | tee syn_program.out
 		urg -dir syn_simv.vdb -report ./REPORTS
 
@@ -77,6 +95,9 @@ apr_simv:	$(APRFILES) $(TESTBENCH)
 # awdeorio fall 2011
 dve:	$(SIMFILES) $(TESTBENCH) 
 	$(VCS) $(VCSFLAGS) +memcbk $(TESTBENCH) $(SIMFILES) -o dve -R -gui
+
+syn_dve:	$(SYNFILES) $(TESTBENCH) 
+	$(VCS) $(VCSFLAGS) +memcbk $(TESTBENCH) $(SYNFILES) -o dve -R -gui
 
 .PHONY: simv syn_simv apr_simv dve
 

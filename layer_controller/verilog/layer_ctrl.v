@@ -12,7 +12,7 @@ module layer_ctrl(
 	output reg	TX_PEND, 
 	output reg	TX_REQ, 
 	input		TX_ACK, 
-	output reg	PRIORITY,
+	output reg	TX_PRIORITY,
 
 	input		[`ADDR_WIDTH-1:0] RX_ADDR, 
 	input		[`DATA_WIDTH-1:0] RX_DATA, 
@@ -177,7 +177,7 @@ begin
 		TX_DATA <= 0;
 		TX_REQ <= 0;
 		TX_PEND <= 0;
-		PRIORITY<= 0;
+		TX_PRIORITY<= 0;
 		RX_ACK	<= 0;
 		TX_RESP_ACK <= 0;
 		// Register file interface
@@ -208,7 +208,7 @@ begin
 		TX_DATA <= next_tx_data;
 		TX_REQ <= next_tx_req;
 		TX_PEND <= next_tx_pend;
-		PRIORITY<= next_priority;
+		TX_PRIORITY<= next_priority;
 		RX_ACK	<= next_rx_ack;
 		TX_RESP_ACK <= next_tx_resp_ack;
 		// Register file interface
@@ -241,7 +241,7 @@ begin
 	next_tx_data 	= TX_DATA;
 	next_tx_pend 	= TX_PEND;
 	next_tx_req 	= TX_REQ;
-	next_priority 	= PRIORITY;
+	next_priority 	= TX_PRIORITY;
 	next_rx_ack		= RX_ACK;
 	next_tx_resp_ack= TX_RESP_ACK;
 	// RF registers
@@ -363,11 +363,7 @@ begin
 					if ((rx_dat_buffer[`DATA_WIDTH-1:`LC_RF_DATA_WIDTH]) < `LC_RF_DEPTH)
 					begin
 						next_rf_dout = rx_dat_buffer[`LC_RF_DATA_WIDTH-1:0];
-						next_rf_load = rf_load_temp;
-						if (rx_pend_reg)
-							next_mem_sub_state = 1;
-						else
-							next_lc_state = LC_STATE_IDLE;
+						next_mem_sub_state = 1;
 					end
 					else if (rx_pend_reg)	// Invalid address
 					begin
@@ -379,6 +375,15 @@ begin
 				end
 
 				1:
+				begin
+					next_rf_load = rf_load_temp;
+					if (rx_pend_reg)
+						next_mem_sub_state = 2;
+					else
+						next_lc_state = LC_STATE_IDLE;
+				end
+
+				2:
 				begin
 					if (RX_REQ_DL2 & (~RX_ACK))
 					begin

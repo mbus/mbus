@@ -2,12 +2,6 @@
 `define SD #1
 `timescale 1ns/1ps
 
-`ifdef SYN
-	`include "/afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/verilog/tsmc18_neg.v"
-`elsif APR
-	`include "/afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/verilog/tsmc18_neg.v"
-`endif
-
 `include "include/mbus_def.v"
 
 module tb_layer_ctrl();
@@ -131,7 +125,7 @@ layer_wrapper #(.ADDRESS(20'hbbbb2)) layer3(
 
 mbus_ctrl_layer_wrapper #(.ADDRESS(20'haaaa0)) c0 
      (.CLK_EXT(clk), .CLKIN(w_n3_clk_out), .CLKOUT(SCLK), .RESETn(resetn), .DIN(w_n3c0), .DOUT(w_c0n0), 
-      .TX_ADDR(c0_tx_addr), .TX_DATA(c0_tx_data), .TX_REQ(c0_tx_req), .TX_ACK(c0_tx_ack), .TX_PEND(c0_tx_pend), .PRIORITY(c0_priority),
+      .TX_ADDR(c0_tx_addr), .TX_DATA(c0_tx_data), .TX_REQ(c0_tx_req), .TX_ACK(c0_tx_ack), .TX_PEND(c0_tx_pend), .TX_PRIORITY(c0_priority),
       .RX_ADDR(c0_rx_addr), .RX_DATA(c0_rx_data), .RX_REQ(c0_rx_req), .RX_ACK(c0_rx_ack), .RX_FAIL(c0_rx_fail), .RX_PEND(c0_rx_pend),
       .TX_SUCC(c0_tx_succ), .TX_FAIL(c0_tx_fail), .TX_RESP_ACK(c0_tx_resp_ack),  .RX_BROADCAST(c0_rx_broadcast),
 	  .LC_POWER_ON(c0_lc_pwr_on), .LC_RELEASE_CLK(c0_lc_release_clk), .LC_RELEASE_RST(c0_lc_release_rst), .LC_RELEASE_ISO(c0_lc_release_iso),
@@ -173,13 +167,14 @@ begin
 */
 //`endif
       
-	  /*
       //SDF ANNOTATION
  `ifdef SYN
-      $sdf_annotate("../syn/ulpb_ctrl_wrapper.dc.sdf", c0);
-      $sdf_annotate("../syn/ulpb_node32_ab.dc.sdf", n0);
-      $sdf_annotate("../syn/ulpb_node32_cd.dc.sdf", n1);
-      $sdf_annotate("../syn/ulpb_node32_ef.dc.sdf", n2);
+ 	$sdf_annotate("../syn/layer_ctrl.dc.sdf", layer0.lc0);
+   	$sdf_annotate("../syn/layer_ctrl.dc.sdf", layer1.lc0);
+   	$sdf_annotate("../syn/layer_ctrl.dc.sdf", layer2.lc0);
+   	$sdf_annotate("../syn/layer_ctrl.dc.sdf", layer3.lc0);
+`endif
+	  /*
 `elsif APR
       $sdf_annotate("../apr/ulpb_ctrl_wrapper/ulpb_ctrl_wrapper.apr.sdf", c0);
       $sdf_annotate("../apr/ulpb_node32_ab/ulpb_node32_ab.apr.sdf", n0);

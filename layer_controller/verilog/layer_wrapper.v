@@ -133,7 +133,7 @@ layer_ctrl lc0(
 	.TX_PEND(tx_pend), 
 	.TX_REQ(tx_req), 
 	.TX_ACK(tx_ack), 
-	.PRIORITY(tx_priority),
+	.TX_PRIORITY(tx_priority),
 	.RX_ADDR(rx_addr), 
 	.RX_DATA(rx_data), 
 	.RX_PEND(rx_pend), 
@@ -165,7 +165,7 @@ layer_ctrl lc0(
 
 mbus_layer_wrapper #(.ADDRESS(ADDRESS)) mbus_node0
      (.CLKIN(CLKIN), .CLKOUT(CLKOUT), .RESETn(RESETn), .DIN(DIN), .DOUT(DOUT), 
-      .TX_ADDR(tx_addr_t_mbus), .TX_DATA(tx_data_t_mbus), .TX_REQ(tx_req_t_mbus), .TX_ACK(tx_ack), .TX_PEND(tx_pend_t_mbus), .PRIORITY(priority_t_mbus),
+      .TX_ADDR(tx_addr_t_mbus), .TX_DATA(tx_data_t_mbus), .TX_REQ(tx_req_t_mbus), .TX_ACK(tx_ack), .TX_PEND(tx_pend_t_mbus), .TX_PRIORITY(priority_t_mbus),
       .RX_ADDR(rx_addr), .RX_DATA(rx_data), .RX_REQ(rx_req), .RX_ACK(rx_ack_t_mbus), .RX_FAIL(rx_fail), .RX_PEND(rx_pend),
       .TX_SUCC(tx_succ), .TX_FAIL(tx_fail), .TX_RESP_ACK(tx_resp_ack_t_mbus), .RX_BROADCAST(rx_broadcast),
 	  .LC_POWER_ON(lc_pwr_on), .LC_RELEASE_CLK(lc_release_clk), .LC_RELEASE_RST(lc_release_rst), .LC_RELEASE_ISO(lc_release_iso),

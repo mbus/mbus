@@ -126,26 +126,21 @@ mbus_wire_ctrl wc0
 	 .DOUT(DOUT), .CLKOUT(CLKOUT),									// to next node
 	 .EXTERNAL_INT(ext_int_to_wire));
 
-// always on interrupt request
-mbus_ext_int int0(
-	.CLKIN(CLKIN), 
+// always on interrupt controller
+mbus_int_ctrl mic0(
+	.CLKIN(CLKIN),
 	.RESETn(RESETn),
+	.BC_RELEASE_ISO(release_iso_from_s0),
+	.SC_CLR_BUSY(m0_power_onb),
+	.MBUS_CLR_BUSY(clr_busy),
+
 	.REQ_INT(REQ_INT), 
-	.BUS_BUSYn(bus_busyn),
 	.BC_PWR_ON(~m0_power_on),
 	.LC_PWR_ON(LC_POWER_ON),
 	.EXTERNAL_INT_TO_WIRE(ext_int_to_wire), 
 	.EXTERNAL_INT_TO_BUS(ext_int_to_bus), 
-	.CLR_EXT_INT(clr_ext_int));
-
-// always on busy controller
-mbus_busy_ctrl mbc0(
-	.MBUS_CLK(CLKIN),
-	.RESETn(RESETn),
-	.BC_RELEASE_ISO(release_iso_from_s0),
-	.SC_CLR_BUSY(m0_power_onb),
-	.CLR_BUSY(clr_busy),
-	.BUS_BUSYn(bus_busyn));
+	.CLR_EXT_INT(clr_ext_int)
+);
 
 always @ *
 begin

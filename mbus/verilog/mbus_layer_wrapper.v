@@ -98,18 +98,6 @@ mbus_wire_ctrl lc0
 	 .DOUT(DOUT), .CLKOUT(CLKOUT),									// to next node
 	 .EXTERNAL_INT(ext_int_to_wire));
 
-// always on interrupt request
-mbus_ext_int int0(
-	.CLKIN(CLKIN), 
-	.RESETn(RESETn),
-	.REQ_INT(REQ_INT), 
-	.BUS_BUSYn(bus_busyn),
-	.BC_PWR_ON(n0_power_on),
-	.LC_PWR_ON(LC_POWER_ON),
-	.EXTERNAL_INT_TO_WIRE(ext_int_to_wire), 
-	.EXTERNAL_INT_TO_BUS(ext_int_to_bus), 
-	.CLR_EXT_INT(clr_ext_int));
-
 // always on register files
 mbus_addr_rf rf0(
 	.RESETn(RESETn),
@@ -121,14 +109,21 @@ mbus_addr_rf rf0(
 	.ADDR_CLRn(rf_addr_rstn)
 );
 
-// always on busy controller
-mbus_busy_ctrl mbc0(
-	.MBUS_CLK(CLKIN),
+// always on interrupt controller
+mbus_int_ctrl mic0(
+	.CLKIN(CLKIN),
 	.RESETn(RESETn),
 	.BC_RELEASE_ISO(n0_release_iso_from_sc),
 	.SC_CLR_BUSY(sleep_ctrl_clr_busy),
-	.CLR_BUSY(clr_busy),
-	.BUS_BUSYn(bus_busyn));
+	.MBUS_CLR_BUSY(clr_busy),
+
+	.REQ_INT(REQ_INT), 
+	.BC_PWR_ON(n0_power_on),
+	.LC_PWR_ON(LC_POWER_ON),
+	.EXTERNAL_INT_TO_WIRE(ext_int_to_wire), 
+	.EXTERNAL_INT_TO_BUS(ext_int_to_bus), 
+	.CLR_EXT_INT(clr_ext_int)
+);
 
 always @ *
 begin

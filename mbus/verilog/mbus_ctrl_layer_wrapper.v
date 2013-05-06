@@ -12,7 +12,7 @@ module mbus_ctrl_layer_wrapper(
 	input 	[`DATA_WIDTH-1:0] TX_DATA, 
 	input 	TX_PEND, 
 	input 	TX_REQ, 
-	input 	PRIORITY,
+	input 	TX_PRIORITY,
 	output 	TX_ACK, 
 	output 	[`ADDR_WIDTH-1:0] RX_ADDR, 
 	output 	[`DATA_WIDTH-1:0] RX_DATA, 
@@ -101,7 +101,7 @@ mbus_regular_isolation iso0
 mbus_ctrl_wrapper #(.ADDRESS(ADDRESS)) m0(
 	.CLK_EXT(CLK_GEN), .RESETn(RESETn), 
 	.CLKIN(CLKIN), .CLKOUT(w_m0wc0_clk_out), .DIN(DIN), .DOUT(w_m0wc0),
-	.TX_ADDR(m0_tx_addr_t_bc), .TX_DATA(m0_tx_data_t_bc), .TX_PEND(m0_tx_pend_t_bc), .TX_REQ(m0_tx_req_t_bc), .PRIORITY(m0_priority_t_bc), .TX_ACK(m0_tx_ack_t_iso), 
+	.TX_ADDR(m0_tx_addr_t_bc), .TX_DATA(m0_tx_data_t_bc), .TX_PEND(m0_tx_pend_t_bc), .TX_REQ(m0_tx_req_t_bc), .TX_PRIORITY(m0_priority_t_bc), .TX_ACK(m0_tx_ack_t_iso), 
 	.RX_ADDR(m0_rx_addr_t_iso), .RX_DATA(m0_rx_data_t_iso), .RX_REQ(m0_rx_req_t_iso), .RX_ACK(m0_rx_ack_t_bc), .RX_BROADCAST(m0_rx_bcast_t_iso),
 	.RX_FAIL(m0_rx_fail_t_iso), .RX_PEND(m0_rx_pend_t_iso), 
 	.TX_FAIL(m0_tx_fail_t_iso), .TX_SUCC(m0_tx_succ_t_iso), .TX_RESP_ACK(m0_tx_resp_ack_t_bc), 
@@ -202,7 +202,7 @@ begin
 		m0_tx_data_f_lc 	= TX_DATA;
 		m0_tx_req_f_lc 		= TX_REQ;
 		m0_tx_pend_f_lc 	= TX_PEND;
-		m0_priority_f_lc 	= PRIORITY;
+		m0_priority_f_lc 	= TX_PRIORITY;
 		m0_rx_ack_f_lc 		= RX_ACK;
 		m0_tx_resp_ack_f_lc = TX_RESP_ACK;
 	end

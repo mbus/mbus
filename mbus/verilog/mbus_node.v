@@ -12,8 +12,8 @@
  *
  * In addition, MBUS adds new features:
  *
- * 1. The additional PRIORITY input. This input sets the transmission
- * priority. If the PRIORITY input has been asserted, it gives additional
+ * 1. The additional TX_PRIORITY input. This input sets the transmission
+ * priority. If the TX_PRIORITY input has been asserted, it gives additional
  * flexibility for the lower layer to win bus arbitration.
  *
  * 2. TX_PEND, RX_PEND. These inputs indicate more data coming after first
@@ -48,6 +48,8 @@
  * 			at this point.
  * --------------------------------------------------------------------------
  * Update log:
+ * 5/6 '13
+ * Rename PRIORITY -> TX_PRIORITY
  * 5/1 '13
  * Add CLR_BUSY Port
  * 4/28 '13
@@ -89,7 +91,7 @@ module mbus_node(
 	input 		TX_PEND, 
 	input 		TX_REQ, 
 	output 	reg TX_ACK, 
-	input 		PRIORITY,
+	input 		TX_PRIORITY,
 
 	output 	reg [`ADDR_WIDTH-1:0] RX_ADDR, 
 	output 	reg [`DATA_WIDTH-1:0] RX_DATA, 
@@ -253,7 +255,7 @@ begin
 	if (mode==MODE_TX_NON_PRIO)
 	begin
 		// Other node request priority,
-		if (DIN & (~PRIORITY))
+		if (DIN & (~TX_PRIORITY))
 			mode_temp = MODE_RX;
 		else
 			mode_temp = MODE_TX;
@@ -261,7 +263,7 @@ begin
 	else
 	begin
 		// the node won first trial doesn't request priority
-		if (TX_REQ & PRIORITY & (~DIN))
+		if (TX_REQ & TX_PRIORITY & (~DIN))
 			mode_temp = MODE_TX;
 		else
 			mode_temp = MODE_RX;
@@ -1166,12 +1168,12 @@ begin
 		begin
 			if (mode_neg==MODE_TX_NON_PRIO)
 			begin
-				if (PRIORITY)
+				if (TX_PRIORITY)
 					DOUT = 1;
 				else
 					DOUT = 0;
 			end
-			else if ((mode_neg==MODE_RX)&&(PRIORITY & TX_REQ))
+			else if ((mode_neg==MODE_RX)&&(TX_PRIORITY & TX_REQ))
 				DOUT = 1;
 		end
 

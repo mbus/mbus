@@ -45,6 +45,8 @@
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  *
  * Update log:
+ * 5/9 '13
+ * Change tx_broadcast_latched from TX_ADDR to ADDR
  * 5/6 '13
  * Rename PRIORITY -> TX_PRIORITY
  * 5/1 '13
@@ -218,7 +220,8 @@ wire	address_match = (addr_match_temp[1] | addr_match_temp[0]);
 reg		[`BROADCAST_CMD_WIDTH -1:0] rx_broadcast_command;
 wire	rx_long_addr_en = (RX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1'b1 : 1'b0;
 wire	tx_long_addr_en = (TX_ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1'b1 : 1'b0;
-reg		tx_broadcast;
+wire	tx_long_addr_en_latched = (ADDR[`ADDR_WIDTH-1:`ADDR_WIDTH-4]==4'hf)? 1'b1 : 1'b0;
+reg		tx_broadcast_latched;
 reg		[1:0] tx_dat_length, rx_dat_length;
 reg		rx_position, rx_dat_length_valid;
 reg		wakeup_req;
@@ -270,18 +273,19 @@ end
 
 // TX Broadcast
 // For some boradcast message, TX node should take apporiate action, ex: all node sleep
+// determined by ADDR flops, not TX_ADDR
 always @ *
 begin
-	tx_broadcast = 0;
-	if (tx_long_addr_en)
+	tx_broadcast_latched = 0;
+	if (tx_long_addr_en_latched)
 	begin
-		if (TX_ADDR[`DATA_WIDTH-1:`FUNC_WIDTH]==broadcast_addr[`DATA_WIDTH-1:`FUNC_WIDTH])
-			tx_broadcast = 1;
+		if (ADDR[`DATA_WIDTH-1:`FUNC_WIDTH]==broadcast_addr[`DATA_WIDTH-1:`FUNC_WIDTH])
+			tx_broadcast_latched = 1;
 	end
 	else
 	begin
-		if (TX_ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH]==broadcast_addr[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH])
-			tx_broadcast = 1;
+		if (ADDR[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH]==broadcast_addr[`SHORT_ADDR_WIDTH-1:`FUNC_WIDTH])
+			tx_broadcast_latched = 1;
 	end
 end
 // End of TX broadcast
@@ -349,7 +353,7 @@ end
 always @ *
 begin
 	tx_dat_length = LENGTH_4BYTE;
-	if (tx_broadcast)
+	if (tx_broadcast_latched)
 	begin
 		case (ADDR[`FUNC_WIDTH-1:0])
 			`CHANNEL_ENUM:
@@ -802,7 +806,7 @@ begin
 					begin
 						// Prevent wire floating
 						next_out_reg_pos = ~CONTROL_BITS[0];
-						if (tx_broadcast)
+						if (tx_broadcast_latched)
 						begin
 							case (ADDR[`FUNC_WIDTH-1:0])
 								`CHANNEL_POWER:

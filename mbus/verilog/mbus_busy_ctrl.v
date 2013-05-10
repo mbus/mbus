@@ -19,14 +19,20 @@ begin
 		clr_busy_temp = MBUS_CLR_BUSY;
 end
 
-wire RESET_BUSY = (RESETn & (~clr_busy_temp) & (~SC_CLR_BUSY));
+wire RESETn_BUSY = ((~clr_busy_temp) & (~SC_CLR_BUSY));
 
-always @ (negedge CLKIN or negedge RESET_BUSY)
+// Use SRFF
+always @ (negedge CLKIN or negedge RESETn or negedge RESETn_BUSY)
 begin
-	if (~RESET_BUSY)
+	// set port
+	if (~RESETn)
 		BUS_BUSYn <= 1;
-	else
+	// reset port
+	else if (~CLKIN)
 		BUS_BUSYn <= 0;
+	// clk port
+	else
+		BUS_BUSYn <= 1;
 end
 
 endmodule

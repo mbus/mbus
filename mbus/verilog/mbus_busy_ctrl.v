@@ -23,10 +23,10 @@ wire RESET_BUSY = (RESETn & (~clr_busy_temp) & (~SC_CLR_BUSY));
 
 always @ (negedge CLKIN or negedge RESET_BUSY)
 begin
-	if (~CLKIN)
-		BUS_BUSYn <= 0;
-	else
+	if (~RESET_BUSY)
 		BUS_BUSYn <= 1;
+	else
+		BUS_BUSYn <= 0;
 end
 
 endmodule

@@ -1,5 +1,8 @@
 
 module mbus_int_ctrl(
+	input	VDD,
+	input	VSS,
+
 	input	CLKIN,
 	input	RESETn,
 	input	BC_RELEASE_ISO,
@@ -17,14 +20,21 @@ module mbus_int_ctrl(
 wire mbus_busyn;
 
 mbus_busy_ctrl busy0(
+//	.VDD(VDD),
+//	.VSS(VSS),
+
 	.CLKIN(CLKIN),
 	.RESETn(RESETn),
 	.BC_RELEASE_ISO(BC_RELEASE_ISO),
 	.SC_CLR_BUSY(SC_CLR_BUSY),
 	.MBUS_CLR_BUSY(MBUS_CLR_BUSY),
-	.BUS_BUSYn(mbus_busyn));
+	.BUS_BUSYn(mbus_busyn)
+);
 
 mbus_ext_int ext0(
+//	.VDD(VDD),
+//	.VSS(VSS),
+
 	.CLKIN(CLKIN), 
 	.RESETn(RESETn),
 	.REQ_INT(REQ_INT), 

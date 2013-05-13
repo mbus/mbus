@@ -4,19 +4,7 @@
 //****************************************
 task task0;
 begin
-    clk = 0;
-    resetn = 1;
     handle=$fopen("result_task0.txt");
-
-    @ (posedge clk);
-    @ (posedge clk);
-    @ (posedge clk);
-    `SD resetn = 0;
-    @ (posedge clk);
-    @ (posedge clk);
-    `SD resetn = 1;
-    @ (posedge clk);
-    @ (posedge clk);
 
     #100000;
     $fdisplay(handle, "\nTASK0, Master node and Processor wake up");
@@ -299,19 +287,7 @@ endtask // task0
 
 task task1;
 begin
-	clk = 0;
-   	resetn = 1;
    	handle=$fopen("result_task1.txt");
-
-    @ (posedge clk);
-    @ (posedge clk);
-    @ (posedge clk);
-    `SD resetn = 0;
-    @ (posedge clk);
-    @ (posedge clk);
-    `SD resetn = 1;
-    @ (posedge clk);
-    @ (posedge clk);
 
     #10000;
     $fdisplay(handle, "\nTASK0, Master node and Processor wake up");
@@ -502,9 +478,166 @@ begin
     state = TASK23;
     @ (posedge n2_tx_succ | n2_tx_fail);
 
+    #100000;
+    $fdisplay(handle, "\nTASK25, N2 sends to N0.");
+    $fdisplay(handle, "Result: N2 TX Fail");
+    $fdisplay(handle, "Result: N0 RX Fail");
+    state = TASK25;
+    @ (posedge n2_tx_succ | n2_tx_fail);
+
     #300000;
     $display("*************************************");
     $display("************TASK1 Complete***********");
+    $display("*************************************");
+    $finish;
+end
+endtask
+
+task task2;
+begin
+	err_clk = 0;
+   	handle=$fopen("result_task1.txt");
+
+    #10000;
+    $fdisplay(handle, "\nTASK0, Master node and Processor wake up");
+    state = TASK0;
+	@ (posedge SCLK);
+	c0_req_int = 0;
+    #50000;
+
+    #100000;
+    $fdisplay(handle, "\nTASK1, Master node sends out querry");
+    state = TASK1;
+	@ (posedge c0_rx_req);
+	@ (posedge c0_rx_req);
+	@ (posedge c0_rx_req);
+	@ (posedge c0_rx_req);
+
+    #100000;
+    $fdisplay(handle, "\nTASK2, Master node enumerate with address 4'h2");
+    state = TASK2;
+	@ (posedge c0_rx_req);
+
+    #100000;
+    $fdisplay(handle, "\nTASK3, Master node enumerate with address 4'h3");
+    state = TASK3;
+	@ (posedge c0_rx_req);
+
+    #100000;
+    $fdisplay(handle, "\nTASK4, Master node enumerate with address 4'h4");
+    state = TASK4;
+	@ (posedge c0_rx_req);
+
+    #100000;
+    $fdisplay(handle, "\nTASK5, Master node enumerate with address 4'h5");
+    state = TASK5;
+	@ (posedge c0_rx_req);
+
+    #10000;
+    $fdisplay(handle, "\nTASK24, All Wake");
+    state = TASK24;
+	@ (posedge c0_tx_succ | c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK6, introduce clock glitch");
+    $fdisplay(handle, "Result: N1 TX Fail");
+    $fdisplay(handle, "Result: N3 RX Fail");
+	word_counter = 7;
+    state = TASK6;
+    @ (posedge n1_tx_succ | n1_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK7, N1 to N3");
+    $fdisplay(handle, "Result: N1 TX Success");
+    $fdisplay(handle, "Result: N3 RX Success");
+    state = TASK7;
+    @ (posedge n1_tx_succ | n1_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK8, missing 1 clock edge");
+    $fdisplay(handle, "Result: N1 TX Fail");
+    $fdisplay(handle, "Result: N3 RX Fail");
+	word_counter = 7;
+    state = TASK8;
+    @ (posedge n1_tx_succ | n1_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK7, N1 to N3");
+    $fdisplay(handle, "Result: N1 TX Success");
+    $fdisplay(handle, "Result: N3 RX Success");
+    state = TASK7;
+    @ (posedge n1_tx_succ | n1_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK9, N1 to N3, introduce clkc glitch after interrupt");
+    $fdisplay(handle, "Result: N1 TX Fail");
+    $fdisplay(handle, "Result: N3 RX Fail");
+    state = TASK9;
+    @ (posedge n1_tx_succ | n1_tx_fail);
+	err_start <= 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK7, N1 to N3, states missalign");
+    $fdisplay(handle, "Result: N1 TX Fail");
+    $fdisplay(handle, "Result: N3 RX Fail");
+    state = TASK7;
+    @ (posedge n1_tx_succ | n1_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK7, N1 to N3");
+    $fdisplay(handle, "Result: N1 TX Success");
+    $fdisplay(handle, "Result: N3 RX Success");
+    state = TASK7;
+    @ (posedge n1_tx_succ | n1_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK10, N1 to N3, missing clk edge after interrupt");
+    $fdisplay(handle, "Result: N1 TX Fail");
+    $fdisplay(handle, "Result: N3 RX Success, then immediately Fail");
+    state = TASK10;
+    @ (posedge n1_tx_succ | n1_tx_fail);
+	err_start <= 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK7, N1 to N3");
+    $fdisplay(handle, "Result: N1 TX Success");
+    $fdisplay(handle, "Result: N3 RX Success");
+    state = TASK7;
+    @ (posedge n1_tx_succ | n1_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK7, N1 to N3, CLK stuck at 0");
+    state = TASK7;
+	err_start <= 1;
+	err_type <= 4;
+	#1000000;
+	err_start <= 0;
+
+    #100000;
+    $fdisplay(handle, "\nTASK7, N1 to N3");
+    $fdisplay(handle, "Result: N1 TX Success");
+    $fdisplay(handle, "Result: N3 RX Success");
+    state = TASK7;
+    @ (posedge n1_tx_succ | n1_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK7, N1 to N3");
+    $fdisplay(handle, "Result: N1 TX Success");
+    $fdisplay(handle, "Result: N3 RX Success");
+    state = TASK7;
+    @ (posedge n1_tx_succ | n1_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK7, N1 to N3, CLK stuck at 0");
+    state = TASK7;
+	err_start <= 1;
+	err_type <= 5;
+	#1000000;
+	err_start <= 0;
+
+    #300000;
+    $display("*************************************");
+    $display("************TASK2 Complete***********");
     $display("*************************************");
     $finish;
 end

@@ -53,6 +53,8 @@
  * Last modified date: 05/06 '13
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  * Update log:
+ * 5/17 '13
+ * Change memory interface, MEM_ACK_IN is no longer asynchronously reset MEM_REQ_OUT
  * 5/6 '13
  * first added
  * */

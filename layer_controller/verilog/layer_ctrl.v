@@ -184,21 +184,6 @@ generate
 	end
 endgenerate
 
-wire MEM_ACK_RSTn = (RESETn_local & (~MEM_ACK_IN));
-always @ (posedge CLK or negedge MEM_ACK_RSTn)
-begin
-	if (~MEM_ACK_RSTn)
-	begin
-		mem_write 	<= 0;
-		mem_read 	<= 0;
-	end
-	else
-	begin
-		mem_write	<= next_mem_write;
-		mem_read 	<= next_mem_read;
-	end
-end
-
 always @ (posedge CLK or negedge RESETn_local)
 begin
 	if (~RESETn_local)
@@ -242,6 +227,8 @@ begin
 		REG_WR_DATA <= 0;
 		rf_idx <= 0;
 		// Memory interface
+		mem_write 	<= 0;
+		mem_read 	<= 0;
 		MEM_ADDR <= 0;
 		MEM_WR_DATA <= 0;
 		// Interrupt interface
@@ -273,6 +260,8 @@ begin
 		REG_WR_DATA <= next_rf_dout;
 		rf_idx <= next_rf_idx;
 		// Memory interface
+		mem_write	<= next_mem_write;
+		mem_read 	<= next_mem_read;
 		MEM_ADDR <= next_mem_aout;
 		MEM_WR_DATA <= next_mem_dout;
 		// Interrupt interface
@@ -331,6 +320,12 @@ begin
 
 	if ((~(TX_SUCC | TX_FAIL)) & TX_RESP_ACK)
 		next_tx_resp_ack = 0;
+	
+	if (MEM_ACK_IN & MEM_REQ_OUT)
+	begin
+		next_mem_read = 0;
+		next_mem_write = 0;
+	end
 	// End of asynchronized interface
 
 	case (lc_state)

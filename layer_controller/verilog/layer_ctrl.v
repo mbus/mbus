@@ -121,52 +121,53 @@ module layer_ctrl(
 
 	parameter LC_INT_DEPTH = 8;
 
-	input		CLK,
-	input		RESETn,
+	input		CLK;
+	input		RESETn;
 
 	// Interface with MBus
-	output reg	[`ADDR_WIDTH-1:0] TX_ADDR, 
-	output reg	[`DATA_WIDTH-1:0] TX_DATA, 
-	output reg	TX_PEND, 
-	output reg	TX_REQ, 
-	input		TX_ACK, 
-	output reg	TX_PRIORITY,
+	output reg	[`ADDR_WIDTH-1:0] TX_ADDR;
+	output reg	[`DATA_WIDTH-1:0] TX_DATA; 
+	output reg	TX_PEND; 
+	output reg	TX_REQ;
+	input		TX_ACK; 
+	output reg	TX_PRIORITY;
 
-	input		[`ADDR_WIDTH-1:0] RX_ADDR, 
-	input		[`DATA_WIDTH-1:0] RX_DATA, 
-	input		RX_PEND, 
-	input		RX_REQ, 
-	output reg	RX_ACK, 
-	input		RX_BROADCAST,
+	input		[`ADDR_WIDTH-1:0] RX_ADDR;
+	input		[`DATA_WIDTH-1:0] RX_DATA; 
+	input		RX_PEND;
+	input		RX_REQ;
+	output reg	RX_ACK; 
+	input		RX_BROADCAST;
 
-	input		RX_FAIL,
-	input		TX_FAIL, 
-	input		TX_SUCC, 
-	output reg	TX_RESP_ACK,
+	input		RX_FAIL;
+	input		TX_FAIL;
+	input		TX_SUCC; 
+	output reg	TX_RESP_ACK;
 
-	input 		RELEASE_RST_FROM_MBUS,
+	input 		RELEASE_RST_FROM_MBUS;
 	// End of interface
 	
 	// Interface with Registers
-	input		[(LC_RF_DATA_WIDTH*LC_RF_DEPTH)-1:0] REG_RD_DATA,
-	output reg	[LC_RF_DATA_WIDTH-1:0] REG_WR_DATA,
-	output reg	[LC_RF_DEPTH-1:0] REG_WR_EN,
+	input		[(LC_RF_DATA_WIDTH*LC_RF_DEPTH)-1:0] REG_RD_DATA;
+	output reg	[LC_RF_DATA_WIDTH-1:0] REG_WR_DATA;
+	output reg	[LC_RF_DEPTH-1:0] REG_WR_EN;
 	// End of interface
 	
 	// Interface with MEM
-	output 		MEM_REQ_OUT,
-	output 		MEM_WRITE,
-	input		MEM_ACK_IN,
-	output reg	[LC_MEM_DATA_WIDTH-1:0] MEM_WR_DATA,
-	input		[LC_MEM_DATA_WIDTH-1:0] MEM_RD_DATA,
-	output reg	[LC_MEM_ADDR_WIDTH-3:0] MEM_ADDR,
+	output 		MEM_REQ_OUT;
+	output 		MEM_WRITE;
+	input		MEM_ACK_IN;
+	output reg	[LC_MEM_DATA_WIDTH-1:0] MEM_WR_DATA;
+	input		[LC_MEM_DATA_WIDTH-1:0] MEM_RD_DATA;
+	output reg	[LC_MEM_ADDR_WIDTH-3:0] MEM_ADDR;
 	// End of interface
 	
 	// Interrupt
-	input		[LC_INT_DEPTH-1:0] INT_VECTOR,
-	output reg	[LC_INT_DEPTH-1:0] CLR_INT,
-	input		[`FUNC_WIDTH*LC_INT_DEPTH-1:0] INT_FU_ID,
-	input		[(`DATA_WIDTH<<1)*LC_INT_DEPTH-1:0] INT_CMD
+	input		[LC_INT_DEPTH-1:0] INT_VECTOR;
+	output reg	[LC_INT_DEPTH-1:0] CLR_INT;
+	input		[`FUNC_WIDTH*LC_INT_DEPTH-1:0] INT_FU_ID;
+	input		[(`DATA_WIDTH<<1)*LC_INT_DEPTH-1:0] INT_CMD;
+
 `include "include/mbus_func.v"
 
 wire	RESETn_local = (RESETn & (~RELEASE_RST_FROM_MBUS));

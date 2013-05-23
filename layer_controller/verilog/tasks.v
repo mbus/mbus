@@ -188,14 +188,14 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK9, write to Layer 1 Maximum MEM address");
-	mem_addr = (`LC_MEM_DEPTH-1'b1);
+	mem_addr = (LC_MEM_DEPTH-1'b1);
 	dest_short_addr = 4'h3;
     state = TASK9;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
     #100000;
     $fdisplay(handle, "\nTASK10, DMA read from Layer 1 invalid MEM address");
-	mem_addr = `LC_MEM_DEPTH;
+	mem_addr = LC_MEM_DEPTH;
 	dest_short_addr = 4'h3;
 	relay_addr = 8'h03;
     state = TASK10;
@@ -203,7 +203,7 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK10, DMA read from Layer 1 invalid MEM address, part 2");
-	mem_addr = (`LC_MEM_DEPTH-1'b1);
+	mem_addr = (LC_MEM_DEPTH-1'b1);
 	dest_short_addr = 4'h3;
 	relay_addr = 8'h03;
 	word_counter = 1;
@@ -214,7 +214,7 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK10, DMA read from Layer 1 invalid MEM address, part 3");
-	mem_addr = (`LC_MEM_DEPTH-1'b1);
+	mem_addr = (LC_MEM_DEPTH-1'b1);
 	dest_short_addr = 4'h3;
 	relay_addr = 8'h03;
 	word_counter = 2;
@@ -225,7 +225,7 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK10, DMA read from Layer 1 invalid MEM address, part 4");
-	mem_addr = (`LC_MEM_DEPTH-1'b1);
+	mem_addr = (LC_MEM_DEPTH-1'b1);
 	dest_short_addr = 4'h3;
 	relay_addr = 8'h03;
 	word_counter = 3;
@@ -236,7 +236,7 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK10, DMA read from Layer 1 invalid MEM address, part 5");
-	mem_addr = `LC_MEM_DEPTH;
+	mem_addr = LC_MEM_DEPTH;
 	dest_short_addr = 4'h3;
 	relay_addr = 8'h03;
 	word_counter = 1;
@@ -246,14 +246,14 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK7, write to Layer 1 maximum RF address");
-	rf_addr = `LC_RF_DEPTH-1'b1;
+	rf_addr = LC_RF_DEPTH-1'b1;
 	dest_short_addr = 4'h3;
     state = TASK7;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
     #100000;
     $fdisplay(handle, "\nTASK8, read from Layer 1 invalid RF address");
-	rf_addr = `LC_RF_DEPTH;
+	rf_addr = LC_RF_DEPTH;
 	dest_short_addr = 4'h3;
 	relay_addr = 8'h03;
 	word_counter = 0;
@@ -262,7 +262,7 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK8, read from Layer 1 invalid RF address, part 2");
-	rf_addr = `LC_RF_DEPTH-1'b1;
+	rf_addr = LC_RF_DEPTH-1'b1;
 	dest_short_addr = 4'h3;
 	relay_addr = 8'h03;
 	word_counter = 1;
@@ -273,7 +273,7 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK8, read from Layer 1 invalid RF address, part 3");
-	rf_addr = `LC_RF_DEPTH-1'b1;
+	rf_addr = LC_RF_DEPTH-1'b1;
 	dest_short_addr = 4'h3;
 	relay_addr = 8'h03;
 	word_counter = 2;
@@ -284,7 +284,7 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK8, read from Layer 1 invalid RF address, part 4");
-	rf_addr = `LC_RF_DEPTH-1'b1;
+	rf_addr = LC_RF_DEPTH-1'b1;
 	dest_short_addr = 4'h3;
 	relay_addr = 8'h03;
 	word_counter = 3;
@@ -295,7 +295,7 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK7, write to Layer 1 invalid RF address");
-	rf_addr = `LC_RF_DEPTH;
+	rf_addr = LC_RF_DEPTH;
 	dest_short_addr = 4'h3;
 	word_counter = 0;
     state = TASK7;
@@ -303,7 +303,7 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK7, write to Layer 1 invalid RF address, part 2");
-	rf_addr = `LC_RF_DEPTH-1'b1;
+	rf_addr = LC_RF_DEPTH-1'b1;
 	dest_short_addr = 4'h3;
 	word_counter = 1;
     state = TASK7;
@@ -312,7 +312,7 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK7, write to Layer 1 invalid RF address, part 3");
-	rf_addr = `LC_RF_DEPTH-1'b1;
+	rf_addr = LC_RF_DEPTH-1'b1;
 	dest_short_addr = 4'h3;
 	word_counter = 2;
     state = TASK7;
@@ -321,7 +321,7 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK7, write to Layer 1 invalid RF address, part 4");
-	rf_addr = `LC_RF_DEPTH-1'b1;
+	rf_addr = LC_RF_DEPTH-1'b1;
 	dest_short_addr = 4'h3;
 	word_counter = 3;
     state = TASK7;
@@ -330,14 +330,14 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK9, write to Layer 1 invalid MEM address");
-	mem_addr = `LC_MEM_DEPTH;
+	mem_addr = LC_MEM_DEPTH;
 	dest_short_addr = 4'h3;
     state = TASK9;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
     #100000;
     $fdisplay(handle, "\nTASK9, write to Layer 1 invalid MEM address, part 2");
-	mem_addr = `LC_MEM_DEPTH - 1'b1;
+	mem_addr = LC_MEM_DEPTH - 1'b1;
 	dest_short_addr = 4'h3;
 	word_counter = 1;
     state = TASK9;
@@ -346,7 +346,7 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK9, write to Layer 1 invalid MEM address, part 3");
-	mem_addr = `LC_MEM_DEPTH - 1'b1;
+	mem_addr = LC_MEM_DEPTH - 1'b1;
 	dest_short_addr = 4'h3;
 	word_counter = 2;
     state = TASK9;
@@ -355,7 +355,7 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK9, write to Layer 1 invalid MEM address, part 4");
-	mem_addr = `LC_MEM_DEPTH - 1'b1;
+	mem_addr = LC_MEM_DEPTH - 1'b1;
 	dest_short_addr = 4'h3;
 	word_counter = 3;
     state = TASK9;

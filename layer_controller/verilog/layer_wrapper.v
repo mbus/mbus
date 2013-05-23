@@ -4,31 +4,50 @@
 module layer_wrapper(
 
 	// layer controller
-	input 	CLK,
-	input 	RESETn,
-	input	[`LC_INT_DEPTH-1:0] INT_VECTOR,
-	output 	[`LC_INT_DEPTH-1:0] CLR_INT_EXTERNAL,
+	CLK,
+	RESETn,
+	INT_VECTOR,
+	CLR_INT_EXTERNAL,
 
 	// mbus
-	input	CLKIN,
-	output	CLKOUT,
-	input	DIN,
-	output	DOUT
+	CLKIN,
+	CLKOUT,
+	DIN,
+	DOUT
 ); 
 
-parameter RF_DEPTH = 64;
+parameter RF_DEPTH = 64;		// this number is intend to be less than LC_RF_DEPTH
 parameter ROM_DEPTH = 64;
 parameter ADDRESS = 20'hccccc;
+
+parameter LC_RF_DATA_WIDTH =24;
+parameter LC_RF_DEPTH = 128;		// 1 ~ 2^8
+
+parameter LC_MEM_DATA_WIDTH = 32;	// should ALWAYS less than DATA_WIDTH
+parameter LC_MEM_ADDR_WIDTH = 32;	// should ALWAYS less than DATA_WIDTH
+parameter LC_MEM_DEPTH = 65536;	// 1 ~ 2^30
+
+parameter LC_INT_DEPTH = 8;
+
+input 	CLK;
+input 	RESETn;
+input	[LC_INT_DEPTH-1:0] INT_VECTOR;
+output 	[LC_INT_DEPTH-1:0] CLR_INT_EXTERNAL;
+
+input	CLKIN;
+output	CLKOUT;
+input	DIN;
+output	DOUT;
 
 // from layer controller, need isolation
 // Mem
 wire	mem_req_out, mem_write;
-wire	[`LC_MEM_DATA_WIDTH-1:0] mem_dout;
-wire	[`LC_MEM_ADDR_WIDTH-3:0] mem_aout;
+wire	[LC_MEM_DATA_WIDTH-1:0] mem_dout;
+wire	[LC_MEM_ADDR_WIDTH-3:0] mem_aout;
 
 // RF
-wire	[`LC_RF_DATA_WIDTH-1:0] rf_dout;
-wire	[`LC_RF_DEPTH-1:0] rf_load;
+wire	[LC_RF_DATA_WIDTH-1:0] rf_dout;
+wire	[LC_RF_DEPTH-1:0] rf_load;
 
 // Mbus
 wire	[`ADDR_WIDTH-1:0] 	tx_addr;
@@ -37,17 +56,17 @@ wire						tx_req, tx_priority, tx_pend, tx_resp_ack;
 wire						tx_ack, tx_succ, tx_fail;
 
 // Interrupt
-wire	[`LC_INT_DEPTH-1:0] clr_int;
+wire	[LC_INT_DEPTH-1:0] clr_int;
 
 // unknown state when power if off
 // Mem
 reg		mem_req_out_f_lc, mem_write_f_lc;
-reg		[`LC_MEM_DATA_WIDTH-1:0] mem_dout_f_lc;
-reg		[`LC_MEM_ADDR_WIDTH-3:0] mem_aout_f_lc;
+reg		[LC_MEM_DATA_WIDTH-1:0] mem_dout_f_lc;
+reg		[LC_MEM_ADDR_WIDTH-3:0] mem_aout_f_lc;
 
 // RF
-reg		[`LC_RF_DATA_WIDTH-1:0] rf_dout_f_lc;
-reg		[`LC_RF_DEPTH-1:0] rf_load_f_lc;
+reg		[LC_RF_DATA_WIDTH-1:0] rf_dout_f_lc;
+reg		[LC_RF_DEPTH-1:0] rf_load_f_lc;
 
 // Mbus
 reg		[`ADDR_WIDTH-1:0] 	tx_addr_f_lc;
@@ -56,17 +75,17 @@ reg							tx_req_f_lc, priority_f_lc, tx_pend_f_lc, tx_resp_ack_f_lc;
 reg							rx_ack_f_lc;
 
 // Interrupt
-reg		[`LC_INT_DEPTH-1:0] clr_int_f_lc;
+reg		[LC_INT_DEPTH-1:0] clr_int_f_lc;
 
 // output from isolation
 // Mem
 wire	mem_req_out_t_mem, mem_write_t_mem;
-wire	[`LC_MEM_DATA_WIDTH-1:0] mem_dout_t_mem;
-wire	[`LC_MEM_ADDR_WIDTH-3:0] mem_aout_t_mem;
+wire	[LC_MEM_DATA_WIDTH-1:0] mem_dout_t_mem;
+wire	[LC_MEM_ADDR_WIDTH-3:0] mem_aout_t_mem;
 
 // RF
-wire	[`LC_RF_DATA_WIDTH-1:0] rf_dout_t_rf;
-wire	[`LC_RF_DEPTH-1:0] rf_load_t_rf;
+wire	[LC_RF_DATA_WIDTH-1:0] rf_dout_t_rf;
+wire	[LC_RF_DEPTH-1:0] rf_load_t_rf;
 
 // Mbus
 wire	[`ADDR_WIDTH-1:0] 	tx_addr_t_mbus;
@@ -78,14 +97,14 @@ wire						rx_ack_t_mbus;
 // To layer controller, doesn't need isolation
 // MEM
 wire	mem_ack_f_mem;
-wire	[`LC_MEM_DATA_WIDTH-1:0] mem_data_f_mem;
+wire	[LC_MEM_DATA_WIDTH-1:0] mem_data_f_mem;
 
 // RF
-wire	[`LC_RF_DATA_WIDTH*RF_DEPTH-1:0] rf_dout_f_rf;
+wire	[LC_RF_DATA_WIDTH*RF_DEPTH-1:0] rf_dout_f_rf;
 // ROM
-wire	[`LC_RF_DATA_WIDTH*ROM_DEPTH-1:0] sensor_dat_f_rom;
-wire	[`FUNC_WIDTH*`LC_INT_DEPTH-1:0] int_func_id_f_rom;
-wire	[(`DATA_WIDTH<<1)*`LC_INT_DEPTH-1:0] int_payload_f_rom;
+wire	[LC_RF_DATA_WIDTH*ROM_DEPTH-1:0] sensor_dat_f_rom;
+wire	[`FUNC_WIDTH*LC_INT_DEPTH-1:0] int_func_id_f_rom;
+wire	[(`DATA_WIDTH<<1)*LC_INT_DEPTH-1:0] int_payload_f_rom;
 
 // Mbus
 wire	[`ADDR_WIDTH-1:0]	rx_addr;
@@ -101,7 +120,10 @@ wire						req_int = (INT_VECTOR>0)? 1'b1 : 1'b0;
 wire						CLK_LC = (CLK&(~lc_release_clk));
 
 // always on isolation
-layer_ctrl_isolation lc_iso0(
+layer_ctrl_isolation #(
+	.LC_RF_DATA_WIDTH(LC_RF_DATA_WIDTH), .LC_RF_DEPTH(LC_RF_DEPTH), 
+	.LC_MEM_DATA_WIDTH(LC_MEM_DATA_WIDTH), .LC_MEM_ADDR_WIDTH(LC_MEM_ADDR_WIDTH), 
+	.LC_INT_DEPTH(LC_INT_DEPTH)) lc_iso0(
 	.LC_ISOLATION(lc_release_iso),
 	// Interface with MBus
 	.TX_ADDR_FROM_LC(tx_addr_f_lc), .TX_DATA_FROM_LC(tx_data_f_lc), .TX_PEND_FROM_LC(tx_pend_f_lc), .TX_REQ_FROM_LC(tx_req_f_lc),
@@ -124,7 +146,10 @@ layer_ctrl_isolation lc_iso0(
 	.CLR_INT_EXTERNAL(CLR_INT_EXTERNAL)
 );
 
-layer_ctrl lc0(
+layer_ctrl 
+	#(.LC_RF_DATA_WIDTH(LC_RF_DATA_WIDTH), .LC_RF_DEPTH(LC_RF_DEPTH), 
+	.LC_MEM_DATA_WIDTH(LC_MEM_DATA_WIDTH), .LC_MEM_ADDR_WIDTH(LC_MEM_ADDR_WIDTH), .LC_MEM_DEPTH(LC_MEM_DEPTH), 
+	.LC_INT_DEPTH(LC_INT_DEPTH)) lc0(
 	.CLK(CLK_LC),
 	.RESETn(RESETn),
 	// Interface with MBus
@@ -200,8 +225,8 @@ always @ *
 begin
 	if (lc_pwr_on)
 	begin
-		rf_dout_f_lc= {(`LC_RF_DATA_WIDTH){1'bx}};
-		rf_load_f_lc = {(`LC_RF_DEPTH){1'bx}};
+		rf_dout_f_lc= {(LC_RF_DATA_WIDTH){1'bx}};
+		rf_load_f_lc = {(LC_RF_DEPTH){1'bx}};
 	end
 	else
 	begin
@@ -216,8 +241,8 @@ begin
 	begin
 		mem_req_out_f_lc = 1'bx;
 		mem_write_f_lc = 1'bx;
-		mem_dout_f_lc = {(`LC_MEM_DATA_WIDTH){1'bx}};
-		mem_aout_f_lc = {(`LC_MEM_ADDR_WIDTH-2){1'bx}};
+		mem_dout_f_lc = {(LC_MEM_DATA_WIDTH){1'bx}};
+		mem_aout_f_lc = {(LC_MEM_ADDR_WIDTH-2){1'bx}};
 	end
 	else
 	begin
@@ -240,7 +265,7 @@ begin
 end
 
 // always on MEM
-mem_ctrl mem0(
+mem_ctrl #(.MEM_DEPTH(LC_MEM_DEPTH), .LC_MEM_DATA_WIDTH(LC_MEM_DATA_WIDTH), .LC_MEM_ADDR_WIDTH(LC_MEM_ADDR_WIDTH)) mem0(
 	.CLK(CLK),
 	.RESETn(RESETn),
 	.ADDR(mem_aout_t_mem),
@@ -265,7 +290,7 @@ sensor_rom #(.ROM_DEPTH(ROM_DEPTH)) r0(
 );
 
 // always on interrupt command roms
-int_action_rom ir0(
+int_action_rom #(.LC_INT_DEPTH(LC_INT_DEPTH), .LC_RF_DEPTH(LC_RF_DEPTH), .LC_MEM_DEPTH(LC_MEM_DEPTH)) ir0(
 	.int_func_id(int_func_id_f_rom),
 	.int_payload(int_payload_f_rom)
 );

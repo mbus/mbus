@@ -1,25 +1,35 @@
 
 // Simualtion only memory controller
-`include "include/mbus_def.v"
 
 module mem_ctrl(
-	input 	CLK,
-	input	RESETn,
-	input	[`LC_MEM_ADDR_WIDTH-3:0]	ADDR,
-	input	[`LC_MEM_DATA_WIDTH-1:0]	DATA_IN,
-	input	MEM_REQ,
-	input	MEM_WRITE,
-	output	reg [`LC_MEM_DATA_WIDTH-1:0]	DATA_OUT,
-	output	reg	MEM_ACK_OUT
+	CLK,
+	RESETn,
+	ADDR,
+	DATA_IN,
+	MEM_REQ,
+	MEM_WRITE,
+	DATA_OUT,
+	MEM_ACK_OUT
 );
+	parameter MEM_DEPTH = 65536;
+	parameter LC_MEM_DATA_WIDTH = 32;
+	parameter LC_MEM_ADDR_WIDTH = 32;
+
+	input 	CLK;
+	input	RESETn;
+	input	[LC_MEM_ADDR_WIDTH-3:0]	ADDR;
+	input	[LC_MEM_DATA_WIDTH-1:0]	DATA_IN;
+	input	MEM_REQ;
+	input	MEM_WRITE;
+	output	reg [LC_MEM_DATA_WIDTH-1:0]	DATA_OUT;
+	output	reg	MEM_ACK_OUT;
 
 `include "include/mbus_func.v"
 
-parameter MEM_DEPTH = 65536;
 
 wire	[log2(MEM_DEPTH-1)-1:0] addr_equal = ADDR[log2(MEM_DEPTH-1)-1:0];
 
-reg	 [`LC_MEM_DATA_WIDTH-1:0] mem_array [0:MEM_DEPTH-1];
+reg	 [LC_MEM_DATA_WIDTH-1:0] mem_array [0:MEM_DEPTH-1];
 reg	[1:0] fsm;
 
 parameter IDLE = 2'b00;

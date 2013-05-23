@@ -6,27 +6,31 @@
 
 module tb_layer_ctrl();
 
+	parameter LC_INT_DEPTH=8;
+	parameter LC_MEM_DEPTH=65536;
+	parameter LC_RF_DEPTH=128;
+
    reg		         clk, resetn;
    wire 		 SCLK;
 
 	// n0 connections
-	reg		[`LC_INT_DEPTH-1:0] n0_int_vector;
-	wire	[`LC_INT_DEPTH-1:0]	n0_clr_int;
+	reg		[LC_INT_DEPTH-1:0] n0_int_vector;
+	wire	[LC_INT_DEPTH-1:0]	n0_clr_int;
 	// end of n0 connections
 
 	// n1 connections
-	reg		[`LC_INT_DEPTH-1:0] n1_int_vector;
-	wire	[`LC_INT_DEPTH-1:0]	n1_clr_int;
+	reg		[LC_INT_DEPTH-1:0] n1_int_vector;
+	wire	[LC_INT_DEPTH-1:0]	n1_clr_int;
 	// end of n1 connections
 	
 	// n2 connections
-	reg		[`LC_INT_DEPTH-1:0] n2_int_vector;
-	wire	[`LC_INT_DEPTH-1:0]	n2_clr_int;
+	reg		[LC_INT_DEPTH-1:0] n2_int_vector;
+	wire	[LC_INT_DEPTH-1:0]	n2_clr_int;
 	// end of n2 connections
 	
 	// n3 connections
-	reg		[`LC_INT_DEPTH-1:0] n3_int_vector;
-	wire	[`LC_INT_DEPTH-1:0]	n3_clr_int;
+	reg		[LC_INT_DEPTH-1:0] n3_int_vector;
+	wire	[LC_INT_DEPTH-1:0]	n3_clr_int;
 	// end of n3 connections
 	
 	// c0 connections
@@ -270,7 +274,7 @@ begin
 end
 
 // n0 interrupt control
-wire	[`LC_INT_DEPTH-1:0] n0_int_clr_mask = (n0_clr_int & n0_int_vector);
+wire	[LC_INT_DEPTH-1:0] n0_int_clr_mask = (n0_clr_int & n0_int_vector);
 always @ (posedge clk)
 begin
 	if (n0_int_clr_mask)
@@ -294,7 +298,7 @@ always @ (posedge layer0.tx_fail)
 // end of n0 interrupt control
 
 // n1 interrupt control
-wire	[`LC_INT_DEPTH-1:0] n1_int_clr_mask = (n1_clr_int & n1_int_vector);
+wire	[LC_INT_DEPTH-1:0] n1_int_clr_mask = (n1_clr_int & n1_int_vector);
 always @ (posedge clk)
 begin
 	if (n1_int_clr_mask)
@@ -318,7 +322,7 @@ always @ (posedge layer1.tx_fail)
 // end of n1 interrupt control
 
 // n2 interrupt control
-wire	[`LC_INT_DEPTH-1:0] n2_int_clr_mask = (n2_clr_int & n2_int_vector);
+wire	[LC_INT_DEPTH-1:0] n2_int_clr_mask = (n2_clr_int & n2_int_vector);
 always @ (posedge clk)
 begin
 	if (n2_int_clr_mask)
@@ -342,7 +346,7 @@ always @ (posedge layer2.tx_fail)
 // end of n2 interrupt control
 
 // n3 interrupt control
-wire	[`LC_INT_DEPTH-1:0] n3_int_clr_mask = (n3_clr_int & n3_int_vector);
+wire	[LC_INT_DEPTH-1:0] n3_int_clr_mask = (n3_clr_int & n3_int_vector);
 always @ (posedge clk)
 begin
 	if (n3_int_clr_mask)

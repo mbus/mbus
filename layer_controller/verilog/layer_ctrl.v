@@ -53,6 +53,8 @@
  * Last modified date: 05/06 '13
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  * Update log:
+ * 5/22 '13
+ * Change define to parameter
  * 5/17 '13
  * Change memory interface, MEM_ACK_IN is no longer asynchronously reset MEM_REQ_OUT
  * 5/6 '13
@@ -61,6 +63,63 @@
 `include "include/mbus_def.v"
 
 module layer_ctrl(
+	CLK,
+	RESETn,
+
+	// Interface with MBus
+	TX_ADDR, 
+	TX_DATA, 
+	TX_PEND, 
+	TX_REQ, 
+	TX_ACK, 
+	TX_PRIORITY,
+
+	RX_ADDR, 
+	RX_DATA, 
+	RX_PEND, 
+	RX_REQ, 
+	RX_ACK, 
+	RX_BROADCAST,
+
+	RX_FAIL,
+	TX_FAIL, 
+	TX_SUCC, 
+	TX_RESP_ACK,
+
+	RELEASE_RST_FROM_MBUS,
+	// End of interface
+	
+	// Interface with Registers
+	REG_RD_DATA,
+	REG_WR_DATA,
+	REG_WR_EN,
+	// End of interface
+	
+	// Interface with MEM
+	MEM_REQ_OUT,
+	MEM_WRITE,
+	MEM_ACK_IN,
+	MEM_WR_DATA,
+	MEM_RD_DATA,
+	MEM_ADDR,
+	// End of interface
+	
+	// Interrupt
+	INT_VECTOR,
+	CLR_INT,
+	INT_FU_ID,
+	INT_CMD
+);
+
+	parameter LC_RF_DATA_WIDTH =24;
+	parameter LC_RF_ADDR_WIDTH =`DATA_WIDTH-LC_RF_DATA_WIDTH;
+	parameter LC_RF_DEPTH = 128;		// 1 ~ 2^8
+
+	parameter LC_MEM_ADDR_WIDTH = 32;	// should ALWAYS less than DATA_WIDTH
+	parameter LC_MEM_DATA_WIDTH = 32;	// should ALWAYS less than DATA_WIDTH
+	parameter LC_MEM_DEPTH = 65536;	// 1 ~ 2^30
+
+	parameter LC_INT_DEPTH = 8;
 
 	input		CLK,
 	input		RESETn,
@@ -89,26 +148,25 @@ module layer_ctrl(
 	// End of interface
 	
 	// Interface with Registers
-	input		[(`LC_RF_DATA_WIDTH*`LC_RF_DEPTH)-1:0] REG_RD_DATA,
-	output reg	[`LC_RF_DATA_WIDTH-1:0] REG_WR_DATA,
-	output reg	[`LC_RF_DEPTH-1:0] REG_WR_EN,
+	input		[(LC_RF_DATA_WIDTH*LC_RF_DEPTH)-1:0] REG_RD_DATA,
+	output reg	[LC_RF_DATA_WIDTH-1:0] REG_WR_DATA,
+	output reg	[LC_RF_DEPTH-1:0] REG_WR_EN,
 	// End of interface
 	
 	// Interface with MEM
 	output 		MEM_REQ_OUT,
 	output 		MEM_WRITE,
 	input		MEM_ACK_IN,
-	output reg	[`LC_MEM_DATA_WIDTH-1:0] MEM_WR_DATA,
-	input		[`LC_MEM_DATA_WIDTH-1:0] MEM_RD_DATA,
-	output reg	[`LC_MEM_ADDR_WIDTH-3:0] MEM_ADDR,
+	output reg	[LC_MEM_DATA_WIDTH-1:0] MEM_WR_DATA,
+	input		[LC_MEM_DATA_WIDTH-1:0] MEM_RD_DATA,
+	output reg	[LC_MEM_ADDR_WIDTH-3:0] MEM_ADDR,
 	// End of interface
 	
 	// Interrupt
-	input		[`LC_INT_DEPTH-1:0] INT_VECTOR,
-	output reg	[`LC_INT_DEPTH-1:0] CLR_INT,
-	input		[`FUNC_WIDTH*`LC_INT_DEPTH-1:0] INT_FU_ID,
-	input		[(`DATA_WIDTH<<1)*`LC_INT_DEPTH-1:0] INT_CMD
-);
+	input		[LC_INT_DEPTH-1:0] INT_VECTOR,
+	output reg	[LC_INT_DEPTH-1:0] CLR_INT,
+	input		[`FUNC_WIDTH*LC_INT_DEPTH-1:0] INT_FU_ID,
+	input		[(`DATA_WIDTH<<1)*LC_INT_DEPTH-1:0] INT_CMD
 `include "include/mbus_func.v"
 
 wire	RESETn_local = (RESETn & (~RELEASE_RST_FROM_MBUS));
@@ -149,37 +207,37 @@ reg		next_rx_ack;
 reg		next_tx_resp_ack;
 
 // RF interface
-wire	[`LC_RF_DATA_WIDTH-1:0] rf_in_array [0:`LC_RF_DEPTH-1];
+wire	[LC_RF_DATA_WIDTH-1:0] rf_in_array [0:LC_RF_DEPTH-1];
 genvar unpk_idx; 
 generate 
-	for (unpk_idx=0; unpk_idx<(`LC_RF_DEPTH); unpk_idx=unpk_idx+1)
+	for (unpk_idx=0; unpk_idx<(LC_RF_DEPTH); unpk_idx=unpk_idx+1)
 	begin: UNPACK
-		assign rf_in_array[unpk_idx] = REG_RD_DATA[((`LC_RF_DATA_WIDTH)*(unpk_idx+1)-1):((`LC_RF_DATA_WIDTH)*unpk_idx)]; 
+		assign rf_in_array[unpk_idx] = REG_RD_DATA[((LC_RF_DATA_WIDTH)*(unpk_idx+1)-1):((LC_RF_DATA_WIDTH)*unpk_idx)]; 
 	end
 endgenerate
-reg		[`LC_RF_DEPTH-1:0] next_rf_load;
-wire	[`LC_RF_DEPTH-1:0] rf_load_temp = (1'b1<<(rx_dat_buffer[`DATA_WIDTH-1:`LC_RF_DATA_WIDTH]));
-reg		[`LC_RF_DATA_WIDTH-1:0] next_rf_dout;
-wire	[`LC_RF_ADDR_WIDTH-1:0] rf_dma_length = rx_dat_buffer[`LC_RF_DATA_WIDTH-1:`LC_RF_DATA_WIDTH-`LC_RF_ADDR_WIDTH];
-wire	[log2(`LC_RF_DEPTH-1)-1:0] rf_idx_temp = rx_dat_buffer[(`LC_RF_DATA_WIDTH+log2(`LC_RF_DEPTH-1)-1):`LC_RF_DATA_WIDTH];
-wire	[`SHORT_ADDR_WIDTH-1:0] rf_relay_addr = rx_dat_buffer[`LC_RF_DATA_WIDTH-`LC_RF_ADDR_WIDTH-1:`LC_RF_DATA_WIDTH-`LC_RF_ADDR_WIDTH-`SHORT_ADDR_WIDTH];
-reg		[log2(`LC_RF_DEPTH-1)-1:0] rf_idx, next_rf_idx;
+reg		[LC_RF_DEPTH-1:0] next_rf_load;
+wire	[LC_RF_DEPTH-1:0] rf_load_temp = (1'b1<<(rx_dat_buffer[`DATA_WIDTH-1:LC_RF_DATA_WIDTH]));
+reg		[LC_RF_DATA_WIDTH-1:0] next_rf_dout;
+wire	[LC_RF_ADDR_WIDTH-1:0] rf_dma_length = rx_dat_buffer[LC_RF_DATA_WIDTH-1:LC_RF_DATA_WIDTH-LC_RF_ADDR_WIDTH];
+wire	[log2(LC_RF_DEPTH-1)-1:0] rf_idx_temp = rx_dat_buffer[(LC_RF_DATA_WIDTH+log2(LC_RF_DEPTH-1)-1):LC_RF_DATA_WIDTH];
+wire	[`SHORT_ADDR_WIDTH-1:0] rf_relay_addr = rx_dat_buffer[LC_RF_DATA_WIDTH-LC_RF_ADDR_WIDTH-1:LC_RF_DATA_WIDTH-LC_RF_ADDR_WIDTH-`SHORT_ADDR_WIDTH];
+reg		[log2(LC_RF_DEPTH-1)-1:0] rf_idx, next_rf_idx;
 
 // Mem interface
 reg		mem_write, next_mem_write, mem_read, next_mem_read;
 assign	MEM_REQ_OUT = (mem_write | mem_read);
 assign	MEM_WRITE = mem_write;
-reg		[`LC_MEM_ADDR_WIDTH-3:0] next_mem_aout;
-reg		[`LC_MEM_DATA_WIDTH-1:0] next_mem_dout;
+reg		[LC_MEM_ADDR_WIDTH-3:0] next_mem_aout;
+reg		[LC_MEM_DATA_WIDTH-1:0] next_mem_dout;
 
 // Interrupt register
-reg		[`LC_INT_DEPTH-1:0] next_clr_int, int_vector_copied, next_int_vector_copied;
-reg		[log2(`LC_INT_DEPTH-1)-1:0] int_idx, next_int_idx;
+reg		[LC_INT_DEPTH-1:0] next_clr_int, int_vector_copied, next_int_vector_copied;
+reg		[log2(LC_INT_DEPTH-1)-1:0] int_idx, next_int_idx;
 reg		next_layer_interrupted, layer_interrupted;
-wire	[`FUNC_WIDTH-1:0] interrupt_functional_id [0:`LC_INT_DEPTH-1];
-wire	[(`DATA_WIDTH<<1)-1:0] interrupt_payload [0:`LC_INT_DEPTH-1];
+wire	[`FUNC_WIDTH-1:0] interrupt_functional_id [0:LC_INT_DEPTH-1];
+wire	[(`DATA_WIDTH<<1)-1:0] interrupt_payload [0:LC_INT_DEPTH-1];
 generate
-	for (unpk_idx=0; unpk_idx<(`LC_INT_DEPTH); unpk_idx=unpk_idx+1)
+	for (unpk_idx=0; unpk_idx<(LC_INT_DEPTH); unpk_idx=unpk_idx+1)
 	begin: UNPACK_INT
 		assign interrupt_functional_id[unpk_idx] = INT_FU_ID[((`FUNC_WIDTH)*(unpk_idx+1)-1):((`FUNC_WIDTH)*unpk_idx)]; 
 		assign interrupt_payload[unpk_idx] = INT_CMD[((`DATA_WIDTH<<1)*(unpk_idx+1)-1):((`DATA_WIDTH<<1)*unpk_idx)]; 
@@ -366,9 +424,9 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					if ((~rx_pend_reg)&&((rx_dat_buffer[`DATA_WIDTH-1:`LC_RF_DATA_WIDTH]) < `LC_RF_DEPTH))	// prevent aliasing
+					if ((~rx_pend_reg)&&((rx_dat_buffer[`DATA_WIDTH-1:LC_RF_DATA_WIDTH]) < LC_RF_DEPTH))	// prevent aliasing
 					begin 
-						next_dma_counter = {{(MAX_DMA_LENGTH-`LC_RF_ADDR_WIDTH){1'b0}}, rf_dma_length};
+						next_dma_counter = {{(MAX_DMA_LENGTH-LC_RF_ADDR_WIDTH){1'b0}}, rf_dma_length};
 						next_rf_idx = rf_idx_temp;
 						next_mem_sub_state = 1;
 						next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, rf_relay_addr};
@@ -386,12 +444,12 @@ begin
 				begin
 					if (~TX_REQ)
 					begin
-						next_tx_data = {{(`LC_RF_ADDR_WIDTH){1'b0}}, rf_in_array[rf_idx]};
+						next_tx_data = {{(LC_RF_ADDR_WIDTH){1'b0}}, rf_in_array[rf_idx]};
 						next_tx_req = 1;
 						next_lc_state = LC_STATE_BUS_TX;
 						next_mem_sub_state = 2;
 						next_lc_return_state = LC_STATE_RF_READ;
-						if ((dma_counter)&&(rf_idx < (`LC_RF_DEPTH-1'b1)))
+						if ((dma_counter)&&(rf_idx < (LC_RF_DEPTH-1'b1)))
 						begin
 							next_tx_pend = 1;
 							next_dma_counter = dma_counter - 1'b1;
@@ -414,9 +472,9 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					if ((rx_dat_buffer[`DATA_WIDTH-1:`LC_RF_DATA_WIDTH]) < `LC_RF_DEPTH)
+					if ((rx_dat_buffer[`DATA_WIDTH-1:LC_RF_DATA_WIDTH]) < LC_RF_DEPTH)
 					begin
-						next_rf_dout = rx_dat_buffer[`LC_RF_DATA_WIDTH-1:0];
+						next_rf_dout = rx_dat_buffer[LC_RF_DATA_WIDTH-1:0];
 						next_mem_sub_state = 1;
 					end
 					else if (rx_pend_reg)	// Invalid address
@@ -461,9 +519,9 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					if ((rx_pend_reg)&&(rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:2] < `LC_MEM_DEPTH))
+					if ((rx_pend_reg)&&(rx_dat_buffer[LC_MEM_ADDR_WIDTH-1:2] < LC_MEM_DEPTH))
 					begin
-						next_mem_aout = rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:2];
+						next_mem_aout = rx_dat_buffer[LC_MEM_ADDR_WIDTH-1:2];
 						next_dma_counter = 0;
 						next_mem_sub_state = 1;
 					end
@@ -518,11 +576,11 @@ begin
 					if (MEM_ACK_IN & (~TX_REQ))
 					begin
 						next_tx_req = 1;
-						next_tx_data[`LC_MEM_DATA_WIDTH-1:0] = MEM_RD_DATA;
+						next_tx_data[LC_MEM_DATA_WIDTH-1:0] = MEM_RD_DATA;
 						next_lc_state = LC_STATE_BUS_TX;
 						next_lc_return_state = LC_STATE_MEM_READ;
 						next_mem_sub_state = 4;
-						if ((dma_counter)&&(MEM_ADDR < (`LC_MEM_DEPTH-1'b1)))
+						if ((dma_counter)&&(MEM_ADDR < (LC_MEM_DEPTH-1'b1)))
 						begin
 							next_tx_pend = 1;
 							next_dma_counter = dma_counter - 1'b1;
@@ -545,9 +603,9 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					if ((rx_pend_reg)&&(rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:2] < `LC_MEM_DEPTH))
+					if ((rx_pend_reg)&&(rx_dat_buffer[LC_MEM_ADDR_WIDTH-1:2] < LC_MEM_DEPTH))
 					begin
-						next_mem_aout = rx_dat_buffer[`LC_MEM_ADDR_WIDTH-1:2];
+						next_mem_aout = rx_dat_buffer[LC_MEM_ADDR_WIDTH-1:2];
 						next_mem_sub_state = 1;
 					end
 					else if (rx_pend_reg)	// Invalid Address
@@ -565,7 +623,7 @@ begin
 					begin
 						next_rx_ack = 1;
 						next_mem_sub_state = 2;
-						next_mem_dout = RX_DATA[`LC_MEM_DATA_WIDTH-1:0];
+						next_mem_dout = RX_DATA[LC_MEM_DATA_WIDTH-1:0];
 						next_rx_pend_reg = RX_PEND;
 					end
 					else if (RX_FAIL & (~RX_ACK))
@@ -589,7 +647,7 @@ begin
 					// write complete
 					if (MEM_ACK_IN)
 					begin
-						if ((rx_pend_reg)&&(MEM_ADDR<(`LC_MEM_DEPTH-1'b1)))
+						if ((rx_pend_reg)&&(MEM_ADDR<(LC_MEM_DEPTH-1'b1)))
 						begin
 							next_mem_aout = MEM_ADDR + 1'b1;
 							next_mem_sub_state = 1;

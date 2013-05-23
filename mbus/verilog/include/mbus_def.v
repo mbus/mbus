@@ -48,20 +48,6 @@
 `define CMD_CHANNEL_POWER_SEL_WAKE			4'h3
 `define CMD_CHANNEL_POWER_SEL_SLEEP_FULL	4'h4
 
-// Specific Layer Controller Definition
-// Register files
-`define LC_RF_DATA_WIDTH 24
-`define LC_RF_ADDR_WIDTH (`DATA_WIDTH-`LC_RF_DATA_WIDTH)
-`define	LC_RF_DEPTH		128		// 1 ~ 2^8
-
-// Memory
-`define LC_MEM_ADDR_WIDTH 32	// should ALWAYS less than DATA_WIDTH
-`define LC_MEM_DATA_WIDTH 32	// should ALWAYS less than DATA_WIDTH
-`define LC_MEM_DEPTH	65536	// 1 ~ 2^30
-
-// Interrupt vector
-`define LC_INT_DEPTH 8
-
 // Commands for Layer controller, the width should match `FUNC_WIDTH
 `define LC_CMD_RF_WRITE		4'h0
 `define LC_CMD_RF_READ		4'h1

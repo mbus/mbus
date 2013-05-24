@@ -9,7 +9,6 @@ set top_level "layer_ctrl"
 # Read verilog files
 read_verilog "../verilog/layer_ctrl.v" 
 analyze -format verilog "../verilog/layer_ctrl.v"
-#elaborate $top_level -param "ADDRESS=20'hbbbb0"
 current_design $top_level
 
 list_designs
@@ -36,13 +35,6 @@ set_output_delay $typical_output_delay [all_outputs] -clock $clk_name
 
 # Set loading of outputs 
 set_load $typical_wire_load [all_outputs]
-# Set loading of DIN and CLKOUT (Needs to be going to pads)
-# This means PAD + bonding wire + PAD + input cap + (maybe socket)
-# Roughly set to 2pF
-#set_load 2 {DOUT CLKOUT}
-
-# Set clock
-# set_ideal_network $clk_name 
 
 # Verify the design
 check_design
@@ -51,9 +43,7 @@ check_design
 uniquify
 
 # Synthesize the design
-#compile -map_effort medium
 compile_ultra 
-#compile_ultra -gate_clock
 
 # Rename modules, signals according to the naming rules
 # Used for tool exchange

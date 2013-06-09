@@ -53,8 +53,6 @@
  * Last modified date: 05/06 '13
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  * Update log:
- * 6/9 '13
- * Fix non-24 bit RF
  * 5/22 '13
  * Change define to parameter
  * 5/17 '13
@@ -113,8 +111,8 @@ module layer_ctrl(
 	INT_CMD
 );
 
-	parameter LC_RF_DATA_WIDTH = 24;
-	parameter LC_RF_ADDR_WIDTH = 8;		// don't change this value
+	parameter LC_RF_DATA_WIDTH =24;
+	parameter LC_RF_ADDR_WIDTH =`DATA_WIDTH-LC_RF_DATA_WIDTH;
 	parameter LC_RF_DEPTH = 128;		// 1 ~ 2^8
 
 	parameter LC_MEM_ADDR_WIDTH = 32;	// should ALWAYS less than DATA_WIDTH
@@ -219,16 +217,11 @@ generate
 	end
 endgenerate
 reg		[LC_RF_DEPTH-1:0] next_rf_load;
-wire	[LC_RF_DEPTH-1:0] rf_load_temp = (1'b1<<(rx_dat_buffer[`DATA_WIDTH-1:`DATA_WIDTH-LC_RF_ADDR_WIDTH-1]));
+wire	[LC_RF_DEPTH-1:0] rf_load_temp = (1'b1<<(rx_dat_buffer[`DATA_WIDTH-1:LC_RF_DATA_WIDTH]));
 reg		[LC_RF_DATA_WIDTH-1:0] next_rf_dout;
-/*
 wire	[LC_RF_ADDR_WIDTH-1:0] rf_dma_length = rx_dat_buffer[LC_RF_DATA_WIDTH-1:LC_RF_DATA_WIDTH-LC_RF_ADDR_WIDTH];
 wire	[log2(LC_RF_DEPTH-1)-1:0] rf_idx_temp = rx_dat_buffer[(LC_RF_DATA_WIDTH+log2(LC_RF_DEPTH-1)-1):LC_RF_DATA_WIDTH];
 wire	[`SHORT_ADDR_WIDTH-1:0] rf_relay_addr = rx_dat_buffer[LC_RF_DATA_WIDTH-LC_RF_ADDR_WIDTH-1:LC_RF_DATA_WIDTH-LC_RF_ADDR_WIDTH-`SHORT_ADDR_WIDTH];
-*/
-wire	[LC_RF_ADDR_WIDTH-1:0] rf_dma_length = rx_dat_buffer[23:16];
-wire	[log2(LC_RF_DEPTH-1)-1:0] rf_idx_temp = rx_dat_buffer[(24+log2(LC_RF_DEPTH-1)-1):24];
-wire	[`SHORT_ADDR_WIDTH-1:0] rf_relay_addr = rx_dat_buffer[15:15-`SHORT_ADDR_WIDTH];
 reg		[log2(LC_RF_DEPTH-1)-1:0] rf_idx, next_rf_idx;
 
 // Mem interface
@@ -432,8 +425,7 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					//if ((~rx_pend_reg)&&((rx_dat_buffer[`DATA_WIDTH-1:LC_RF_DATA_WIDTH]) < LC_RF_DEPTH))	// prevent aliasing
-					if ((~rx_pend_reg)&&((rx_dat_buffer[`DATA_WIDTH-1:24]) < LC_RF_DEPTH))	// prevent aliasing
+					if ((~rx_pend_reg)&&((rx_dat_buffer[`DATA_WIDTH-1:LC_RF_DATA_WIDTH]) < LC_RF_DEPTH))	// prevent aliasing
 					begin 
 						next_dma_counter = {{(MAX_DMA_LENGTH-LC_RF_ADDR_WIDTH){1'b0}}, rf_dma_length};
 						next_rf_idx = rf_idx_temp;
@@ -453,7 +445,7 @@ begin
 				begin
 					if (~TX_REQ)
 					begin
-						next_tx_data = {{(`DATA_WIDTH-LC_RF_DATA_WIDTH){1'b0}}, rf_in_array[rf_idx]};
+						next_tx_data = {{(LC_RF_ADDR_WIDTH){1'b0}}, rf_in_array[rf_idx]};
 						next_tx_req = 1;
 						next_lc_state = LC_STATE_BUS_TX;
 						next_mem_sub_state = 2;
@@ -481,8 +473,7 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					//if ((rx_dat_buffer[`DATA_WIDTH-1:LC_RF_DATA_WIDTH]) < LC_RF_DEPTH)
-					if ((rx_dat_buffer[`DATA_WIDTH-1:24]) < LC_RF_DEPTH)
+					if ((rx_dat_buffer[`DATA_WIDTH-1:LC_RF_DATA_WIDTH]) < LC_RF_DEPTH)
 					begin
 						next_rf_dout = rx_dat_buffer[LC_RF_DATA_WIDTH-1:0];
 						next_mem_sub_state = 1;

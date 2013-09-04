@@ -29,6 +29,10 @@ mbus_addr_rf:
 	dc_shell -f $@.tcl | tee $@.dc.log
 	-perl ${POST_SDF} -s $@.pt.sdf -o $@.dc.sdf
 
+mbus_regular_sleep_ctrl:
+	dc_shell -f $@.tcl | tee $@.dc.log
+	-perl ${POST_SDF} -s $@.pt.sdf -o $@.dc.sdf
+
 clean:
 	rm -f *.log; rm -f *.rpt; rm -f *.nl.v; rm -f *.sdf; rm -f *.svf; rm -f *.key; rm -rf INCA_libs; rm -rf *.log; rm -rf waves.shm; rm -rf .nclaunch*; rm -rf .simvision*;
 	rm -f *.pvl *.syn *.mr *.sdc

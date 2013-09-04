@@ -12,18 +12,22 @@ synth:
 	make synth_ctrl_wrapper;
 
 synth_node:
-	dc_shell -f ${MBUS_n0}.tcl |tee ${MBUS_n0}.dc.log
+	dc_shell -f ${MBUS_n0}.tcl | tee ${MBUS_n0}.dc.log
 	-perl ${POST_SDF} -s ${MBUS_n0}.pt.sdf -o ${MBUS_n0}.dc.sdf
-	dc_shell -f ${MBUS_n1}.tcl |tee ${MBUS_n1}.dc.log
+	dc_shell -f ${MBUS_n1}.tcl | tee ${MBUS_n1}.dc.log
 	-perl ${POST_SDF} -s ${MBUS_n1}.pt.sdf -o ${MBUS_n1}.dc.sdf
-	dc_shell -f ${MBUS_n2}.tcl |tee ${MBUS_n2}.dc.log
+	dc_shell -f ${MBUS_n2}.tcl | tee ${MBUS_n2}.dc.log
 	-perl ${POST_SDF} -s ${MBUS_n2}.pt.sdf -o ${MBUS_n2}.dc.sdf
-	dc_shell -f ${MBUS_n3}.tcl |tee ${MBUS_n3}.dc.log
+	dc_shell -f ${MBUS_n3}.tcl | tee ${MBUS_n3}.dc.log
 	-perl ${POST_SDF} -s ${MBUS_n3}.pt.sdf -o ${MBUS_n3}.dc.sdf
 
 synth_ctrl_wrapper:
-	dc_shell -f ${CTRL}.tcl |tee ${CTRL}.dc.log
+	dc_shell -f ${CTRL}.tcl | tee ${CTRL}.dc.log
 	-perl ${POST_SDF} -s ${CTRL}.pt.sdf -o ${CTRL}.dc.sdf
+
+mbus_addr_rf:
+	dc_shell -f $@.tcl | tee $@.dc.log
+	-perl ${POST_SDF} -s $@.pt.sdf -o $@.dc.sdf
 
 clean:
 	rm -f *.log; rm -f *.rpt; rm -f *.nl.v; rm -f *.sdf; rm -f *.svf; rm -f *.key; rm -rf INCA_libs; rm -rf *.log; rm -rf waves.shm; rm -rf .nclaunch*; rm -rf .simvision*;

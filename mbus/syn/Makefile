@@ -1,3 +1,4 @@
+#Makefile for MBUS synthesis
 
 MBUS_n0 = mbus_node_n0
 MBUS_n1 = mbus_node_n1
@@ -7,9 +8,16 @@ CTRL = mbus_ctrl_wrapper
 
 POST_SDF = /afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/primetime/pt_postprocessor.pl
 
-synth:
+RUN_SYN = dc_shell -f $@.tcl | tee $@.dc.log
+RUN_POST = -perl ${POST_SDF} -s $@.pt.sdf -o $@.dc.sdf
+
+
+all:
 	make synth_node;
 	make synth_ctrl_wrapper;
+	make mbus_addr_rf;
+	make mbus_regular_sleep_ctrl;
+	make mbus_wire_ctrl;
 
 synth_node:
 	dc_shell -f ${MBUS_n0}.tcl | tee ${MBUS_n0}.dc.log
@@ -26,12 +34,16 @@ synth_ctrl_wrapper:
 	-perl ${POST_SDF} -s ${CTRL}.pt.sdf -o ${CTRL}.dc.sdf
 
 mbus_addr_rf:
-	dc_shell -f $@.tcl | tee $@.dc.log
-	-perl ${POST_SDF} -s $@.pt.sdf -o $@.dc.sdf
+	${RUN_SYN}
+	${RUN_POST}
 
 mbus_regular_sleep_ctrl:
-	dc_shell -f $@.tcl | tee $@.dc.log
-	-perl ${POST_SDF} -s $@.pt.sdf -o $@.dc.sdf
+	${RUN_SYN}
+	${RUN_POST}
+
+mbus_wire_ctrl:
+	${RUN_SYN}
+	${RUN_POST}
 
 clean:
 	rm -f *.log; rm -f *.rpt; rm -f *.nl.v; rm -f *.sdf; rm -f *.svf; rm -f *.key; rm -rf INCA_libs; rm -rf *.log; rm -rf waves.shm; rm -rf .nclaunch*; rm -rf .simvision*;

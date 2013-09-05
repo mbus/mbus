@@ -11,7 +11,8 @@
 
 `include "include/mbus_def.v"
 
-module mbus_wire_ctrl(
+module mbus_wire_ctrl_wresetn(
+	input RESETn,
 	input DIN,
 	input CLKIN,
 	input DOUT_FROM_BUS,
@@ -24,26 +25,31 @@ module mbus_wire_ctrl(
 
 always @ *
 begin
-	if (RELEASE_ISO_FROM_SLEEP_CTRL==`IO_HOLD)
-		CLKOUT = CLKIN;
+	if( !RESETn )
+		CLKOUT <= #1 1'b1;
+	else if (RELEASE_ISO_FROM_SLEEP_CTRL==`IO_HOLD)
+		CLKOUT <= #1 CLKIN;
 	else
-		CLKOUT = CLKOUT_FROM_BUS;
+		CLKOUT <= #1 CLKOUT_FROM_BUS;
 
-	if (EXTERNAL_INT)
+	if ( !RESETn )
+		DOUT <= #1 1'b1;
+	else if (EXTERNAL_INT)
 	begin
-		DOUT = 0;
+		DOUT <= #1 0;
 	end
 	else
 	begin
 		if (RELEASE_ISO_FROM_SLEEP_CTRL==`IO_HOLD)
 		begin
-			DOUT = DIN;
+			DOUT <= #1 DIN;
 		end
 		else
 		begin
-			DOUT = DOUT_FROM_BUS;
+			DOUT <= #1 DOUT_FROM_BUS;
 		end
 	end
 end
 
-endmodule
+endmodule // mbus_wire_ctrl_wresetn
+

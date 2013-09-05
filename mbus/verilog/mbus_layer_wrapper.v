@@ -34,13 +34,22 @@ module mbus_layer_wrapper(
 
 parameter ADDRESS = 20'h12345;
 
-wire	n0_power_on, n0_sleep_req, n0_release_rst, n0_release_iso_from_sc;
+//wire	n0_power_on, n0_sleep_req, n0_release_rst, n0_release_iso_from_sc;
+wire	mbc_sleep, mbc_isolate, mbc_reset, mbc_sleep_req;
+wire	ext_int_to_bus, ext_int_to_wire, clr_ext_int, clr_busy, bus_busyn, sleep_ctrl_clr_busy; 
 wire	w_n0lc0, w_n0lc0_clk_out;
 
-reg		n0_tx_ack_f_bc;
 reg		[`ADDR_WIDTH-1:0] n0_rx_addr_f_bc;
 reg		[`DATA_WIDTH-1:0] n0_rx_data_f_bc;
-reg		n0_rx_req_f_bc, n0_rx_bcast_f_bc, n0_rx_fail_f_bc, n0_rx_pend_f_bc, n0_tx_fail_f_bc, n0_tx_succ_f_bc, n0_pwr_on_f_bc, n0_rel_clk_f_bc, n0_rel_rst_f_bc, n0_rel_iso_f_bc;
+reg		n0_tx_ack_f_bc, n0_rx_req_f_bc, n0_rx_bcast_f_bc, n0_rx_fail_f_bc, n0_rx_pend_f_bc, n0_tx_fail_f_bc, n0_tx_succ_f_bc;
+//reg	n0_pwr_on_f_bc, n0_rel_clk_f_bc, n0_rel_rst_f_bc, n0_rel_iso_f_bc;
+reg		m0_lrc_sleep_f_bc, m0_lrc_clkenb_f_bc, m0_lrc_reset_f_bc, m0_lrc_isolate_f_bc;
+
+wire	[`ADDR_WIDTH-1:0] n0_rx_addr_t_iso;
+wire	[`DATA_WIDTH-1:0] n0_rx_data_t_iso;
+wire	n0_tx_ack_t_iso, n0_rx_req_t_iso, n0_rx_bcast_t_iso, n0_rx_fail_t_iso, n0_rx_pend_t_iso, n0_tx_fail_t_iso, n0_tx_succ_t_iso;
+//wire	n0_pwr_on_t_iso, n0_rel_clk_t_iso, n0_rel_rst_t_iso, n0_rel_iso_t_iso;
+wire	m0_lrc_sleep_t_iso, m0_lrc_clkenb_t_iso, m0_lrc_reset_t_iso, m0_lrc_isolate_t_iso;
 
 reg		[`ADDR_WIDTH-1:0] n0_tx_addr_f_lc;
 reg		[`DATA_WIDTH-1:0] n0_tx_data_f_lc;
@@ -50,18 +59,12 @@ wire	[`ADDR_WIDTH-1:0] n0_tx_addr_t_bc;
 wire	[`DATA_WIDTH-1:0] n0_tx_data_t_bc;
 wire	n0_tx_req_t_bc, n0_tx_pend_t_bc, n0_priority_t_bc, n0_rx_ack_t_bc, n0_tx_resp_ack_t_bc;
 
-wire	[`ADDR_WIDTH-1:0] n0_rx_addr_t_iso;
-wire	[`DATA_WIDTH-1:0] n0_rx_data_t_iso;
-wire	n0_tx_ack_t_iso, n0_rx_req_t_iso, n0_rx_bcast_t_iso, n0_rx_fail_t_iso, n0_rx_pend_t_iso, n0_tx_succ_t_iso, n0_tx_fail_t_iso, n0_pwr_on_t_iso, n0_rel_clk_t_iso, n0_rel_rst_t_iso, n0_rel_iso_t_iso;
-
-wire	ext_int_to_bus, ext_int_to_wire, clr_ext_int, clr_busy, bus_busyn, sleep_ctrl_clr_busy; 
-
 wire	[`DYNA_WIDTH-1:0] rf_addr_out_to_node, rf_addr_in_from_node;
 wire	rf_addr_valid, rf_addr_write, rf_addr_rstn;
    
 // always on block, interface with layer controller
 mbus_regular_isolation iso0
-	(.RELEASE_ISO_FROM_SLEEP_CTRL(n0_release_iso_from_sc),
+	(.RELEASE_ISO_FROM_SLEEP_CTRL(mbc_isolate),
 	 .TX_ADDR_FROM_LC(n0_tx_addr_f_lc), .TX_DATA_FROM_LC(n0_tx_data_f_lc), .TX_REQ_FROM_LC(n0_tx_req_f_lc), .TX_ACK_TO_LC(TX_ACK), .TX_PEND_FROM_LC(n0_tx_pend_f_lc), .PRIORITY_FROM_LC(n0_priority_f_lc),
 	 .RX_ADDR_TO_LC(RX_ADDR), .RX_DATA_TO_LC(RX_DATA), .RX_REQ_TO_LC(RX_REQ), .RX_ACK_FROM_LC(n0_rx_ack_f_lc), .RX_FAIL_TO_LC(RX_FAIL), .RX_PEND_TO_LC(RX_PEND), 
 	 .TX_SUCC_TO_LC(TX_SUCC), .TX_FAIL_TO_LC(TX_FAIL), .TX_RESP_ACK_FROM_LC(n0_tx_resp_ack_f_lc), .RX_BROADCAST_TO_LC(RX_BROADCAST),
@@ -70,7 +73,7 @@ mbus_regular_isolation iso0
 	 .RX_ADDR_FROM_BC(n0_rx_addr_f_bc), .RX_DATA_FROM_BC(n0_rx_data_f_bc), .RX_REQ_FROM_BC(n0_rx_req_f_bc), .RX_ACK_TO_BC(n0_rx_ack_t_bc), .RX_FAIL_FROM_BC(n0_rx_fail_f_bc), .RX_PEND_FROM_BC(n0_rx_pend_f_bc), 
 	 .TX_FAIL_FROM_BC(n0_tx_fail_f_bc), .TX_SUCC_FROM_BC(n0_tx_succ_f_bc), .TX_RESP_ACK_TO_BC(n0_tx_resp_ack_t_bc), .RX_BROADCAST_FROM_BC(n0_rx_bcast_f_bc),
 
-	 .POWER_ON_FROM_BC(n0_pwr_on_f_bc), .RELEASE_CLK_FROM_BC(n0_rel_clk_f_bc), .RELEASE_RST_FROM_BC(n0_rel_rst_f_bc), .RELEASE_ISO_FROM_BC(n0_rel_iso_f_bc), .RELEASE_ISO_FROM_BC_MASKED(LC_RELEASE_ISO),
+	 .POWER_ON_FROM_BC(m0_lrc_sleep_f_bc), .RELEASE_CLK_FROM_BC(m0_lrc_clkenb_f_bc), .RELEASE_RST_FROM_BC(m0_lrc_reset_f_bc), .RELEASE_ISO_FROM_BC(m0_lrc_isolate_f_bc), .RELEASE_ISO_FROM_BC_MASKED(LC_RELEASE_ISO),
 	 .POWER_ON_TO_LC(LC_POWER_ON), .RELEASE_CLK_TO_LC(LC_RELEASE_CLK), .RELEASE_RST_TO_LC(LC_RELEASE_RST));
 
 // power gated block
@@ -79,8 +82,8 @@ mbus_node#(.ADDRESS(ADDRESS)) n0
       .TX_ADDR(n0_tx_addr_t_bc), .TX_DATA(n0_tx_data_t_bc), .TX_REQ(n0_tx_req_t_bc), .TX_ACK(n0_tx_ack_t_iso), .TX_PEND(n0_tx_pend_t_bc), .TX_PRIORITY(n0_priority_t_bc),
       .RX_ADDR(n0_rx_addr_t_iso), .RX_DATA(n0_rx_data_t_iso), .RX_REQ(n0_rx_req_t_iso), .RX_ACK(n0_rx_ack_t_bc), .RX_BROADCAST(n0_rx_bcast_t_iso), .RX_FAIL(n0_rx_fail_t_iso), .RX_PEND(n0_rx_pend_t_iso),
       .TX_SUCC(n0_tx_succ_t_iso), .TX_FAIL(n0_tx_fail_t_iso), .TX_RESP_ACK(n0_tx_resp_ack_t_bc),
-	  .RELEASE_RST_FROM_SLEEP_CTRL(n0_release_rst), .SLEEP_REQUEST_TO_SLEEP_CTRL(n0_sleep_req), 
-	  .POWER_ON_TO_LAYER_CTRL(n0_pwr_on_t_iso), .RELEASE_CLK_TO_LAYER_CTRL(n0_rel_clk_t_iso), .RELEASE_RST_TO_LAYER_CTRL(n0_rel_rst_t_iso), .RELEASE_ISO_TO_LAYER_CTRL(n0_rel_iso_t_iso),
+	  .MBC_SLEEP(mbc_reset), .SLEEP_REQUEST_TO_SLEEP_CTRL(mbc_sleep_req), 
+	  .LRC_SLEEP(m0_lrc_sleep_t_iso), .LRC_CLKENB(m0_lrc_clkenb_t_iso), .LRC_RESET(m0_lrc_reset_t_iso), .LRC_ISOLATE(m0_lrc_isolate_t_iso),
 	  .EXTERNAL_INT(ext_int_to_bus), .CLR_EXT_INT(clr_ext_int), .CLR_BUSY(clr_busy),
 	  .ASSIGNED_ADDR_IN(rf_addr_out_to_node), .ASSIGNED_ADDR_OUT(rf_addr_in_from_node), 
 	  .ASSIGNED_ADDR_VALID(rf_addr_valid), .ASSIGNED_ADDR_WRITE(rf_addr_write), .ASSIGNED_ADDR_INVALIDn(rf_addr_rstn));
@@ -88,76 +91,76 @@ mbus_node#(.ADDRESS(ADDRESS)) n0
 // always on block
 mbus_regular_sleep_ctrl sc0
 	(.CLKIN(CLKIN), .RESETn(RESETn),
-	 .SLEEP_REQ(n0_sleep_req), .POWER_ON(n0_power_on), .RELEASE_CLK(), .RELEASE_RST(n0_release_rst), .RELEASE_ISO(n0_release_iso_from_sc), .BC_PG_CLR_BUSY(sleep_ctrl_clr_busy));
+	 .SLEEP_REQ(mbc_sleep_req), .POWER_ON(mbc_sleep), .RELEASE_CLK(), .RELEASE_RST(mbc_reset), .RELEASE_ISO(mbc_isolate), .BC_PG_CLR_BUSY(sleep_ctrl_clr_busy));
 
 // always on wire controller
 mbus_wire_ctrl lc0
 	(.DIN(DIN), .CLKIN(CLKIN), 										// the same input as the node
-	 .RELEASE_ISO_FROM_SLEEP_CTRL(n0_release_iso_from_sc),			// from sleep controller
+	 .RELEASE_ISO_FROM_SLEEP_CTRL(mbc_isolate),			// from sleep controller
 	 .DOUT_FROM_BUS(w_n0lc0), .CLKOUT_FROM_BUS(w_n0lc0_clk_out), 	// the outputs from the node
 	 .DOUT(DOUT), .CLKOUT(CLKOUT),									// to next node
 	 .EXTERNAL_INT(ext_int_to_wire));
 
 // always on register files
 mbus_addr_rf rf0(
-	.RESETn(RESETn),
-	.RELEASE_ISO_FROM_SLEEP_CTRL(n0_release_iso_from_sc),
-	.ADDR_OUT(rf_addr_out_to_node),
-	.ADDR_IN(rf_addr_in_from_node),
-	.ADDR_VALID(rf_addr_valid),
-	.ADDR_WR_EN(rf_addr_write),
-	.ADDR_CLRn(rf_addr_rstn)
+	.RESETn							(RESETn),
+	.RELEASE_ISO_FROM_SLEEP_CTRL	(mbc_isolate),
+	.ADDR_OUT						(rf_addr_out_to_node),
+	.ADDR_IN						(rf_addr_in_from_node),
+	.ADDR_VALID						(rf_addr_valid),
+	.ADDR_WR_EN						(rf_addr_write),
+	.ADDR_CLRn						(rf_addr_rstn)
 );
 
 // always on interrupt controller
 mbus_int_ctrl mic0(
-	.CLKIN(CLKIN),
-	.RESETn(RESETn),
-	.BC_RELEASE_ISO(n0_release_iso_from_sc),
-	.SC_CLR_BUSY(sleep_ctrl_clr_busy),
-	.MBUS_CLR_BUSY(clr_busy),
+	.CLKIN					(CLKIN),
+	.RESETn					(RESETn),
+	.MBC_ISOLATE			(mbc_isolate),
+	.SC_CLR_BUSY			(sleep_ctrl_clr_busy),
+	.MBUS_CLR_BUSY			(clr_busy),
 
-	.REQ_INT(REQ_INT), 
-	.BC_PWR_ON(n0_power_on),
-	.LC_PWR_ON(LC_POWER_ON),
-	.EXTERNAL_INT_TO_WIRE(ext_int_to_wire), 
-	.EXTERNAL_INT_TO_BUS(ext_int_to_bus), 
-	.CLR_EXT_INT(clr_ext_int)
+	.REQ_INT				(REQ_INT), 
+	.MBC_SLEEP				(mbc_sleep),
+	.LRC_SLEEP				(LC_POWER_ON),
+	.EXTERNAL_INT_TO_WIRE	(ext_int_to_wire), 
+	.EXTERNAL_INT_TO_BUS	(ext_int_to_bus), 
+	.CLR_EXT_INT			(clr_ext_int)
 );
 
 always @ *
 begin
-	if (n0_power_on)
+	if (mbc_sleep)
 	begin
-		n0_tx_ack_f_bc 	= 1'bx;
-		n0_rx_addr_f_bc = 8'bxx;
-		n0_rx_data_f_bc = 32'hxxxxxxxx;
-		n0_rx_req_f_bc 	= 1'bx;
-		n0_rx_bcast_f_bc= 1'bx;
-		n0_rx_fail_f_bc = 1'bx;
-		n0_rx_pend_f_bc = 1'bx;
-		n0_tx_fail_f_bc = 1'bx;
-		n0_tx_succ_f_bc = 1'bx;
-		n0_pwr_on_f_bc 	= 1'bx;
-		n0_rel_clk_f_bc = 1'bx;
-		n0_rel_rst_f_bc = 1'bx;
-		n0_rel_iso_f_bc = 1'bx;
+		n0_tx_ack_f_bc		= 1'bx;
+		n0_rx_addr_f_bc		= 8'bxx;
+		n0_rx_data_f_bc		= 32'hxxxxxxxx;
+		n0_rx_req_f_bc		= 1'bx;
+		n0_rx_bcast_f_bc	= 1'bx;
+		n0_rx_fail_f_bc		= 1'bx;
+		n0_rx_pend_f_bc		= 1'bx;
+		n0_tx_fail_f_bc		= 1'bx;
+		n0_tx_succ_f_bc		= 1'bx;
+		m0_lrc_sleep_f_bc	= 1'bx;
+		m0_lrc_clkenb_f_bc	= 1'bx;
+		m0_lrc_reset_f_bc	= 1'bx;
+		m0_lrc_isolate_f_bc	= 1'bx;
 	end
 	else
 	begin
-		n0_tx_ack_f_bc 	= n0_tx_ack_t_iso;
-		n0_rx_addr_f_bc = n0_rx_addr_t_iso;
-		n0_rx_data_f_bc = n0_rx_data_t_iso;
-		n0_rx_req_f_bc 	= n0_rx_req_t_iso;
-		n0_rx_bcast_f_bc= n0_rx_bcast_t_iso;
-		n0_rx_fail_f_bc = n0_rx_fail_t_iso;
-		n0_rx_pend_f_bc = n0_rx_pend_t_iso;
-		n0_tx_fail_f_bc = n0_tx_fail_t_iso;
-		n0_tx_succ_f_bc = n0_tx_succ_t_iso;
-		n0_pwr_on_f_bc 	= n0_pwr_on_t_iso;
-		n0_rel_clk_f_bc = n0_rel_clk_t_iso;
-		n0_rel_rst_f_bc = n0_rel_rst_t_iso;
-		n0_rel_iso_f_bc = n0_rel_iso_t_iso;
+		n0_tx_ack_f_bc		= n0_tx_ack_t_iso;
+		n0_rx_addr_f_bc		= n0_rx_addr_t_iso;
+		n0_rx_data_f_bc		= n0_rx_data_t_iso;
+		n0_rx_req_f_bc		= n0_rx_req_t_iso;
+		n0_rx_bcast_f_bc	= n0_rx_bcast_t_iso;
+		n0_rx_fail_f_bc		= n0_rx_fail_t_iso;
+		n0_rx_pend_f_bc		= n0_rx_pend_t_iso;
+		n0_tx_fail_f_bc		= n0_tx_fail_t_iso;
+		n0_tx_succ_f_bc		= n0_tx_succ_t_iso;
+		m0_lrc_sleep_f_bc	= m0_lrc_sleep_t_iso;
+		m0_lrc_clkenb_f_bc	= m0_lrc_clkenb_t_iso;
+		m0_lrc_reset_f_bc	= m0_lrc_reset_t_iso;
+		m0_lrc_isolate_f_bc	= m0_lrc_isolate_t_iso;
 	end
 end
 

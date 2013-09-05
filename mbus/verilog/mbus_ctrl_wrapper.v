@@ -26,12 +26,12 @@ module mbus_ctrl_wrapper(
 	input 	TX_RESP_ACK,
 	input 	[`WATCH_DOG_WIDTH-1:0] THRESHOLD,
 	// power gated signals from sleep controller
-	input 	RELEASE_RST_FROM_SLEEP_CTRL,
+	input 	MBC_SLEEP,
 	// power gated signals to layer controller
-	output 	POWER_ON_TO_LAYER_CTRL,
-	output 	RELEASE_CLK_TO_LAYER_CTRL,
-	output 	RELEASE_RST_TO_LAYER_CTRL,
-	output 	RELEASE_ISO_TO_LAYER_CTRL,
+	output 	LRC_SLEEP,
+	output 	LRC_CLKENB,
+	output 	LRC_RESET,
+	output 	LRC_ISOLATE,
 	// wake up bus controller
 	input 	EXTERNAL_INT,
 	output	CLR_EXT_INT,
@@ -49,7 +49,7 @@ wire	NODE_RX_ACK;
 wire	SLEEP_REQ;
 reg		ctrl_addr_match, ctrl_rx_ack;
 
-wire 	RESETn_local = (RESETn & (~RELEASE_RST_FROM_SLEEP_CTRL));
+wire 	RESETn_local = (RESETn & (~MBC_SLEEP));
 
 always @ *
 begin
@@ -116,11 +116,11 @@ mbus_node#(.ADDRESS(ADDRESS), .MASTER_NODE(1'b1), .CPU_LAYER(1'b1)) node0(
 	.TX_FAIL(TX_FAIL), 
 	.TX_SUCC(TX_SUCC), 
 	.TX_RESP_ACK(TX_RESP_ACK),
-	.RELEASE_RST_FROM_SLEEP_CTRL(RELEASE_RST_FROM_SLEEP_CTRL),
-	.POWER_ON_TO_LAYER_CTRL(POWER_ON_TO_LAYER_CTRL),
-	.RELEASE_CLK_TO_LAYER_CTRL(RELEASE_CLK_TO_LAYER_CTRL),
-	.RELEASE_RST_TO_LAYER_CTRL(RELEASE_RST_TO_LAYER_CTRL),
-	.RELEASE_ISO_TO_LAYER_CTRL(RELEASE_ISO_TO_LAYER_CTRL),
+	.MBC_SLEEP(MBC_SLEEP),
+	.LRC_SLEEP(LRC_SLEEP),
+	.LRC_CLKENB(LRC_CLKENB),
+	.LRC_RESET(LRC_RESET),
+	.LRC_ISOLATE(LRC_ISOLATE),
 	.SLEEP_REQUEST_TO_SLEEP_CTRL(SLEEP_REQ),
 	.EXTERNAL_INT(EXTERNAL_INT),
 	.CLR_EXT_INT(CLR_EXT_INT),

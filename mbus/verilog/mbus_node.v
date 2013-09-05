@@ -41,10 +41,17 @@
  * i.e. ADDRESS_MASK = 8'hf0, compare only upper 4-bit of address (from MSB)
  * 
  *
- * Last modified date: 05/06 '13
- * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
+ * Last modified date: 09/05 '13
+ * Last modified by: Yoonmyung Lee <sori@umich.edu>
  *
  * Update log:
+ * 9/5 '13
+ * Change port names: 
+ * 		RELEASE_RST_FROM_SLEEP_CTRL	-> MBC_SLEEP
+ *		POWER_ON_TO_LAYER_CTRL		-> LRC_SLEEP
+ *		RELEASE_CLK_TO_LAYER_CTRL	-> LRC_CLKENB
+ *		RELEASE_ISO_TO_LAYER_CTRL	-> LRC_ISOLATE
+ *		RELEASE_RST_TO_LAYER_CTRL	-> LRC_RESET
  * 5/9 '13
  * Change tx_broadcast_latched from TX_ADDR to ADDR
  * 5/6 '13
@@ -106,12 +113,12 @@ module mbus_node(
 
 	`ifdef POWER_GATING
 	// power gated signals from sleep controller
-	input 		RELEASE_RST_FROM_SLEEP_CTRL,
+	input 		MBC_SLEEP,
 	// power gated signals to layer controller
-	output 	reg POWER_ON_TO_LAYER_CTRL,
-	output 	reg RELEASE_CLK_TO_LAYER_CTRL,
-	output 	reg RELEASE_RST_TO_LAYER_CTRL,
-	output 	reg RELEASE_ISO_TO_LAYER_CTRL,
+	output 	reg LRC_SLEEP,
+	output 	reg LRC_CLKENB,
+	output 	reg LRC_RESET,
+	output 	reg LRC_ISOLATE,
 	// power gated signal to sleep controller
 	output 	reg SLEEP_REQUEST_TO_SLEEP_CTRL,
 	// External interrupt
@@ -230,7 +237,7 @@ wire	[`DATA_WIDTH-1:0] rx_data_buf_proc = (rx_dat_length_valid)? (rx_position==R
 
 // Power gating related signals
 `ifdef POWER_GATING
-wire 	RESETn_local = (RESETn & (~RELEASE_RST_FROM_SLEEP_CTRL));
+wire 	RESETn_local = (RESETn & (~MBC_SLEEP));
 `else
 wire	RESETn_local = RESETn;
 `endif
@@ -993,10 +1000,10 @@ begin
 	if (~RESETn_local)
 	begin
 		powerup_seq_fsm <= 0;
-		POWER_ON_TO_LAYER_CTRL <= `IO_HOLD;
-		RELEASE_CLK_TO_LAYER_CTRL <= `IO_HOLD;
-		RELEASE_ISO_TO_LAYER_CTRL <= `IO_HOLD;
-		RELEASE_RST_TO_LAYER_CTRL <= `IO_HOLD;
+		LRC_SLEEP <= `IO_HOLD;
+		LRC_CLKENB <= `IO_HOLD;
+		LRC_ISOLATE <= `IO_HOLD;
+		LRC_RESET <= `IO_HOLD;
 		SLEEP_REQUEST_TO_SLEEP_CTRL <= 0;
 		ext_int <= 0;
 		CLR_EXT_INT <= 0;
@@ -1013,7 +1020,7 @@ begin
 			begin
 				ext_int <= 1;
 				powerup_seq_fsm <= 1;
-				POWER_ON_TO_LAYER_CTRL <= `IO_RELEASE;
+				LRC_SLEEP <= `IO_RELEASE;
 			end
 			else
 				powerup_seq_fsm <= 0;
@@ -1026,9 +1033,9 @@ begin
 		if (ext_int)
 		begin
 			case (powerup_seq_fsm)
-				1: begin RELEASE_CLK_TO_LAYER_CTRL <= `IO_RELEASE; CLR_EXT_INT <= 1; powerup_seq_fsm <= powerup_seq_fsm + 1'b1; end
-				2: begin RELEASE_ISO_TO_LAYER_CTRL <= `IO_RELEASE; powerup_seq_fsm <= powerup_seq_fsm + 1'b1; end
-				3: begin RELEASE_RST_TO_LAYER_CTRL <= `IO_RELEASE; powerup_seq_fsm <= powerup_seq_fsm + 1'b1; end
+				1: begin LRC_CLKENB <= `IO_RELEASE; CLR_EXT_INT <= 1; powerup_seq_fsm <= powerup_seq_fsm + 1'b1; end
+				2: begin LRC_ISOLATE <= `IO_RELEASE; powerup_seq_fsm <= powerup_seq_fsm + 1'b1; end
+				3: begin LRC_RESET <= `IO_RELEASE; powerup_seq_fsm <= powerup_seq_fsm + 1'b1; end
 				0: begin end
 			endcase
 		end
@@ -1045,26 +1052,26 @@ begin
 							// the complete command should received after `DATA_WIDTH (32) - `BROADCAST_CMD_WIDTH(4) + 2(2 BUS_ADDR_ADDI) - 1
 							if ((wakeup_req)&&(bit_position==`DATA_WIDTH-`BROADCAST_CMD_WIDTH+1))
 							begin
-								POWER_ON_TO_LAYER_CTRL <= `IO_RELEASE;
+								LRC_SLEEP <= `IO_RELEASE;
 								powerup_seq_fsm <= powerup_seq_fsm + 1'b1;
 							end
 						end
 
 						1:
 						begin
-							RELEASE_CLK_TO_LAYER_CTRL <= `IO_RELEASE;
+							LRC_CLKENB <= `IO_RELEASE;
 							powerup_seq_fsm <= powerup_seq_fsm + 1'b1;
 						end
 
 						2:
 						begin
-							RELEASE_ISO_TO_LAYER_CTRL <= `IO_RELEASE;
+							LRC_ISOLATE <= `IO_RELEASE;
 							powerup_seq_fsm <= powerup_seq_fsm + 1'b1;
 						end
 
 						3:
 						begin
-							RELEASE_RST_TO_LAYER_CTRL <= `IO_RELEASE;
+							LRC_RESET <= `IO_RELEASE;
 						end
 					endcase
 				end
@@ -1074,7 +1081,7 @@ begin
 					if (shutdown)
 					begin
 						SLEEP_REQUEST_TO_SLEEP_CTRL <= 1;
-						RELEASE_ISO_TO_LAYER_CTRL <= `IO_HOLD;
+						LRC_ISOLATE <= `IO_HOLD;
 					end
 				end
 

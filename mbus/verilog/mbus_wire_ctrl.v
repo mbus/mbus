@@ -11,7 +11,7 @@
 
 `include "include/mbus_def.v"
 
-module mbus_wire_ctrl_wresetn(
+module mbus_wire_ctrl(
 	input RESETn,
 	input DIN,
 	input CLKIN,

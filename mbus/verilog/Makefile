@@ -7,20 +7,13 @@
 # make clean    <- remove files created during compilations (but not synthesis)
 # make nuke     <- remove all files created during compilation and synthesis
 #
-# To compile additional files, add them to the TESTBENCH or SIMFILES as needed
-# Every .vg file will need its own rule and one or more synthesis scripts
-# The information contained here (in the rules for those vg files) will be 
-# similar to the information in those scripts but that seems hard to avoid.
-#
+# Execute Example: make simv VCSFLAGS="+define+TASK0"
 
-# added "SW_VCS=2011.03 and "-full64" option -- awdeorio fall 2011
-VCS = SW_VCS=2011.03 vcs +v2k +vc -sverilog +lint=all,noVCDE +warn=all -Mupdate -line -full64 -cm line+cond+fsm+tgl
+VCS = SW_VCS=2011.03 vcs +v2k +vc -sverilog +lint=all,noVCDE +warn=all -Mupdate -line -full64 -cm line+cond+fsm+tgl -debug_all
 SYNVCS = SW_VCS=2011.03 vcs +v2k +vc -Mupdate -line -full64 +v2k +vc -sverilog +lint=all,noVCDE +warn=all -timescale=1ns/1ps +vcs+lic+wait +multisource_int_delays +plusarg_save +overlap -full64 -Mupdate -line -debug -cc gcc +libext+.v+.vlib+.vh +prof +neg_tchk +memopt -negdelay +define+SYN
 APRVCS = SW_VCS=2011.03 vcs +v2k +vc -Mupdate -line -full64 +v2k +vc -sverilog +lint=all,noVCDE +warn=all -timescale=1ns/1ps +vcs+lic+wait +multisource_int_delays +plusarg_save +overlap -full64 -Mupdate -line -debug -cc gcc +libext+.v+.vlib+.vh +prof +neg_tchk +memopt -negdelay +define+APR
-VCSFLAGS =
+VCSFLAGS = 
 INTFLAGS = -I +memcbk
-
-all:    simv
 
 ##### 
 # Modify starting here
@@ -28,21 +21,24 @@ all:    simv
 
 TESTBENCH = tb_mbus.v
 SIMFILES = 	mbus_addr_rf.v \
-			mbus_swapper.v \
-			mbus_ext_int.v \
-			mbus_wire_ctrl.v \
-			mbus_clk_sim.v \
-			mbus_regular_isolation.v \
-			mbus_regular_sleep_ctrl.v \
-			mbus_ctrl.v \
-			mbus_master_sleep_ctrl.v \
-			mbus_node.v \
-			mbus_ctrl_wrapper.v \
-			mbus_layer_wrapper.v \
-			mbus_ctrl_layer_wrapper.v \
-			mbus_busy_ctrl.v \
-			mbus_int_ctrl.v \
-			mbus_err_inject.v
+		mbus_swapper.v \
+		mbus_ext_int.v \
+		mbus_wire_ctrl.v \
+		mbus_master_wire_ctrl.v \
+		mbus_clk_sim.v \
+		mbus_regular_isolation.v \
+		mbus_regular_sleep_ctrl.v \
+		SLEEP_CONTROLv4.v \
+		mbus_ctrl.v \
+		mbus_node.v \
+		mbus_ctrl_wrapper.v \
+		mbus_layer_wrapper.v \
+		mbus_ctrl_layer_wrapper.v \
+		mbus_busy_ctrl.v \
+		mbus_int_ctrl.v \
+		mbus_err_inject.v
+
+#		mbus_master_sleep_ctrl.v \
 
 SYNFILES = 	../syn/mbus_node32_ab.nl.v \
 		../syn/mbus_node32_cd.nl.v \
@@ -54,7 +50,7 @@ APRFILES = 	../apr/mbus_node32_ab/mbus_node32_ab.apr.v \
 		../apr/mbus_ctrl_wrapper/mbus_ctrl_wrapper.apr.v
 
 #####
-# Should be no need to modify after here
+# Do Not Modify
 #####
 simv:		$(SIMFILES) $(TESTBENCH)
 		$(VCS) $(VCSFLAGS) $(TESTBENCH) $(SIMFILES) -o simv -cm line+cond+fsm+tgl -R | tee program.out
@@ -69,7 +65,6 @@ apr_simv:	$(APRFILES) $(TESTBENCH)
 		urg -dir apr_simv.vdb -report ./REPORTS
 
 # updated interactive debugger "DVE", using the latest version of VCS
-# awdeorio fall 2011
 dve:	$(SIMFILES) $(TESTBENCH) 
 	$(VCS) $(VCSFLAGS) +memcbk $(TESTBENCH) $(SIMFILES) -o dve -R -gui
 

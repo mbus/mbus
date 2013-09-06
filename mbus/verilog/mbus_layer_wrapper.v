@@ -82,7 +82,7 @@ mbus_node#(.ADDRESS(ADDRESS)) n0
       .TX_ADDR(n0_tx_addr_t_bc), .TX_DATA(n0_tx_data_t_bc), .TX_REQ(n0_tx_req_t_bc), .TX_ACK(n0_tx_ack_t_iso), .TX_PEND(n0_tx_pend_t_bc), .TX_PRIORITY(n0_priority_t_bc),
       .RX_ADDR(n0_rx_addr_t_iso), .RX_DATA(n0_rx_data_t_iso), .RX_REQ(n0_rx_req_t_iso), .RX_ACK(n0_rx_ack_t_bc), .RX_BROADCAST(n0_rx_bcast_t_iso), .RX_FAIL(n0_rx_fail_t_iso), .RX_PEND(n0_rx_pend_t_iso),
       .TX_SUCC(n0_tx_succ_t_iso), .TX_FAIL(n0_tx_fail_t_iso), .TX_RESP_ACK(n0_tx_resp_ack_t_bc),
-	  .MBC_SLEEP(mbc_reset), .SLEEP_REQUEST_TO_SLEEP_CTRL(mbc_sleep_req), 
+	  .MBC_RESET(mbc_reset), .SLEEP_REQUEST_TO_SLEEP_CTRL(mbc_sleep_req), 
 	  .LRC_SLEEP(m0_lrc_sleep_t_iso), .LRC_CLKENB(m0_lrc_clkenb_t_iso), .LRC_RESET(m0_lrc_reset_t_iso), .LRC_ISOLATE(m0_lrc_isolate_t_iso),
 	  .EXTERNAL_INT(ext_int_to_bus), .CLR_EXT_INT(clr_ext_int), .CLR_BUSY(clr_busy),
 	  .ASSIGNED_ADDR_IN(rf_addr_out_to_node), .ASSIGNED_ADDR_OUT(rf_addr_in_from_node), 
@@ -95,7 +95,7 @@ mbus_regular_sleep_ctrl sc0
 
 // always on wire controller
 mbus_wire_ctrl lc0
-	(.DIN(DIN), .CLKIN(CLKIN), 										// the same input as the node
+	(.RESETn(RESETn), .DIN(DIN), .CLKIN(CLKIN), 										// the same input as the node
 	 .RELEASE_ISO_FROM_SLEEP_CTRL(mbc_isolate),			// from sleep controller
 	 .DOUT_FROM_BUS(w_n0lc0), .CLKOUT_FROM_BUS(w_n0lc0_clk_out), 	// the outputs from the node
 	 .DOUT(DOUT), .CLKOUT(CLKOUT),									// to next node

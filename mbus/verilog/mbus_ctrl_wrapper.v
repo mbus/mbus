@@ -26,7 +26,7 @@ module mbus_ctrl_wrapper(
 	input 	TX_RESP_ACK,
 	input 	[`WATCH_DOG_WIDTH-1:0] THRESHOLD,
 	// power gated signals from sleep controller
-	input 	MBC_SLEEP,
+	input 	MBC_RESET,
 	// power gated signals to layer controller
 	output 	LRC_SLEEP,
 	output 	LRC_CLKENB,
@@ -49,7 +49,7 @@ wire	NODE_RX_ACK;
 wire	SLEEP_REQ;
 reg		ctrl_addr_match, ctrl_rx_ack;
 
-wire 	RESETn_local = (RESETn & (~MBC_SLEEP));
+wire 	RESETn_local = (RESETn & (~MBC_RESET));
 
 always @ *
 begin
@@ -116,7 +116,7 @@ mbus_node#(.ADDRESS(ADDRESS), .MASTER_NODE(1'b1), .CPU_LAYER(1'b1)) node0(
 	.TX_FAIL(TX_FAIL), 
 	.TX_SUCC(TX_SUCC), 
 	.TX_RESP_ACK(TX_RESP_ACK),
-	.MBC_SLEEP(MBC_SLEEP),
+	.MBC_RESET(MBC_RESET),
 	.LRC_SLEEP(LRC_SLEEP),
 	.LRC_CLKENB(LRC_CLKENB),
 	.LRC_RESET(LRC_RESET),

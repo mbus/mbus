@@ -37,27 +37,26 @@ parameter ADDRESS = 20'haaaaa;
 
 wire	CLK_GEN;
 wire	mbc_sleep, mbc_sleepb, mbc_isolate, mbc_reset;
-wire	req_int_ored;
 wire	sleep_req_from_m0;
 
 // Always on Sleep Controller in CTRv6/7 - structural
-SLEEP_CONTROLv4 s0(
-	.MBC_ISOLATE	(mbc_isolate), 
-	.MBC_ISOLATE_B	(), 
-	.MBC_RESET		(mbc_reset),
-    .MBC_RESET_B	(), 
-	.MBC_SLEEP		(mbc_sleep),
-	.MBC_SLEEP_B	(mbc_sleepb), 
-	.SYSTEM_ACTIVE	(),				// output to PMU : floated in this wrapper
-    .WAKEUP_REQ_ORED(req_int_ored),	// output to int_ctrl : ored interrupt request
-	.CLK			(CLK_GEN), 
-	.MBUS_DIN		(DIN), 
-	.RESETn			(RESETn), 
-	.SLEEP_REQ		(sleep_req_from_m0),
-    .WAKEUP_REQ0	(REQ_INT), 
-	.WAKEUP_REQ1	(REQ_INT), 
-	.WAKEUP_REQ2	(REQ_INT)
-);
+   SLEEP_CONTROLv4 s0(
+		      .MBC_ISOLATE	(mbc_isolate), 
+		      .MBC_ISOLATE_B	(), 
+		      .MBC_RESET	(mbc_reset),
+		      .MBC_RESET_B	(), 
+		      .MBC_SLEEP	(mbc_sleep),
+		      .MBC_SLEEP_B	(mbc_sleepb), 
+		      .SYSTEM_ACTIVE	(),				// output to PMU : floated in this wrapper
+		      .WAKEUP_REQ_ORED  (req_int_ored),	// output to int_ctrl : ored interrupt request
+		      .CLK		(CLK_GEN), 
+		      .MBUS_DIN		(DIN), 
+		      .RESETn		(RESETn), 
+		      .SLEEP_REQ	(sleep_req_from_m0),
+		      .WAKEUP_REQ0	(REQ_INT), 
+		      .WAKEUP_REQ1	(REQ_INT), 
+		      .WAKEUP_REQ2	(REQ_INT)
+		      );
 
 // Clock generator
 mbus_clk_sim mcs0(
@@ -113,7 +112,7 @@ mbus_ctrl_wrapper #(.ADDRESS(ADDRESS)) m0(
 
 	.THRESHOLD(20'h05fff),
 
-	.MBC_SLEEP(mbc_reset),
+	.MBC_RESET(mbc_reset),
 	.LRC_SLEEP(m0_lrc_sleep_t_iso),
 	.LRC_CLKENB(m0_lrc_clkenb_t_iso),
 	.LRC_RESET(m0_lrc_reset_t_iso),
@@ -122,10 +121,17 @@ mbus_ctrl_wrapper #(.ADDRESS(ADDRESS)) m0(
 	.SLEEP_REQUEST_TO_SLEEP_CTRL(sleep_req_from_m0)
 );
 
+/* -----\/----- EXCLUDED -----\/-----
+// always on block
+mbus_regular_sleep_ctrl sc0
+	(.CLKIN(CLKIN), .RESETn(RESETn),
+	 .SLEEP_REQ(sleep_req_from_m0), .POWER_ON(mbc_sleep), .RELEASE_CLK(), .RELEASE_RST(mbc_reset), .RELEASE_ISO(mbc_isolate), .BC_PG_CLR_BUSY());
+ -----/\----- EXCLUDED -----/\----- */
+
 
 // always on wire controller
-mbus_wire_ctrl wc0
-	(.DIN(DIN), .CLKIN(CLKIN), 										// the same input as the node
+mbus_master_wire_ctrl wc0
+	(.RESETn(RESETn), .DIN(DIN), .CLKIN(CLKIN), 										// the same input as the node
 	 .RELEASE_ISO_FROM_SLEEP_CTRL(mbc_isolate),						// from sleep controller
 	 .DOUT_FROM_BUS(w_m0wc0), .CLKOUT_FROM_BUS(w_m0wc0_clk_out), 	// the outputs from the node
 	 .DOUT(DOUT), .CLKOUT(CLKOUT),									// to next node
@@ -152,7 +158,7 @@ begin
 	if (mbc_sleep)
 	begin
 		m0_tx_ack_f_bc 		= 1'bx;
-		m0_rx_addr_f_bc 	= 8'bxx;
+		m0_rx_addr_f_bc 	= 32'hxxxxxxxx;
 		m0_rx_data_f_bc 	= 32'hxxxxxxxx;
 		m0_rx_req_f_bc 		= 1'bx;
 		m0_rx_bcast_f_bc	= 1'bx;
@@ -188,7 +194,7 @@ begin
 	// layer controller is power off
 	if (LC_POWER_ON)
 	begin
-		m0_tx_addr_f_lc 	= 8'hxx;
+		m0_tx_addr_f_lc 	= 32'hxxxxxxxx;
 		m0_tx_data_f_lc 	= 32'hxxxxxxxx;
 		m0_tx_req_f_lc 		= 1'bx;
 		m0_tx_pend_f_lc 	= 1'bx;

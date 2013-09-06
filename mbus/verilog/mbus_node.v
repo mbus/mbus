@@ -47,7 +47,7 @@
  * Update log:
  * 9/5 '13
  * Change port names: 
- * 		RELEASE_RST_FROM_SLEEP_CTRL	-> MBC_SLEEP
+ * 		RELEASE_RST_FROM_SLEEP_CTRL	-> MBC_RESET
  *		POWER_ON_TO_LAYER_CTRL		-> LRC_SLEEP
  *		RELEASE_CLK_TO_LAYER_CTRL	-> LRC_CLKENB
  *		RELEASE_ISO_TO_LAYER_CTRL	-> LRC_ISOLATE
@@ -113,7 +113,7 @@ module mbus_node(
 
 	`ifdef POWER_GATING
 	// power gated signals from sleep controller
-	input 		MBC_SLEEP,
+	input 		MBC_RESET,
 	// power gated signals to layer controller
 	output 	reg LRC_SLEEP,
 	output 	reg LRC_CLKENB,
@@ -237,7 +237,7 @@ wire	[`DATA_WIDTH-1:0] rx_data_buf_proc = (rx_dat_length_valid)? (rx_position==R
 
 // Power gating related signals
 `ifdef POWER_GATING
-wire 	RESETn_local = (RESETn & (~MBC_SLEEP));
+wire 	RESETn_local = (RESETn & (~MBC_RESET));
 `else
 wire	RESETn_local = RESETn;
 `endif

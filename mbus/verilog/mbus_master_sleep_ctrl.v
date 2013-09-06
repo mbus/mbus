@@ -7,18 +7,72 @@
 `timescale 1ns / 1ns 
 `include "/afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/mosis_2009q1/sc-x_2004q3v1/aci/sc/verilog/tsmc18_neg.v"
 
-module SLEEP_CONTROLv4 ( MBC_ISOLATE, MBC_ISOLATE_B, MBC_RESET,
-     MBC_RESET_B, MBC_SLEEP, MBC_SLEEP_B, SYSTEM_ACTIVE,
-     WAKEUP_REQ_ORED, /*VDD, VSS,*/ CLK, MBUS_DIN, RESETn, SLEEP_REQ,
-     WAKEUP_REQ0, WAKEUP_REQ1, WAKEUP_REQ2 );
+module SLEEP_CONTROLv4 ( 
+	output	MBC_ISOLATE, 
+	output	MBC_ISOLATE_B,
+	output	MBC_RESET,
+	output	MBC_RESET_B,
+	output	MBC_SLEEP,
+	output	MBC_SLEEP_B,
+	output	SYSTEM_ACTIVE,
+	output	WAKEUP_REQ_ORED,
 
-output  MBC_ISOLATE, MBC_ISOLATE_B, MBC_RESET, MBC_RESET_B, MBC_SLEEP,
-     MBC_SLEEP_B, SYSTEM_ACTIVE, WAKEUP_REQ_ORED;
+	input	CLK,
+	input	MBUS_DIN,
+	input	PMU_FORCE_WAKE,		// Added compared to SLEEP_CONTROLv4
+	input	RESETn,
+	input	SLEEP_REQ,
+	input	WAKEUP_REQ0,
+	input	WAKEUP_REQ1,
+	input	WAKEUP_REQ2 
+);
 
-//inout  VDD, VSS;
+	reg	set_tran_to_wake;
+	reg	rst_tran_to_wake;	// act as tran to "sleep"
 
-input  CLK, MBUS_DIN, RESETn, SLEEP_REQ, WAKEUP_REQ0, WAKEUP_REQ1,
-     WAKEUP_REQ2;
+	reg	MBC_SLEEP_int;
+
+	reg	tran_to_wake;
+
+	assign	WAKEUP_REQ_ORED	= WAKEUP_REQ0 | WAKEUP_REQ1 | WAKEUP_REQ2;
+
+
+	// set_tran_to_wake
+	always @ *
+	begin
+		if( ~RESETn )
+		    set_tran_to_wake	<= 1'b0;
+		else if( MBC_SLEEP ) begin	// While MBC is in sleep
+			if( WAKEUP_REQ_ORED || ~MBUS_DIN )	// Wake up if there is internal req or DIN pulled down
+			    set_tran_to_wake	<= 1'b1;
+			else
+			    set_tran_to_wake	<= 1'b0;
+		end
+		else
+		    set_tran_to_wake	<= 1'b0;
+	end
+
+	// rst_tran_to_wake
+	always @ *
+	begin
+		if( ~RESETn )
+		    rst_tran_to_wake	<= 1'b0;
+		else if( set_tran_to_wake | ~SLEEP_REQ )
+		    rst_tran_to_wake	<= 1'b0;
+		else
+		    rst_tran_to_wake	<= 1'b1;
+	end
+
+	// tran_to_wake
+	always @ ( posedge rst_tran_to_wake or posedge set_tran_to_wake )
+	begin
+		if( rst_tran_towake ) 
+			tran_to_wake	<= 1'b0;
+		else 
+			tran_to_wake	<= 1'b1;
+	end
+
+
 
 
 NOR3X1 I1 ( .C(WAKEUP_REQ2), .B(WAKEUP_REQ1), .A(WAKEUP_REQ0), .Y(WAKEUP_REQ_ORED_B_int) );
@@ -46,6 +100,8 @@ INVX12 I24 ( .Y(MBC_RESET_B), .A(MBC_RESET_int));
 INVX12 I23 ( .Y(MBC_SLEEP), .A(net071));
 INVX12 I20 ( .Y(MBC_RESET), .A(MBC_RESET_B_int));
 INVX12 I18 ( .Y(MBC_ISOLATE), .A(MBC_ISOLATE_B_int));
+
+
 
 endmodule
 

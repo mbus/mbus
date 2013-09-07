@@ -1,0 +1,554 @@
+
+TASK0, Master node and Processor wake up
+Processor Wakeup
+N0 RX Fail
+N1 RX Fail
+N2 RX Fail
+N3 RX Fail
+
+TASK1, Master node sends out querry
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb0f
+N0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb1f
+N1 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb2f
+N2 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb2f
+N3 TX Success
+
+
+TASK2, Master node enumerate with address 4'h2
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb02
+
+TASK3, Master node enumerate with address 4'h3
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb13
+
+TASK4, Master node enumerate with address 4'h4
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb24
+
+TASK5, Master node enumerate with address 4'h5
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb25
+
+TASK6, All Wake
+N0 LC Wakeup
+N1 LC Wakeup
+N2 LC Wakeup
+N3 LC Wakeup
+C0 TX Success
+
+
+TASK7, write to Layer 1 RF address 0
+Write RF addr: 8'h00,	Data: 24'h001b72d2
+N1 RX Success
+N1 Data out =	32'h001b72d2
+C0 TX Success
+
+
+TASK7, write to Layer 1 RF address 1-4
+Write RF addr: 8'h01,	Data: 24'h0060904a
+Write RF addr: 8'h02,	Data: 24'h0061da0e
+Write RF addr: 8'h03,	Data: 24'h00b66b27
+N1 RX Success
+N1 Data out =	32'h0160904a
+Write RF addr: 8'h04,	Data: 24'h00d9abc3
+N1 RX Success
+N1 Data out =	32'h0261da0e
+N1 RX Success
+N1 Data out =	32'h03b66b27
+N1 RX Success
+N1 Data out =	32'h04d9abc3
+C0 TX Success
+
+
+TASK7, write to Layer 1 RF address 67 (ROM, not writable)
+Write RF addr: 8'h43,	Data: 24'h00de871b
+N1 RX Success
+N1 Data out =	32'h43de871b
+C0 TX Success
+
+
+TASK8, read from Layer 1 RF address 0
+N1 RX Success
+N1 Data out =	32'h00000300
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h001b72d2
+RF Addr: 8'h00,	Data: 24'h001b72d2
+N1 TX Success
+
+
+TASK8, read from Laer 1 RF address 1-4
+N1 RX Success
+N1 Data out =	32'h01030300
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h0060904a
+C0 RX Success
+C0 Data out =	32'h0061da0e
+C0 RX Success
+C0 Data out =	32'h00b66b27
+C0 RX Success
+C0 Data out =	32'h00d9abc3
+N1 TX Success
+
+
+TASK8, read from Layer 1 RF address 67 (ROM)
+N1 RX Success
+N1 Data out =	32'h43000300
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h00000003
+RF Addr: 8'h43,	Data: 24'h00000003
+N1 TX Success
+
+
+TASK9, write to Layer 1 MEM address 0
+Write mem Addr: 32'h00000000,	Data: 32'h52850ba5
+N1 RX Success
+N1 Data out =	32'h00000000
+N1 RX Success
+N1 Data out =	32'h52850ba5
+C0 TX Success
+
+
+TASK10, read from Layer 1 MEM address 0
+N1 RX Success
+N1 Data out =	32'h00000000
+N1 RX Success
+N1 Data out =	32'h03000000
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h52850ba5
+MEM Addr: 32'h00000000,	Data: 32'h52850ba5
+N1 TX Success
+
+
+TASK11, sleep N1
+C0 TX Success
+
+N1 LC Sleep
+
+TASK9, write to Layer 1 MEM address 1
+Write mem Addr: 32'h00000004,	Data: 32'had60d45a
+N1 LC Wakeup
+N1 RX Success
+N1 Data out =	32'h00000004
+N1 RX Success
+N1 Data out =	32'had60d45a
+C0 TX Success
+
+
+TASK9, write to Layer 1 MEM address 2
+Write mem Addr: 32'h00000008,	Data: 32'hcfa4909f
+N1 RX Success
+N1 Data out =	32'h00000008
+N1 RX Success
+N1 Data out =	32'hcfa4909f
+C0 TX Success
+
+
+TASK10, read from Layer 1 MEM address 1
+N1 RX Success
+N1 Data out =	32'h00000004
+N1 RX Success
+N1 Data out =	32'h03000000
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'had60d45a
+MEM Addr: 32'h00000001,	Data: 32'had60d45a
+N1 TX Success
+
+
+TASK10, read from Layer 1 MEM address 2
+N1 RX Success
+N1 Data out =	32'h00000008
+N1 RX Success
+N1 Data out =	32'h03000000
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'hcfa4909f
+MEM Addr: 32'h00000002,	Data: 32'hcfa4909f
+N1 TX Success
+
+
+TASK9, DMA write 16-word to Layer 1 MEM address 3-18
+Write mem Addr: 32'h0000000c,	Data: 32'ha6fc264d
+Write mem Addr: 32'h00000010,	Data: 32'hb797c66f
+N1 RX Success
+N1 Data out =	32'h0000000c
+Write mem Addr: 32'h00000014,	Data: 32'h8c3b6c18
+N1 RX Success
+N1 Data out =	32'ha6fc264d
+Write mem Addr: 32'h00000018,	Data: 32'h2f1bd15e
+N1 RX Success
+N1 Data out =	32'hb797c66f
+Write mem Addr: 32'h0000001c,	Data: 32'h74f8f5e9
+N1 RX Success
+N1 Data out =	32'h8c3b6c18
+Write mem Addr: 32'h00000020,	Data: 32'hf292dae5
+N1 RX Success
+N1 Data out =	32'h2f1bd15e
+Write mem Addr: 32'h00000024,	Data: 32'hfca97ef9
+N1 RX Success
+N1 Data out =	32'h74f8f5e9
+Write mem Addr: 32'h00000028,	Data: 32'ha7fce44f
+N1 RX Success
+N1 Data out =	32'hf292dae5
+Write mem Addr: 32'h0000002c,	Data: 32'hc94d0892
+N1 RX Success
+N1 Data out =	32'hfca97ef9
+Write mem Addr: 32'h00000030,	Data: 32'hf559ecea
+N1 RX Success
+N1 Data out =	32'ha7fce44f
+Write mem Addr: 32'h00000034,	Data: 32'h80e39201
+N1 RX Success
+N1 Data out =	32'hc94d0892
+Write mem Addr: 32'h00000038,	Data: 32'h80a9f601
+N1 RX Success
+N1 Data out =	32'hf559ecea
+Write mem Addr: 32'h0000003c,	Data: 32'hc96d1a92
+N1 RX Success
+N1 Data out =	32'h80e39201
+Write mem Addr: 32'h00000040,	Data: 32'hefed00df
+N1 RX Success
+N1 Data out =	32'h80a9f601
+Write mem Addr: 32'h00000044,	Data: 32'h48e9a591
+N1 RX Success
+N1 Data out =	32'hc96d1a92
+Write mem Addr: 32'h00000048,	Data: 32'he9230ad2
+N1 RX Success
+N1 Data out =	32'hefed00df
+N1 RX Success
+N1 Data out =	32'h48e9a591
+N1 RX Success
+N1 Data out =	32'he9230ad2
+C0 TX Success
+
+
+TASK10, DMA read 16-word from Layer 1 MEM address 3-18
+N1 RX Success
+N1 Data out =	32'h0000000c
+N1 RX Success
+N1 Data out =	32'h0300000f
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'ha6fc264d
+C0 RX Success
+C0 Data out =	32'hb797c66f
+C0 RX Success
+C0 Data out =	32'h8c3b6c18
+C0 RX Success
+C0 Data out =	32'h2f1bd15e
+C0 RX Success
+C0 Data out =	32'h74f8f5e9
+C0 RX Success
+C0 Data out =	32'hf292dae5
+C0 RX Success
+C0 Data out =	32'hfca97ef9
+C0 RX Success
+C0 Data out =	32'ha7fce44f
+C0 RX Success
+C0 Data out =	32'hc94d0892
+C0 RX Success
+C0 Data out =	32'hf559ecea
+C0 RX Success
+C0 Data out =	32'h80e39201
+C0 RX Success
+C0 Data out =	32'h80a9f601
+C0 RX Success
+C0 Data out =	32'hc96d1a92
+C0 RX Success
+C0 Data out =	32'hefed00df
+C0 RX Success
+C0 Data out =	32'h48e9a591
+C0 RX Success
+C0 Data out =	32'he9230ad2
+N1 TX Success
+
+
+TASK11, sleep N1
+C0 TX Success
+
+N1 LC Sleep
+
+N1 request interrupt with vecto 8'h1
+N1 LC Wakeup
+C0 RX Fail
+N0 RX Fail
+N2 RX Fail
+N3 RX Fail
+C0 RX Success
+C0 Data out =	32'h001b72d2
+C0 RX Success
+C0 Data out =	32'h0060904a
+N1 TX Success
+
+
+TASK9, write to Layer 1 Maximum MEM address
+Write mem Addr: 32'h0003fffc,	Data: 32'h5b9b63b7
+N1 RX Success
+N1 Data out =	32'h0003fffc
+N1 RX Success
+N1 Data out =	32'h5b9b63b7
+C0 TX Success
+
+
+TASK10, DMA read from Layer 1 invalid MEM address
+N1 RX Success
+N1 Data out =	32'h00040000
+N1 RX Success
+N1 Data out =	32'h03000000
+C0 TX Success
+
+
+TASK10, DMA read from Layer 1 invalid MEM address, part 2
+N1 RX Success
+N1 Data out =	32'h0003fffc
+N1 RX Success
+N1 Data out =	32'h03000001
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h5b9b63b7
+N1 TX Success
+
+
+TASK10, DMA read from Layer 1 invalid MEM address, part 3
+N1 RX Success
+N1 Data out =	32'h0003fffc
+N1 RX Success
+N1 Data out =	32'h03000002
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h5b9b63b7
+N1 TX Success
+
+
+TASK10, DMA read from Layer 1 invalid MEM address, part 4
+N1 RX Success
+N1 Data out =	32'h0003fffc
+N1 RX Success
+N1 Data out =	32'h03000003
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h5b9b63b7
+N1 TX Success
+
+
+TASK10, DMA read from Layer 1 invalid MEM address, part 5
+N1 RX Success
+N1 Data out =	32'h00040000
+N1 RX Success
+N1 Data out =	32'h03000001
+C0 TX Success
+
+
+TASK7, write to Layer 1 maximum RF address
+Write RF addr: 8'h7f,	Data: 24'h00b5a2e1
+N1 RX Success
+N1 Data out =	32'h7fb5a2e1
+C0 TX Success
+
+
+TASK8, read from Layer 1 invalid RF address
+N1 RX Success
+N1 Data out =	32'h80000300
+C0 TX Success
+
+
+TASK8, read from Layer 1 invalid RF address, part 2
+N1 RX Success
+N1 Data out =	32'h7f010300
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h0000003f
+N1 TX Success
+
+
+TASK8, read from Layer 1 invalid RF address, part 3
+N1 RX Success
+N1 Data out =	32'h7f020300
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h0000003f
+N1 TX Success
+
+
+TASK8, read from Layer 1 invalid RF address, part 4
+N1 RX Success
+N1 Data out =	32'h7f030300
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h0000003f
+N1 TX Success
+
+
+TASK7, write to Layer 1 invalid RF address
+Write RF addr: 8'h80,	Data: 24'h00a85865
+N1 RX Success
+N1 Data out =	32'h80a85865
+C0 TX Success
+
+
+TASK7, write to Layer 1 invalid RF address, part 2
+Write RF addr: 8'h7f,	Data: 24'h00cff2df
+Write RF addr: 8'h80,	Data: 24'h00b3e51d
+N1 RX Success
+N1 Data out =	32'h7fcff2df
+N1 RX Success
+N1 Data out =	32'h80b3e51d
+C0 TX Success
+
+
+TASK7, write to Layer 1 invalid RF address, part 3
+Write RF addr: 8'h7f,	Data: 24'h00cc393f
+Write RF addr: 8'h80,	Data: 24'h00c04cfb
+Write RF addr: 8'h81,	Data: 24'h002af09c
+N1 RX Success
+N1 Data out =	32'h7fcc393f
+N1 RX Success
+N1 Data out =	32'h80c04cfb
+N1 RX Success
+N1 Data out =	32'h812af09c
+C0 TX Success
+
+
+TASK7, write to Layer 1 invalid RF address, part 4
+Write RF addr: 8'h7f,	Data: 24'h001a7cc8
+Write RF addr: 8'h80,	Data: 24'h00bd3f0b
+Write RF addr: 8'h81,	Data: 24'h00dcaa79
+N1 RX Success
+N1 Data out =	32'h7f1a7cc8
+Write RF addr: 8'h82,	Data: 24'h005c4f46
+N1 RX Success
+N1 Data out =	32'h80bd3f0b
+N1 RX Success
+N1 Data out =	32'h81dcaa79
+N1 RX Fail
+C0 TX Fail
+
+
+TASK9, write to Layer 1 invalid MEM address
+Write mem Addr: 32'h00040000,	Data: 32'h10a6ff21
+N1 RX Success
+N1 Data out =	32'h00040000
+N1 RX Success
+N1 Data out =	32'h10a6ff21
+C0 TX Success
+
+
+TASK9, write to Layer 1 invalid MEM address, part 2
+Write mem Addr: 32'h0003fffc,	Data: 32'h09174512
+Write mem Addr: 32'h00040000,	Data: 32'he789bacf
+N1 RX Success
+N1 Data out =	32'h0003fffc
+N1 RX Success
+N1 Data out =	32'h09174512
+N1 RX Success
+N1 Data out =	32'he789bacf
+C0 TX Success
+
+
+TASK9, write to Layer 1 invalid MEM address, part 3
+Write mem Addr: 32'h0003fffc,	Data: 32'h5ed6b7bd
+Write mem Addr: 32'h00040000,	Data: 32'h534929a6
+N1 RX Success
+N1 Data out =	32'h0003fffc
+Write mem Addr: 32'h00040004,	Data: 32'h08a27511
+N1 RX Success
+N1 Data out =	32'h5ed6b7bd
+N1 RX Success
+N1 Data out =	32'h534929a6
+N1 RX Fail
+C0 TX Fail
+
+
+TASK9, write to Layer 1 invalid MEM address, part 4
+Write mem Addr: 32'h0003fffc,	Data: 32'h5eacebbd
+Write mem Addr: 32'h00040000,	Data: 32'h3f2f477e
+N1 RX Success
+N1 Data out =	32'h0003fffc
+Write mem Addr: 32'h00040004,	Data: 32'h605441c0
+N1 RX Success
+N1 Data out =	32'h5eacebbd
+Write mem Addr: 32'h00040008,	Data: 32'h2bcbfb57
+N1 RX Success
+N1 Data out =	32'h3f2f477e
+N1 RX Fail
+C0 TX Fail
+
+
+N1 request interrupt with vecto 8'h2
+C0 RX Success
+C0 Data out =	32'h0000003f
+N1 TX Success
+
+
+N1 request interrupt with vecto 8'h4
+C0 RX Success
+C0 Data out =	32'h52850ba5
+C0 RX Success
+C0 Data out =	32'had60d45a
+N1 TX Success
+
+
+N1 request interrupt with vecto 8'h8
+C0 RX Success
+C0 Data out =	32'h5eacebbd
+N1 TX Success
+
+
+N1 request interrupt with vecto 8'h10
+
+N1 request interrupt with vecto 8'h20
+
+N1 request interrupt with vecto 8'h40
+
+N1 request interrupt with vecto 8'h80
+
+N1 request interrupt with vecto 8'h5
+C0 RX Success
+C0 Data out =	32'h001b72d2
+C0 RX Success
+C0 Data out =	32'h0060904a
+N1 TX Success
+
+C0 RX Success
+C0 Data out =	32'h52850ba5
+C0 RX Success
+C0 Data out =	32'had60d45a
+N1 TX Success
+

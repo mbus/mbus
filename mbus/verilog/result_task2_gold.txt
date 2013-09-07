@@ -1,0 +1,215 @@
+
+TASK0, Master node and Processor wake up
+Processor Wakeup
+N0 RX Fail
+N1 RX Fail
+N2 RX Fail
+N3 RX Fail
+
+TASK1, Master node sends out querry
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb0f
+N0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb1f
+N1 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb2f
+N2 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb2f
+N3 TX Success
+
+
+TASK2, Master node enumerate with address 4'h2
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb02
+
+TASK3, Master node enumerate with address 4'h3
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb13
+
+TASK4, Master node enumerate with address 4'h4
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb24
+
+TASK5, Master node enumerate with address 4'h5
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb25
+
+TASK24, All Wake
+N0 LC Wakeup
+N1 LC Wakeup
+N2 LC Wakeup
+N3 LC Wakeup
+C0 TX Success
+
+
+TASK6, introduce clock glitch
+Result: N1 TX Fail
+Result: N3 RX Fail
+N1 Data in =	32'heef2c2dd
+N1 Data in =	32'h76e9dfed
+N1 Data in =	32'h22cf7145
+N3 RX Success
+N3 Data out =	32'heef2c2dd
+N1 Data in =	32'hfc48f2f8
+N3 RX Success
+N3 Data out =	32'h76e9dfed
+N1 Data in =	32'h155b332a
+N3 RX Success
+N3 Data out =	32'h22cf7145
+N1 Data in =	32'h1ec6353d
+N3 RX Success
+N3 Data out =	32'hfc48f2f8
+N1 Data in =	32'h8949f412
+N3 RX Success
+N3 Data out =	32'h0aad9995
+N1 Data in =	32'h85a6740b
+N3 RX Success
+N3 Data out =	32'h0f631a9e
+N3 RX Success
+N3 Data out =	32'hc4a4fa09
+N3 RX Fail
+N1 TX Fail
+
+
+TASK7, N1 to N3
+Result: N1 TX Success
+Result: N3 RX Success
+N1 Data in =	32'hb0333e60
+N3 RX Success
+N3 Data out =	32'hb0333e60
+N1 TX Success
+
+
+TASK8, missing 1 clock edge
+Result: N1 TX Fail
+Result: N3 RX Fail
+N1 Data in =	32'hf3ab90e7
+N1 Data in =	32'h04037d08
+N1 Data in =	32'h78e1bff1
+N3 RX Success
+N3 Data out =	32'hf3ab90e7
+N1 Data in =	32'h3b994b77
+N3 RX Success
+N3 Data out =	32'h04037d08
+N1 Data in =	32'h9d75983a
+N3 RX Success
+N3 Data out =	32'h78e1bff1
+N1 Data in =	32'h5b36a5b6
+N3 RX Success
+N3 Data out =	32'h3b994b77
+N1 Data in =	32'hf19c70e3
+N3 RX Success
+N3 Data out =	32'hbaeb3074
+N1 Data in =	32'h9d66fe3a
+N3 RX Success
+N3 Data out =	32'hb66d4b6d
+N3 RX Success
+N3 Data out =	32'he338e1c7
+N3 RX Fail
+N1 TX Fail
+
+
+TASK7, N1 to N3
+Result: N1 TX Success
+Result: N3 RX Success
+N1 Data in =	32'haee2b85d
+N3 RX Success
+N3 Data out =	32'haee2b85d
+N1 TX Success
+
+
+TASK9, N1 to N3, introduce clkc glitch after interrupt
+Result: N1 TX Fail
+Result: N3 RX Fail
+N1 Data in =	32'ha3069446
+N3 RX Fail
+N1 TX Fail
+
+
+TASK7, N1 to N3, states missalign
+Result: N1 TX Fail
+Result: N3 RX Fail
+N1 Data in =	32'h7ff425ff
+N1 TX Fail
+
+
+TASK7, N1 to N3
+Result: N1 TX Success
+Result: N3 RX Success
+N1 Data in =	32'h1184f923
+N3 RX Success
+N3 Data out =	32'h1184f923
+N1 TX Success
+
+
+TASK10, N1 to N3, missing clk edge after interrupt
+Result: N1 TX Fail
+Result: N3 RX Success, then immediately Fail
+N1 Data in =	32'h889f6a11
+N1 TX Fail
+
+N3 RX Success
+N3 Data out =	32'h889f6a11
+C0 RX Fail
+N0 RX Fail
+N1 RX Fail
+N2 RX Fail
+N3 RX Fail
+
+TASK7, N1 to N3
+Result: N1 TX Success
+Result: N3 RX Success
+N1 Data in =	32'hc12d8282
+N3 RX Success
+N3 Data out =	32'hc12d8282
+N1 TX Success
+
+
+TASK7, N1 to N3, CLK stuck at 0
+N1 Data in =	32'h6ffed5df
+N3 RX Success
+N3 Data out =	32'h304b60a0
+N1 TX Success
+
+
+TASK7, N1 to N3
+Result: N1 TX Success
+Result: N3 RX Success
+N1 Data in =	32'h6b9897d7
+N3 RX Success
+N3 Data out =	32'h6b9897d7
+N1 TX Success
+
+
+TASK7, N1 to N3
+Result: N1 TX Success
+Result: N3 RX Success
+N1 Data in =	32'h043c1908
+N3 RX Success
+N3 Data out =	32'h043c1908
+N1 TX Success
+
+
+TASK7, N1 to N3, CLK stuck at 0
+N1 Data in =	32'hc9d39693
+C0 RX Fail
+N0 RX Fail
+N1 TX Fail
+
+N2 RX Fail

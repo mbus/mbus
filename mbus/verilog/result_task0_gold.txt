@@ -1,0 +1,376 @@
+
+TASK0, Master node and Processor wake up
+Processor Wakeup
+N0 RX Fail
+N1 RX Fail
+N2 RX Fail
+N3 RX Fail
+
+TASK1, Master node sends out querry
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb0f
+N0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb1f
+N1 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb2f
+N2 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb2f
+N3 TX Success
+
+
+TASK2, Master node enumerate with address 4'h2
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb02
+
+TASK3, Master node enumerate with address 4'h3
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb13
+
+TASK4, Master node enumerate with address 4'h4
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb24
+
+TASK5, Master node enumerate with address 4'h5
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb25
+
+TASK19, All Wake
+N0 LC Wakeup
+N1 LC Wakeup
+N2 LC Wakeup
+N3 LC Wakeup
+C0 TX Success
+
+
+TASK6, N1 to N0 using long address
+Result: N1 TX Success
+Result: N0 RX Success
+N1 Data in =	32'h783865f0
+N0 RX Success
+N0 Data out =	32'h783865f0
+N1 TX Success
+
+
+TASK7, N1 to N2 using long address
+Result: N1 TX Success
+Result: N2 RX Success
+Result: N3 RX Success
+N1 Data in =	32'h2c5e0358
+N2 RX Success
+N2 Data out =	32'h2c5e0358
+N3 RX Success
+N3 Data out =	32'h2c5e0358
+N1 TX Success
+
+
+TASK8, N1 to N0 using short address
+Result: N1 TX Success
+Result: N0 RX Success
+N1 Data in =	32'h288c3551
+N0 RX Success
+N0 Data out =	32'h288c3551
+N1 TX Success
+
+
+TASK9, N1 to N2 using short address
+Result: N1 TX Success
+Result: N2 RX Success
+N1 Data in =	32'h6fd229df
+N2 RX Success
+N2 Data out =	32'h6fd229df
+N1 TX Success
+
+
+TASK10, N1 to N3 using short address
+Result: N1 TX Success
+Result: N3 RX Success
+N1 Data in =	32'h11c32923
+N3 RX Success
+N3 Data out =	32'h11c32923
+N1 TX Success
+
+
+TASK11, invalidate 4'h2 (n0) short address
+C0 TX Success
+
+
+TASK8, N1 to N0 using short address
+Result: N1 TX Fail
+N1 Data in =	32'h93726626
+N1 TX Fail
+
+
+TASK12, Master node enumerate with address 4'h8
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb08
+N0 TX Success
+
+
+TASK13, N1 to N0 using short address
+Result: N1 TX Success
+Result: N0 RX Success
+N1 Data in =	32'h740723e8
+N0 RX Success
+N0 Data out =	32'h740723e8
+N1 TX Success
+
+
+TASK14, Selective sleep N0, N2
+C0 TX Success
+
+N0 LC Sleep
+N2 LC Sleep
+
+TASK15, N2 asserts ext_int
+Result: C0, N0, N1, N3 RX Fail
+N2 LC Wakeup
+C0 RX Fail
+N0 RX Fail
+N1 RX Fail
+N3 RX Fail
+
+TASK16, N2 to N0 using short address
+Result: N2 TX Success
+Result: N0 RX Success
+N2 Data in =	32'haa6dc254
+N0 LC Wakeup
+N0 RX Success
+N0 Data out =	32'haa6dc254
+N2 TX Success
+
+
+TASK14, Selective sleep N0, N2
+C0 TX Success
+
+N0 LC Sleep
+N2 LC Sleep
+
+TASK10, N1 to N3 using short address
+Result: N1 TX Success
+Result: N3 RX Success
+N1 Data in =	32'h9d01cc3a
+N3 RX Success
+N3 Data out =	32'h9d01cc3a
+N1 TX Success
+
+
+TASK17, Master node sends out long querry
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb08
+N0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb13
+N1 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb24
+N2 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb25
+N3 TX Success
+
+
+TASK18, All sleep
+C0 TX Success
+
+N1 LC Sleep
+N3 LC Sleep
+Processor Sleep
+
+TASK0, Master node and Processor wake up
+Processor Wakeup
+N0 RX Fail
+N1 RX Fail
+N2 RX Fail
+N3 RX Fail
+
+TASK17, Master node sends out long querry
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb08
+N0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb13
+N1 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb24
+N2 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb25
+N3 TX Success
+
+
+TASK18, All sleep
+C0 TX Success
+
+Processor Sleep
+
+TASK0, Master node and Processor wake up
+Processor Wakeup
+N0 RX Fail
+N1 RX Fail
+N2 RX Fail
+N3 RX Fail
+
+TASK19, All Wake
+N0 LC Wakeup
+N1 LC Wakeup
+N2 LC Wakeup
+N3 LC Wakeup
+C0 TX Success
+
+
+TASK20, Invalidate all short address
+C0 TX Success
+
+
+TASK1, Master node sends out querry
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb0f
+N0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb1f
+N1 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb2f
+N2 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb2f
+N3 TX Success
+
+
+TASK21, Selective sleep N1 using long prefix
+C0 TX Success
+
+N1 LC Sleep
+
+TASK22, Selective sleep processor using long prefix
+C0 TX Success
+
+Processor Sleep
+
+TASK23, N2 node sends out querry
+Processor Wakeup
+C0 RX Success
+C0 Data out =	32'h00000000
+N2 TX Success
+
+C0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb0f
+N0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb1f
+N1 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb2f
+N3 TX Success
+
+
+TASK24, N2 node sends to control
+Result: C0 should NOT assert RX_REQ, the message should be handled in mbus_ctrl_wrapper
+N2 Data in =	32'h61e98dc3
+N2 TX Success
+
+
+TASK19, All Wake
+N1 LC Wakeup
+C0 TX Success
+
+
+TASK15, N2 asserts ext_int
+Result: C0, N0, N1, N3 RX Fail
+
+TASK18, All sleep
+C0 TX Success
+
+N0 LC Sleep
+N1 LC Sleep
+N2 LC Sleep
+N3 LC Sleep
+Processor Sleep
+
+TASK0, Master node and Processor wake up
+Processor Wakeup
+N0 RX Fail
+N1 RX Fail
+N2 RX Fail
+N3 RX Fail
+
+TASK15, N2 asserts ext_int
+Result: C0, N0, N1, N3 RX Fail
+N2 LC Wakeup
+C0 RX Fail
+
+TASK25, N3 asserts ext_int between transmission
+N1 Data in =	32'h633d93c6
+N1 Data in =	32'h7235afe4
+N1 LC Wakeup
+N1 Data in =	32'h4d61799a
+N1 RX Success
+N1 Data out =	32'h633d93c6
+N1 Data in =	32'hb4e27c69
+N1 RX Success
+N1 Data out =	32'h7235afe4
+N1 Data in =	32'h740043e8
+N1 RX Success
+N1 Data out =	32'h4d61799a
+N1 RX Success
+N1 Data out =	32'hb4e27c69
+N1 RX Success
+N1 Data out =	32'h740043e8
+N2 TX Success
+
+N3 LC Wakeup
+C0 RX Fail
+N1 RX Fail
+N2 RX Fail
+
+TASK18, All sleep
+C0 TX Success
+
+N1 LC Sleep
+N2 LC Sleep
+N3 LC Sleep
+Processor Sleep
+
+Both N1 and N2 assert interrupt
+N1 LC Wakeup
+N2 LC Wakeup
+C0 RX Fail
+N0 RX Fail
+N3 RX Fail

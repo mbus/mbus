@@ -13,8 +13,6 @@
 
 module mbus_master_wire_ctrl(
 	input RESETn,
-	input DIN,
-	input CLKIN,
 	input DOUT_FROM_BUS,
 	input CLKOUT_FROM_BUS,
 	input RELEASE_ISO_FROM_SLEEP_CTRL,

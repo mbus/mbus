@@ -36,7 +36,7 @@ parameter ADDRESS = 20'h12345;
 
 //wire	n0_power_on, n0_sleep_req, n0_release_rst, n0_release_iso_from_sc;
 wire	mbc_sleep, mbc_isolate, mbc_reset, mbc_sleep_req;
-wire	ext_int_to_bus, ext_int_to_wire, clr_ext_int, clr_busy, bus_busyn, sleep_ctrl_clr_busy; 
+wire	ext_int_to_bus, ext_int_to_wire, clr_ext_int, clr_busy, sleep_ctrl_clr_busy; 
 wire	w_n0lc0, w_n0lc0_clk_out;
 
 reg		[`ADDR_WIDTH-1:0] n0_rx_addr_f_bc;
@@ -133,7 +133,7 @@ begin
 	if (mbc_sleep)
 	begin
 		n0_tx_ack_f_bc		= 1'bx;
-		n0_rx_addr_f_bc		= 8'bxx;
+		n0_rx_addr_f_bc		= 32'hxxxxxxxx;
 		n0_rx_data_f_bc		= 32'hxxxxxxxx;
 		n0_rx_req_f_bc		= 1'bx;
 		n0_rx_bcast_f_bc	= 1'bx;
@@ -169,7 +169,7 @@ begin
 	// layer controller is power off
 	if (LC_POWER_ON)
 	begin
-		n0_tx_addr_f_lc 	= 8'hxx;
+		n0_tx_addr_f_lc 	= 32'hxxxxxxxx;
 		n0_tx_data_f_lc 	= 32'hxxxxxxxx;
 		n0_tx_req_f_lc 		= 1'bx;
 		n0_tx_pend_f_lc 	= 1'bx;

@@ -38,7 +38,8 @@ parameter ADDRESS = 20'haaaaa;
 wire	CLK_GEN;
 wire	mbc_sleep, mbc_sleepb, mbc_isolate, mbc_reset;
 wire	sleep_req_from_m0;
-
+wire    req_int_ored;
+   
 // Always on Sleep Controller in CTRv6/7 - structural
    SLEEP_CONTROLv4 s0(
 		      .MBC_ISOLATE	(mbc_isolate), 
@@ -131,7 +132,7 @@ mbus_regular_sleep_ctrl sc0
 
 // always on wire controller
 mbus_master_wire_ctrl wc0
-	(.RESETn(RESETn), .DIN(DIN), .CLKIN(CLKIN), 										// the same input as the node
+	(.RESETn(RESETn), 										// the same input as the node
 	 .RELEASE_ISO_FROM_SLEEP_CTRL(mbc_isolate),						// from sleep controller
 	 .DOUT_FROM_BUS(w_m0wc0), .CLKOUT_FROM_BUS(w_m0wc0_clk_out), 	// the outputs from the node
 	 .DOUT(DOUT), .CLKOUT(CLKOUT),									// to next node

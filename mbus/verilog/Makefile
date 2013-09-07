@@ -38,6 +38,7 @@ SIMFILES = 	mbus_addr_rf.v \
 		mbus_int_ctrl.v \
 		mbus_err_inject.v
 
+#		SLEEP_CONTROLv4.v \
 #		mbus_master_sleep_ctrl.v \
 
 SYNFILES = 	../syn/mbus_node32_ab.nl.v \

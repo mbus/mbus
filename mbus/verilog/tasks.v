@@ -9,11 +9,9 @@ begin
     #100000;
     $fdisplay(handle, "\nTASK0, Master node and Processor wake up");
     state = TASK0;
-    $fdisplay(handle, "\nTASK0, whatwhat");
 	@ (posedge SCLK);
 	c0_req_int = 0;
     #50000;
-    $fdisplay(handle, "\nTASK0, whatwhat2");
 
     #100000;
     $fdisplay(handle, "\nTASK1, Master node sends out querry");

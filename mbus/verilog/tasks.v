@@ -498,7 +498,7 @@ endtask
 task task2;
 begin
 	err_clk = 0;
-   	handle=$fopen("result_task1.txt");
+   	handle=$fopen("result_task2.txt");
 
     #10000;
     $fdisplay(handle, "\nTASK0, Master node and Processor wake up");

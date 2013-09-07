@@ -30,10 +30,23 @@ module SLEEP_CONTROLv4 (
 	reg	set_tran_to_wake;
 	reg	rst_tran_to_wake;	// act as tran to "sleep"
 
+	reg	MBC_ISOLATE;
+	wire	MBC_ISOLATE_B;
+	assign	MBC_ISOLATE_B = ~MBC_ISOLATE;
+	reg	MBC_RESET;
+	wire	MBC_RESET_B;
+	assign	MBC_RESET_B = ~MBC_RESET;
 	reg	MBC_SLEEP_int;
+	wire	MBC_SLEEP;
+	wire	MBC_SLEEP_B;
+	assign	MBC_SLEEP_B = ~MBC_SLEEP;
 
 	reg	tran_to_wake;
 
+	wire	SYSTEM_ACTIVE;
+	assign	SYSTEM_ACTIVE = PMU_FORCE_WAKE | MBC_SLEEP_B | MBC_ISOLATE_B;
+
+	wire	WAKEUP_REQ_ORED;
 	assign	WAKEUP_REQ_ORED	= WAKEUP_REQ0 | WAKEUP_REQ1 | WAKEUP_REQ2;
 
 
@@ -72,9 +85,39 @@ module SLEEP_CONTROLv4 (
 			tran_to_wake	<= 1'b1;
 	end
 
+	// MBC_ISOLATE
+	always @ ( negedge RESETn or posedge CLK )
+	begin
+		if( ~RESETn )
+			MBC_ISOLATE	<= 1'b1;
+		else begin
+			MBC_ISOLATE	<= MBC_SLEEP_int | ~tran_to_wake;
+		end
+	end
 
+	// MBC_SLEEP
+	always @ ( negedge RESETn or posedge CLK )
+	begin
+		if( ~RESETn )
+			MBC_SLEEP_int	<= 1'b1;
+		else begin
+			MBC_SLEEP_int	<= MBC_ISOLATE & ~tran_to_wake;
+		end
+	end
 
+	assign	MBC_SLEEP = MBC_SLEEP & ~SET_TRAN_TO_WAKE_ifnoporeset;
 
+	// MBC_RESET
+	always @ ( negedge RESETn or posedge CLK )
+	begin
+		if( ~RESETn )
+			MBC_SLEEP_int	<= 1'b1;
+		else begin
+			MBC_SLEEP_int	<= MBC_ISOLATE;
+		end
+	end
+
+/*
 NOR3X1 I1 ( .C(WAKEUP_REQ2), .B(WAKEUP_REQ1), .A(WAKEUP_REQ0), .Y(WAKEUP_REQ_ORED_B_int) );
 INVX2 I2 ( .Y(WAKEUP_REQ_ORED), .A(WAKEUP_REQ_ORED_B_int));
 INVX1 I27 ( .Y(net071), .A(net02));
@@ -100,7 +143,7 @@ INVX12 I24 ( .Y(MBC_RESET_B), .A(MBC_RESET_int));
 INVX12 I23 ( .Y(MBC_SLEEP), .A(net071));
 INVX12 I20 ( .Y(MBC_RESET), .A(MBC_RESET_B_int));
 INVX12 I18 ( .Y(MBC_ISOLATE), .A(MBC_ISOLATE_B_int));
-
+*/
 
 
 endmodule

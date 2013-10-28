@@ -139,16 +139,16 @@ mbus_layer_wrapper #(.ADDRESS(20'hbbbb0)) n0
       .TX_ADDR(n0_tx_addr), .TX_DATA(n0_tx_data), .TX_REQ(n0_tx_req), .TX_ACK(n0_tx_ack), .TX_PEND(n0_tx_pend), .TX_PRIORITY(n0_priority),
       .RX_ADDR(n0_rx_addr), .RX_DATA(n0_rx_data), .RX_REQ(n0_rx_req), .RX_ACK(n0_rx_ack), .RX_FAIL(n0_rx_fail), .RX_PEND(n0_rx_pend),
       .TX_SUCC(n0_tx_succ), .TX_FAIL(n0_tx_fail), .TX_RESP_ACK(n0_tx_resp_ack), .RX_BROADCAST(n0_rx_broadcast),
-	  .LC_POWER_ON(n0_lc_pwr_on), .LC_RELEASE_CLK(n0_lc_release_clk), .LC_RELEASE_RST(n0_lc_release_rst), .LC_RELEASE_ISO(n0_lc_release_iso),
-	  .REQ_INT(n0_req_int));
+      .LC_POWER_ON(n0_lc_pwr_on), .LC_RELEASE_CLK(n0_lc_release_clk), .LC_RELEASE_RST(n0_lc_release_rst), .LC_RELEASE_ISO(n0_lc_release_iso),
+      .REQ_INT(n0_req_int));
 
 mbus_layer_wrapper #(.ADDRESS(20'hbbbb1)) n1
      (.CLKIN(w_n0_clk_out), .CLKOUT(w_n1_clk_out), .RESETn(resetn), .DIN(w_n0n1), .DOUT(w_n1n2), 
       .TX_ADDR(n1_tx_addr), .TX_DATA(n1_tx_data), .TX_REQ(n1_tx_req), .TX_ACK(n1_tx_ack), .TX_PEND(n1_tx_pend), .TX_PRIORITY(n1_priority),
       .RX_ADDR(n1_rx_addr), .RX_DATA(n1_rx_data), .RX_REQ(n1_rx_req), .RX_ACK(n1_rx_ack), .RX_FAIL(n1_rx_fail), .RX_PEND(n1_rx_pend),
       .TX_SUCC(n1_tx_succ), .TX_FAIL(n1_tx_fail), .TX_RESP_ACK(n1_tx_resp_ack), .RX_BROADCAST(n1_rx_broadcast),
-	  .LC_POWER_ON(n1_lc_pwr_on), .LC_RELEASE_CLK(n1_lc_release_clk), .LC_RELEASE_RST(n1_lc_release_rst), .LC_RELEASE_ISO(n1_lc_release_iso),
-	  .REQ_INT(n1_req_int));
+      .LC_POWER_ON(n1_lc_pwr_on), .LC_RELEASE_CLK(n1_lc_release_clk), .LC_RELEASE_RST(n1_lc_release_rst), .LC_RELEASE_ISO(n1_lc_release_iso),
+      .REQ_INT(n1_req_int));
 
 mbus_layer_wrapper #(.ADDRESS(20'hbbbb2)) n2
      (.CLKIN(w_n1_clk_out), .CLKOUT(w_n2_clk_out), .RESETn(resetn), .DIN(w_n1n2), .DOUT(w_n2n3), 

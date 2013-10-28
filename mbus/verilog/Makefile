@@ -1,13 +1,10 @@
-# make          <- runs simv (after compiling simv if needed)
 # make simv     <- compile simv if needed (but do not run)
-# make int      <- runs int_simv interactively (after compiling it if needed)
-# make syn      <- runs syn_simv (after synthesizing if needed then 
-#                                 compiling synsimv if needed)
-# make syn_int  <- runs syn_int_simv interactively (much like make syn)
+# make syn_simv <- runs syn_int_simv interactively (much like make syn)
+# make apr_simv <- runs syn_int_simv interactively (much like make syn)
 # make clean    <- remove files created during compilations (but not synthesis)
 # make nuke     <- remove all files created during compilation and synthesis
 #
-# Execute Example: make simv VCSFLAGS="+define+TASK0"
+# Execute Example: make simv VCSFLAGS="+define+TASK0"  <- This executes task0 testbenching
 
 VCS = SW_VCS=2011.03 vcs +v2k +vc -sverilog +lint=all,noVCDE +warn=all -Mupdate -line -full64 -cm line+cond+fsm+tgl -debug_all
 SYNVCS = SW_VCS=2011.03 vcs +v2k +vc -Mupdate -line -full64 +v2k +vc -sverilog +lint=all,noVCDE +warn=all -timescale=1ns/1ps +vcs+lic+wait +multisource_int_delays +plusarg_save +overlap -full64 -Mupdate -line -debug -cc gcc +libext+.v+.vlib+.vh +prof +neg_tchk +memopt -negdelay +define+SYN
@@ -28,7 +25,7 @@ SIMFILES = 	mbus_addr_rf.v \
 		mbus_clk_sim.v \
 		mbus_regular_isolation.v \
 		mbus_regular_sleep_ctrl.v \
-		SLEEP_CONTROLv4.v \
+		mbus_master_sleep_ctrl.v \
 		mbus_ctrl.v \
 		mbus_node.v \
 		mbus_ctrl_wrapper.v \
@@ -37,9 +34,6 @@ SIMFILES = 	mbus_addr_rf.v \
 		mbus_busy_ctrl.v \
 		mbus_int_ctrl.v \
 		mbus_err_inject.v
-
-#		SLEEP_CONTROLv4.v \
-#		mbus_master_sleep_ctrl.v \
 
 SYNFILES = 	../syn/mbus_node32_ab.nl.v \
 		../syn/mbus_node32_cd.nl.v \

@@ -34,7 +34,6 @@ module mbus_ctrl_layer_wrapper
    wire 		    ext_int_to_wire;
    wire 		    ext_int_to_bus;
    wire 		    clr_ext_int;
-   wire 		    bus_busyn;
    wire 		    clr_busy;
 
    mbus_ctrl_wrapper #(.ADDRESS(ADDRESS)) m0

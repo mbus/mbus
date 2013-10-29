@@ -2,40 +2,42 @@
 
 module mbus_ctrl_layer_wrapper
   (
-    input	  CLK_EXT,
-    input 	  CLKIN,
-    input 	  RESETn,
-    input 	  DIN,
-    output 	  CLKOUT,
-    output 	  DOUT,
-    input [31:0]  TX_ADDR,
-    input [31:0]  TX_DATA,
-    input 	  TX_PEND,
-    input 	  TX_REQ,
-    input 	  TX_PRIORITY,
-    output 	  TX_ACK,
-    output [31:0] RX_ADDR,
-    output [31:0] RX_DATA,
-    output 	  RX_REQ,
-    input 	  RX_ACK,
-    output 	  RX_BROADCAST,
-    output 	  RX_FAIL,
-    output 	  RX_PEND,
-    output 	  TX_FAIL,
-    output 	  TX_SUCC,
-    input 	  TX_RESP_ACK
+    input	            CLK_EXT,
+    input 		    CLKIN,
+    input 		    RESETn,
+    input 		    DIN,
+    output 		    CLKOUT,
+    output 		    DOUT,
+    input [`ADDR_WIDTH-1:0] TX_ADDR,
+    input [`DATA_WIDTH-1:0] TX_DATA,
+    input 		    TX_PEND,
+    input 		    TX_REQ,
+    input 		    TX_PRIORITY,
+    output 		    TX_ACK,
+    output [`ADDR_WIDTH:0]  RX_ADDR,
+    output [`DATA_WIDTH:0]  RX_DATA,
+    output 		    RX_REQ,
+    input 		    RX_ACK,
+    output 		    RX_BROADCAST,
+    output 		    RX_FAIL,
+    output 		    RX_PEND,
+    output 		    TX_FAIL,
+    output 		    TX_SUCC,
+    input 		    TX_RESP_ACK
    );
 
-   wire 	  w_m0wc0_clk_out;
-   wire 	  w_m0wc0;
+   parameter 		    ADDRESS = 20'haaaaa;
+
+   wire 		    w_m0wc0_clk_out;
+   wire 		    w_m0wc0;
    
-   wire 	  ext_int_to_wire;
-   wire 	  ext_int_to_bus;
-   wire 	  clr_ext_int;
-   wire 	  bus_busyn;
-   wire 	  clr_busy;
-   
-   mbus_ctrl_wrapper #(.ADDRESS(20'haaaab)) m0
+   wire 		    ext_int_to_wire;
+   wire 		    ext_int_to_bus;
+   wire 		    clr_ext_int;
+   wire 		    bus_busyn;
+   wire 		    clr_busy;
+
+   mbus_ctrl_wrapper #(.ADDRESS(ADDRESS)) m0
      (
       .CLK_EXT		(CLK_EXT),
       .RESETn		(RESETn),
@@ -76,13 +78,13 @@ module mbus_ctrl_layer_wrapper
    // always on wire controller
    mbus_master_wire_ctrl wc0
      (
-      .RESETn(RESETn),
-      .RELEASE_ISO_FROM_SLEEP_CTRL(1'b0),
-      .DOUT_FROM_BUS(w_m0wc0),
-      .CLKOUT_FROM_BUS(w_m0wc0_clk_out),
-      .DOUT(DOUT),
-      .CLKOUT(CLKOUT),
-      .EXTERNAL_INT(ext_int_to_wire)
+      .RESETn				(RESETn),
+      .RELEASE_ISO_FROM_SLEEP_CTRL	(1'b0),
+      .DOUT_FROM_BUS			(w_m0wc0),
+      .CLKOUT_FROM_BUS			(w_m0wc0_clk_out),
+      .DOUT				(DOUT),
+      .CLKOUT				(CLKOUT),
+      .EXTERNAL_INT			(ext_int_to_wire)
       );
    
    // always on interrupt controller

@@ -22,7 +22,9 @@ module mbus_layer_wrapper
     output 		     RX_PEND, 
     output 		     TX_FAIL, 
     output 		     TX_SUCC, 
-    input 		     TX_RESP_ACK
+    input 		     TX_RESP_ACK,
+	
+	output [3:0] debug
    );
 
    parameter 		     ADDRESS = 20'h12345;
@@ -36,7 +38,7 @@ module mbus_layer_wrapper
    wire 		     clr_busy; 
 
    wire [`DYNA_WIDTH-1:0]    rf_addr_out_to_node;
-   wire 		     rf_addr_in_from_node;
+   wire [`DYNA_WIDTH-1:0]    rf_addr_in_from_node;
    wire 		     rf_addr_valid;
    wire 		     rf_addr_write;
    wire 		     rf_addr_rstn;
@@ -63,6 +65,8 @@ module mbus_layer_wrapper
       .RX_BROADCAST	(RX_BROADCAST), 
       .RX_FAIL		(RX_FAIL), 
       .RX_PEND		(RX_PEND),
+	  
+	  .rx_snoop(1'b0),
       
       .TX_SUCC		(TX_SUCC), 
       .TX_FAIL		(TX_FAIL), 
@@ -85,7 +89,9 @@ module mbus_layer_wrapper
       
       .ASSIGNED_ADDR_VALID	(rf_addr_valid), 
       .ASSIGNED_ADDR_WRITE	(rf_addr_write), 
-      .ASSIGNED_ADDR_INVALIDn	(rf_addr_rstn)
+      .ASSIGNED_ADDR_INVALIDn	(rf_addr_rstn),
+	  
+	  .debug(debug)
       );
 
    mbus_wire_ctrl lc0

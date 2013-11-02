@@ -81,8 +81,6 @@
  * 3/6 '13
  * switch clock mux to posedge edge trigger, clock holds at high if a node request 
  * interrupt, bypass clock once interrupt occurred
- * 10/21 '13
- * change parameters to inputs
  * */
 
 `include "include/mbus_def.v"
@@ -107,7 +105,8 @@ module mbus_node(
 	output 	reg RX_REQ, 
 	input 		RX_ACK, 
 	output 		RX_BROADCAST,
-
+	input rx_snoop,
+	
 	output 	reg RX_FAIL,
 	output 	reg TX_FAIL, 
 	output 	reg TX_SUCC, 
@@ -128,23 +127,22 @@ module mbus_node(
 	output 	reg CLR_EXT_INT,
 	output	reg	CLR_BUSY,
 	`endif
+	
 	// interface with local register files (RF)
 	input		[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_IN,
 	output	 	[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_OUT,
 	input		ASSIGNED_ADDR_VALID,
 	output	reg	ASSIGNED_ADDR_WRITE,
 	output	reg	ASSIGNED_ADDR_INVALIDn,
-
-	input	MASTER_NODE,
-	input	CPU_LAYER,
-	input	[19:0] ADDRESS
+	
+	output [3:0] debug
 );
 
 `include "include/mbus_func.v"
 
-//parameter ADDRESS = 20'habcde;
-parameter ADDRESS_MASK = {(`PRFIX_WIDTH){1'b1}};
-parameter ADDRESS_MASK_SHORT = {`DYNA_WIDTH{1'b1}};
+parameter ADDRESS = 20'habcde;
+wire [`PRFIX_WIDTH-1:0] ADDRESS_MASK = {(`PRFIX_WIDTH){~rx_snoop}};
+wire [`DYNA_WIDTH-1:0] ADDRESS_MASK_SHORT = {`DYNA_WIDTH{~rx_snoop}};
 
 // Node mode
 parameter MODE_TX_NON_PRIO = 2'd0;
@@ -181,9 +179,9 @@ parameter RX_ABOVE_TX = 1'b1;
 parameter RX_BELOW_TX = 1'b0;
 
 // override this parameter to "1'b1" if the node is master
-//parameter MASTER_NODE = 1'b0;
+parameter MASTER_NODE = 1'b0;
 // override this parameter to "1'b1" if the layer is CPU
-//parameter CPU_LAYER = 1'b0;
+parameter CPU_LAYER = 1'b0;//TODO: Set this to 1'b1 in order to listen to broadcast messages
 
 wire [1:0] CONTROL_BITS = `CONTROL_SEQ;	// EOM?, ~ACK?
 
@@ -194,6 +192,8 @@ reg		[log2(`DATA_WIDTH-1)-1:0] bit_position, next_bit_position;
 reg		req_interrupt, next_req_interrupt;
 reg		out_reg_pos, next_out_reg_pos, out_reg_neg;
 reg		next_clr_busy;
+
+assign debug = bus_state;
 
 // tx registers
 reg		[`ADDR_WIDTH-1:0] ADDR, next_addr;

@@ -1,16 +1,13 @@
 
+//
+// TASK0.v, testbench for NON-power gating only
+//
+// 
 always @ (posedge clk or negedge resetn) begin
 	// not in reset
 	if (resetn)
 	begin
 		case (state)
-			// Wake up processor and all B.C.
-			TASK0:
-			begin
-				c0_req_int <= 1;
-				state <= TX_WAIT;
-			end
-
 			// Querry nodes
 			TASK1:
 			begin
@@ -172,13 +169,6 @@ always @ (posedge clk or negedge resetn) begin
 				state <= TX_WAIT;
 			end
 
-			// n2 assert ext_int
-			TASK15:
-			begin
-				n2_req_int <= 1;
-				state <= TX_WAIT;
-			end
-
 			// n2->n0 using short address
 			TASK16:
 			begin
@@ -278,31 +268,6 @@ always @ (posedge clk or negedge resetn) begin
 				n2_priority <= 0;
    	      		$fdisplay(handle, "N2 Data in =\t32'h%h", rand_dat);
 				state <= TX_WAIT;
-			end
-
-			// n2 -> n1 byte streamming using long address, 
-			// n3 request interrupt
-			TASK25: 
-			begin
-	   			if ((~n2_tx_ack) & (~n2_tx_req)) 
-				begin
-	      			n2_tx_addr <= {4'hf, 4'h0, 20'hbbbb1, 4'h1};	// 4'h1 is functional ID
-	      			n2_tx_data <= rand_dat;
-	      			n2_tx_req <= 1;
-   	      			$fdisplay(handle, "N1 Data in =\t32'h%h", rand_dat);
-	      			if (word_counter) 
-					begin
-		 				word_counter <= word_counter - 1;
-		 				n2_tx_pend <= 1;
-						if (word_counter==1)
-							n3_req_int <= 1;
-	      			end
-	      			else 
-					begin
-		 				n2_tx_pend <= 0;
-		 				state <= TX_WAIT;
-	      			end
-	   			end
 			end
 
       	endcase // case (state)

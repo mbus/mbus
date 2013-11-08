@@ -20,12 +20,11 @@ TESTBENCH = tb_mbus.v
 SIMFILES = 	mbus_addr_rf.v \
 		mbus_swapper.v \
 		mbus_wire_ctrl.v \
-		mbus_node_Ben.v \
-		mbus_layer_wrapper.Ben.v \
+		mbus_ctrl.v \
+		mbus_node.v \
+		mbus_ctrl_wrapper.v \
+		mbus_layer_wrapper.v \
 		mbus_ctrl_layer_wrapper.v \
-		mbus_busy_ctrl.v \
-		mbus_int_ctrl.v \
-		mbus_err_inject.v
 
 SYNFILES = 	../syn/mbus_node32_ab.nl.v \
 		../syn/mbus_node32_cd.nl.v \

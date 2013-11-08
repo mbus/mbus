@@ -111,7 +111,6 @@ begin
     $fdisplay(handle, "Result: C0, N0, N1, N3 RX Fail");
     state = TASK15;
 	@ (posedge SCLK);
-	n2_req_int = 0;
     #50000;
 
     #100000;
@@ -150,7 +149,6 @@ begin
     $fdisplay(handle, "\nTASK0, Master node and Processor wake up");
     state = TASK0;
 	@ (posedge SCLK);
-	c0_req_int = 0;
     #50000;
 
     #100000;
@@ -170,7 +168,6 @@ begin
     $fdisplay(handle, "\nTASK0, Master node and Processor wake up");
     state = TASK0;
 	@ (posedge SCLK);
-	c0_req_int = 0;
     #50000;
 
     #10000;
@@ -222,7 +219,6 @@ begin
     $fdisplay(handle, "Result: C0, N0, N1, N3 RX Fail");
     state = TASK15;
     #50000;
-	n2_req_int = 0;
 
     #100000;
     $fdisplay(handle, "\nTASK18, All sleep");
@@ -233,7 +229,6 @@ begin
     $fdisplay(handle, "\nTASK0, Master node and Processor wake up");
     state = TASK0;
 	@ (posedge SCLK);
-	c0_req_int = 0;
     #50000;
 
     #100000;
@@ -241,7 +236,6 @@ begin
     $fdisplay(handle, "Result: C0, N0, N1, N3 RX Fail");
     state = TASK15;
     #50000;
-	n2_req_int = 0;
 
     #100000;
     $fdisplay(handle, "\nTASK25, N3 asserts ext_int between transmission");
@@ -249,7 +243,6 @@ begin
     state = TASK25;
 	@ (posedge n2_tx_succ | n2_tx_fail);
     #50000;
-	n3_req_int = 0;
 
     #100000;
     $fdisplay(handle, "\nTASK18, All sleep");
@@ -258,13 +251,10 @@ begin
 
     #100000;
     $fdisplay(handle, "\nBoth N1 and N2 assert interrupt");
-	n1_req_int = 1;
 	#33600;
-	n2_req_int = 1;
     #50000;
-	n1_req_int = 0;
-	n2_req_int = 0;
-*/
+	*/
+
     #300000;
     $display("*************************************");
     $display("************TASK0 Complete***********");
@@ -281,7 +271,6 @@ begin
     $fdisplay(handle, "\nTASK0, Master node and Processor wake up");
     state = TASK0;
 	@ (posedge SCLK);
-	c0_req_int = 0;
     #50000;
 
     #100000;
@@ -456,7 +445,6 @@ begin
     $fdisplay(handle, "Result: C0, N0, N1, N3 RX Fail");
     state = TASK22;
 	@ (posedge SCLK);
-	n2_req_int = 0;
     #50000;
 
     #100000;
@@ -490,7 +478,6 @@ begin
     $fdisplay(handle, "\nTASK0, Master node and Processor wake up");
     state = TASK0;
 	@ (posedge SCLK);
-	c0_req_int = 0;
     #50000;
 
     #100000;

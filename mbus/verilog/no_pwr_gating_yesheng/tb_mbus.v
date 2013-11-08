@@ -1,4 +1,4 @@
-`define SD #1
+
 `timescale 1ns/1ps
 
 `ifdef SYN
@@ -17,66 +17,61 @@ module tb_mbus();
 	// n0 connections
 	reg		[`ADDR_WIDTH-1:0] 	n0_tx_addr;
 	reg		[`DATA_WIDTH-1:0]	n0_tx_data;
-	reg							n0_tx_req, n0_priority, n0_tx_pend, n0_tx_resp_ack, n0_req_int;
+	reg							n0_tx_req, n0_priority, n0_tx_pend, n0_tx_resp_ack;
 	wire						n0_tx_ack, n0_tx_succ, n0_tx_fail;
 
 	wire	[`ADDR_WIDTH-1:0]	n0_rx_addr;
 	wire	[`DATA_WIDTH-1:0]	n0_rx_data;
 	wire						n0_rx_req, n0_rx_fail, n0_rx_pend, n0_rx_broadcast;
 	reg							n0_rx_ack;
-
 	// end of n0 connections
 
 	// n1 connections
 	reg		[`ADDR_WIDTH-1:0] 	n1_tx_addr;
 	reg		[`DATA_WIDTH-1:0]	n1_tx_data;
-	reg							n1_tx_req, n1_priority, n1_tx_pend, n1_tx_resp_ack, n1_req_int;
+	reg							n1_tx_req, n1_priority, n1_tx_pend, n1_tx_resp_ack;
 	wire						n1_tx_ack, n1_tx_succ, n1_tx_fail;
 
 	wire	[`ADDR_WIDTH-1:0]	n1_rx_addr;
 	wire	[`DATA_WIDTH-1:0]	n1_rx_data;
 	wire						n1_rx_req, n1_rx_fail, n1_rx_pend, n1_rx_broadcast;
 	reg							n1_rx_ack;
-
 	// end of n1 connections
 	
 	// n2 connections
 	reg		[`ADDR_WIDTH-1:0] 	n2_tx_addr;
 	reg		[`DATA_WIDTH-1:0]	n2_tx_data;
-	reg							n2_tx_req, n2_priority, n2_tx_pend, n2_tx_resp_ack, n2_req_int;
+	reg							n2_tx_req, n2_priority, n2_tx_pend, n2_tx_resp_ack;
 	wire						n2_tx_ack, n2_tx_succ, n2_tx_fail;
 
 	wire	[`ADDR_WIDTH-1:0]	n2_rx_addr;
 	wire	[`DATA_WIDTH-1:0]	n2_rx_data;
 	wire						n2_rx_req, n2_rx_fail, n2_rx_pend, n2_rx_broadcast;
 	reg							n2_rx_ack;
-
 	// end of n2 connections
 	
 	// n3 connections
 	reg		[`ADDR_WIDTH-1:0] 	n3_tx_addr;
 	reg		[`DATA_WIDTH-1:0]	n3_tx_data;
-	reg							n3_tx_req, n3_priority, n3_tx_pend, n3_tx_resp_ack, n3_req_int;
+	reg							n3_tx_req, n3_priority, n3_tx_pend, n3_tx_resp_ack;
 	wire						n3_tx_ack, n3_tx_succ, n3_tx_fail;
 
 	wire	[`ADDR_WIDTH-1:0]	n3_rx_addr;
 	wire	[`DATA_WIDTH-1:0]	n3_rx_data;
 	wire						n3_rx_req, n3_rx_fail, n3_rx_pend, n3_rx_broadcast;
 	reg							n3_rx_ack;
-
 	// end of n3 connections
 	
 	// c0 connections
 	reg		[`ADDR_WIDTH-1:0] 	c0_tx_addr;
 	reg		[`DATA_WIDTH-1:0]	c0_tx_data;
-	reg							c0_tx_req, c0_priority, c0_tx_pend, c0_tx_resp_ack, c0_req_int;
+	reg							c0_tx_req, c0_priority, c0_tx_pend, c0_tx_resp_ack;
 	wire						c0_tx_ack, c0_tx_succ, c0_tx_fail;
 
 	wire	[`ADDR_WIDTH-1:0]	c0_rx_addr;
 	wire	[`DATA_WIDTH-1:0]	c0_rx_data;
 	wire						c0_rx_req, c0_rx_fail, c0_rx_pend, c0_rx_broadcast;
 	reg							c0_rx_ack;
-
 	// end of c0 connections
    
    	// connection between nodes
@@ -127,32 +122,31 @@ mbus_layer_wrapper #(.ADDRESS(20'hbbbb0)) n0
      (.CLKIN(SCLK), .CLKOUT(w_n0_clk_out), .RESETn(resetn), .DIN(w_c0n0), .DOUT(w_n0n1), 
       .TX_ADDR(n0_tx_addr), .TX_DATA(n0_tx_data), .TX_REQ(n0_tx_req), .TX_ACK(n0_tx_ack), .TX_PEND(n0_tx_pend), .TX_PRIORITY(n0_priority),
       .RX_ADDR(n0_rx_addr), .RX_DATA(n0_rx_data), .RX_REQ(n0_rx_req), .RX_ACK(n0_rx_ack), .RX_FAIL(n0_rx_fail), .RX_PEND(n0_rx_pend),
-      .TX_SUCC(n0_tx_succ), .TX_FAIL(n0_tx_fail), .TX_RESP_ACK(n0_tx_resp_ack), .RX_BROADCAST(n0_rx_broadcast), .debug());
+      .TX_SUCC(n0_tx_succ), .TX_FAIL(n0_tx_fail), .TX_RESP_ACK(n0_tx_resp_ack), .RX_BROADCAST(n0_rx_broadcast));
 
 mbus_layer_wrapper #(.ADDRESS(20'hbbbb1)) n1
      (.CLKIN(w_n0_clk_out), .CLKOUT(w_n1_clk_out), .RESETn(resetn), .DIN(w_n0n1), .DOUT(w_n1n2), 
       .TX_ADDR(n1_tx_addr), .TX_DATA(n1_tx_data), .TX_REQ(n1_tx_req), .TX_ACK(n1_tx_ack), .TX_PEND(n1_tx_pend), .TX_PRIORITY(n1_priority),
       .RX_ADDR(n1_rx_addr), .RX_DATA(n1_rx_data), .RX_REQ(n1_rx_req), .RX_ACK(n1_rx_ack), .RX_FAIL(n1_rx_fail), .RX_PEND(n1_rx_pend),
-      .TX_SUCC(n1_tx_succ), .TX_FAIL(n1_tx_fail), .TX_RESP_ACK(n1_tx_resp_ack), .RX_BROADCAST(n1_rx_broadcast), .debug());
+      .TX_SUCC(n1_tx_succ), .TX_FAIL(n1_tx_fail), .TX_RESP_ACK(n1_tx_resp_ack), .RX_BROADCAST(n1_rx_broadcast));
 
 mbus_layer_wrapper #(.ADDRESS(20'hbbbb2)) n2
      (.CLKIN(w_n1_clk_out), .CLKOUT(w_n2_clk_out), .RESETn(resetn), .DIN(w_n1n2), .DOUT(w_n2n3), 
       .TX_ADDR(n2_tx_addr), .TX_DATA(n2_tx_data), .TX_REQ(n2_tx_req), .TX_ACK(n2_tx_ack), .TX_PEND(n2_tx_pend), .TX_PRIORITY(n2_priority),
       .RX_ADDR(n2_rx_addr), .RX_DATA(n2_rx_data), .RX_REQ(n2_rx_req), .RX_ACK(n2_rx_ack), .RX_FAIL(n2_rx_fail), .RX_PEND(n2_rx_pend),
-      .TX_SUCC(n2_tx_succ), .TX_FAIL(n2_tx_fail), .TX_RESP_ACK(n2_tx_resp_ack), .RX_BROADCAST(n2_rx_broadcast), .debug());
+      .TX_SUCC(n2_tx_succ), .TX_FAIL(n2_tx_fail), .TX_RESP_ACK(n2_tx_resp_ack), .RX_BROADCAST(n2_rx_broadcast));
 
 mbus_layer_wrapper #(.ADDRESS(20'hbbbb2)) n3
      (.CLKIN(w_n2_clk_out), .CLKOUT(w_n3_clk_out), .RESETn(resetn), .DIN(w_n2n3), .DOUT(w_n3c0), 
       .TX_ADDR(n3_tx_addr), .TX_DATA(n3_tx_data), .TX_REQ(n3_tx_req), .TX_ACK(n3_tx_ack), .TX_PEND(n3_tx_pend), .TX_PRIORITY(n3_priority),
       .RX_ADDR(n3_rx_addr), .RX_DATA(n3_rx_data), .RX_REQ(n3_rx_req), .RX_ACK(n3_rx_ack), .RX_FAIL(n3_rx_fail), .RX_PEND(n3_rx_pend),
-      .TX_SUCC(n3_tx_succ), .TX_FAIL(n3_tx_fail), .TX_RESP_ACK(n3_tx_resp_ack), .RX_BROADCAST(n3_rx_broadcast), .debug());
+      .TX_SUCC(n3_tx_succ), .TX_FAIL(n3_tx_fail), .TX_RESP_ACK(n3_tx_resp_ack), .RX_BROADCAST(n3_rx_broadcast));
 
 mbus_ctrl_layer_wrapper #(.ADDRESS(20'haaaa0)) c0 
      (.CLK_EXT(clk), .CLKIN(w_n3_clk_out), .CLKOUT(SCLK), .RESETn(resetn), .DIN(w_n3c0), .DOUT(w_c0n0), 
       .TX_ADDR(c0_tx_addr), .TX_DATA(c0_tx_data), .TX_REQ(c0_tx_req), .TX_ACK(c0_tx_ack), .TX_PEND(c0_tx_pend), .TX_PRIORITY(c0_priority),
       .RX_ADDR(c0_rx_addr), .RX_DATA(c0_rx_data), .RX_REQ(c0_rx_req), .RX_ACK(c0_rx_ack), .RX_FAIL(c0_rx_fail), .RX_PEND(c0_rx_pend),
-      .TX_SUCC(c0_tx_succ), .TX_FAIL(c0_tx_fail), .TX_RESP_ACK(c0_tx_resp_ack),  .RX_BROADCAST(c0_rx_broadcast), .debug());
-
+      .TX_SUCC(c0_tx_succ), .TX_FAIL(c0_tx_fail), .TX_RESP_ACK(c0_tx_resp_ack),  .RX_BROADCAST(c0_rx_broadcast));
    initial begin
 
     clk = 0;
@@ -220,7 +214,6 @@ end // initial begin
 
 //Changed to 400K for primetime calculations
 always #1250 clk = ~clk;
-
    
 `ifdef TASK0
 	`include "task0.v"
@@ -239,7 +232,6 @@ begin
 		n0_tx_pend  <= 0;
 		n0_tx_req   <= 0;
 		n0_priority <= 0;
-		n0_req_int	<= 0;
 		n0_auto_rx_ack <= 1;
       
 		n1_tx_addr  <= 0;
@@ -247,7 +239,6 @@ begin
 		n1_tx_pend  <= 0;
 		n1_tx_req   <= 0;
 		n1_priority <= 0;
-		n1_req_int	<= 0;
 		n1_auto_rx_ack <= 1;
 		
 		n2_tx_addr  <= 0;
@@ -255,7 +246,6 @@ begin
 		n2_tx_pend  <= 0;
 		n2_tx_req   <= 0;
 		n2_priority <= 0;
-		n2_req_int	<= 0;
 		n2_auto_rx_ack <= 1;
 		
 		n3_tx_addr  <= 0;
@@ -263,7 +253,6 @@ begin
 		n3_tx_pend  <= 0;
 		n3_tx_req   <= 0;
 		n3_priority <= 0;
-		n3_req_int	<= 0;
 		n3_auto_rx_ack <= 1;
 		
 		c0_tx_addr  <= 0;
@@ -271,10 +260,8 @@ begin
 		c0_tx_pend  <= 0;
 		c0_tx_req   <= 0;
 		c0_priority <= 0;
-		c0_req_int	<= 0;
 		c0_auto_rx_ack <= 1;
 		word_counter <= 0;
-
 	end
 	else
 	begin

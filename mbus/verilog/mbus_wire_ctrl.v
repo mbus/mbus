@@ -1,9 +1,16 @@
 /*
- * Last modified date: 04/08 '13
- * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
- * Last modified content: add external interrupt
+ * Update history:
+ *
+ * date: 04/08 '13
+ * modified content: add external interrupt
+ * modified by: Ye-sheng Kuo <samkuo@umich.edu>
+ *
+ * date: 11/08 '13
+ * modified content: add power gating macro
+ * modified by: Ye-sheng Kuo <samkuo@umich.edu>
  * --------------------------------------------------------------------------
- * IMPORTANT:  
+ * IMPORTANT: Don't change blocking statement to non-blocking, it causes
+ * simulation problems!!
  * --------------------------------------------------------------------------
  * */
 
@@ -13,43 +20,54 @@
 
 module mbus_wire_ctrl(
 	input RESETn,
-	input DIN,
-	input CLKIN,
 	input DOUT_FROM_BUS,
 	input CLKOUT_FROM_BUS,
+	`ifdef POWER_GATING
+	input DIN,
+	input CLKIN,
 	input RELEASE_ISO_FROM_SLEEP_CTRL,
+	input EXTERNAL_INT,
+	`endif
 	output reg DOUT,
-	output reg CLKOUT,
-	input EXTERNAL_INT
+	output reg CLKOUT
 );
 
+`ifdef POWER_GATING
 always @ *
 begin
-	if( !RESETn )
-		CLKOUT <= #1 1'b1;
+	if (~RESETn)
+		CLKOUT <= `SD 1'b1;
 	else if (RELEASE_ISO_FROM_SLEEP_CTRL==`IO_HOLD)
-		CLKOUT <= #1 CLKIN;
+		CLKOUT <= `SD CLKIN;
 	else
-		CLKOUT <= #1 CLKOUT_FROM_BUS;
+		CLKOUT <= `SD CLKOUT_FROM_BUS;
 
-	if ( !RESETn )
-		DOUT <= #1 1'b1;
+	if (~RESETn)
+		DOUT <= `SD 1'b1;
 	else if (EXTERNAL_INT)
-	begin
-		DOUT <= #1 0;
-	end
+		DOUT <= `SD 0;
 	else
 	begin
 		if (RELEASE_ISO_FROM_SLEEP_CTRL==`IO_HOLD)
-		begin
-			DOUT <= #1 DIN;
-		end
+			DOUT <= `SD DIN;
 		else
-		begin
-			DOUT <= #1 DOUT_FROM_BUS;
-		end
+			DOUT <= `SD DOUT_FROM_BUS;
 	end
 end
+`else
+always @ *
+begin
+	if (~RESETn)
+		CLKOUT <= `SD 1'b1;
+	else
+		CLKOUT <= `SD CLKOUT_FROM_BUS;
+
+	if (~RESETn)
+		DOUT <= `SD 1'b1;
+	else
+		DOUT <= `SD DOUT_FROM_BUS;
+end
+`endif
 
 endmodule // mbus_wire_ctrl_wresetn
 

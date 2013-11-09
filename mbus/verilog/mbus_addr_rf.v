@@ -4,7 +4,9 @@
 
 module mbus_addr_rf(
 	input		RESETn,
+	`ifdef POWER_GATING
 	input		RELEASE_ISO_FROM_SLEEP_CTRL,
+	`endif
 	output	reg	[`DYNA_WIDTH-1:0] ADDR_OUT,
 	input		[`DYNA_WIDTH-1:0] ADDR_IN,
 	output	reg	ADDR_VALID,
@@ -13,7 +15,11 @@ module mbus_addr_rf(
 );
 
 wire	RESETn_local = (RESETn & ADDR_CLRn); 
+`ifdef POWER_GATING
 wire	ADDR_UPDATE = (ADDR_WR_EN & (~RELEASE_ISO_FROM_SLEEP_CTRL));
+`else
+wire	ADDR_UPDATE = ADDR_WR_EN;
+`endif
 
 always @ (posedge ADDR_UPDATE or negedge RESETn_local)
 begin

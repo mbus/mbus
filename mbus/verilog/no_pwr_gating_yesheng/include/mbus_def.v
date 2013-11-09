@@ -55,4 +55,4 @@
 `define LC_CMD_MEM_READ		4'h3
 
 // Only for simulation
-`define SD #1
+`define SD #125

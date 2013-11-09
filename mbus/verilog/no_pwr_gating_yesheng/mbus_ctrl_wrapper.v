@@ -50,7 +50,9 @@ wire	CLK_CTRL_TO_NODE;
 wire	DOUT_CTRL_TO_NODE;
 wire	NODE_RX_REQ;
 wire	NODE_RX_ACK;
+`ifdef POWER_GATING
 wire	SLEEP_REQ;
+`endif
 reg		ctrl_addr_match, ctrl_rx_ack;
 
 `ifdef POWER_GATING

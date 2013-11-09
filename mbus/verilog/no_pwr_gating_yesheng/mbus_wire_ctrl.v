@@ -9,7 +9,8 @@
  * modified content: add power gating macro
  * modified by: Ye-sheng Kuo <samkuo@umich.edu>
  * --------------------------------------------------------------------------
- * IMPORTANT:  
+ * IMPORTANT: Don't change blocking statement to non-blocking, it causes
+ * simulation problems!!
  * --------------------------------------------------------------------------
  * */
 
@@ -35,36 +36,36 @@ module mbus_wire_ctrl(
 always @ *
 begin
 	if (~RESETn)
-		CLKOUT = `SD 1'b1;
+		CLKOUT <= `SD 1'b1;
 	else if (RELEASE_ISO_FROM_SLEEP_CTRL==`IO_HOLD)
-		CLKOUT = `SD CLKIN;
+		CLKOUT <= `SD CLKIN;
 	else
-		CLKOUT = `SD CLKOUT_FROM_BUS;
+		CLKOUT <= `SD CLKOUT_FROM_BUS;
 
 	if (~RESETn)
-		DOUT = `SD 1'b1;
+		DOUT <= `SD 1'b1;
 	else if (EXTERNAL_INT)
-		DOUT = `SD 0;
+		DOUT <= `SD 0;
 	else
 	begin
 		if (RELEASE_ISO_FROM_SLEEP_CTRL==`IO_HOLD)
-			DOUT = `SD DIN;
+			DOUT <= `SD DIN;
 		else
-			DOUT = `SD DOUT_FROM_BUS;
+			DOUT <= `SD DOUT_FROM_BUS;
 	end
 end
 `else
 always @ *
 begin
 	if (~RESETn)
-		CLKOUT = `SD 1'b1;
+		CLKOUT <= `SD 1'b1;
 	else
-		CLKOUT = `SD CLKOUT_FROM_BUS;
+		CLKOUT <= `SD CLKOUT_FROM_BUS;
 
 	if (~RESETn)
-		DOUT = `SD 1'b1;
+		DOUT <= `SD 1'b1;
 	else
-		DOUT = `SD DOUT_FROM_BUS;
+		DOUT <= `SD DOUT_FROM_BUS;
 end
 `endif
 

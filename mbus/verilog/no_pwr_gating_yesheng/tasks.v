@@ -471,7 +471,6 @@ endtask
 
 task task2;
 begin
-	err_clk = 0;
    	handle=$fopen("result_task2.txt");
 
     #10000;
@@ -544,51 +543,6 @@ begin
     @ (posedge n1_tx_succ | n1_tx_fail);
 
     #100000;
-    $fdisplay(handle, "\nTASK9, N1 to N3, introduce clkc glitch after interrupt");
-    $fdisplay(handle, "Result: N1 TX Fail");
-    $fdisplay(handle, "Result: N3 RX Fail");
-    state = TASK9;
-    @ (posedge n1_tx_succ | n1_tx_fail);
-	err_start <= 0;
-
-    #100000;
-    $fdisplay(handle, "\nTASK7, N1 to N3, states missalign");
-    $fdisplay(handle, "Result: N1 TX Fail");
-    $fdisplay(handle, "Result: N3 RX Fail");
-    state = TASK7;
-    @ (posedge n1_tx_succ | n1_tx_fail);
-
-    #100000;
-    $fdisplay(handle, "\nTASK7, N1 to N3");
-    $fdisplay(handle, "Result: N1 TX Success");
-    $fdisplay(handle, "Result: N3 RX Success");
-    state = TASK7;
-    @ (posedge n1_tx_succ | n1_tx_fail);
-
-    #100000;
-    $fdisplay(handle, "\nTASK10, N1 to N3, missing clk edge after interrupt");
-    $fdisplay(handle, "Result: N1 TX Fail");
-    $fdisplay(handle, "Result: N3 RX Success, then immediately Fail");
-    state = TASK10;
-    @ (posedge n1_tx_succ | n1_tx_fail);
-	err_start <= 0;
-
-    #100000;
-    $fdisplay(handle, "\nTASK7, N1 to N3");
-    $fdisplay(handle, "Result: N1 TX Success");
-    $fdisplay(handle, "Result: N3 RX Success");
-    state = TASK7;
-    @ (posedge n1_tx_succ | n1_tx_fail);
-
-    #100000;
-    $fdisplay(handle, "\nTASK7, N1 to N3, CLK stuck at 0");
-    state = TASK7;
-	err_start <= 1;
-	err_type <= 4;
-	#1000000;
-	err_start <= 0;
-
-    #100000;
     $fdisplay(handle, "\nTASK7, N1 to N3");
     $fdisplay(handle, "Result: N1 TX Success");
     $fdisplay(handle, "Result: N3 RX Success");
@@ -603,12 +557,11 @@ begin
     @ (posedge n1_tx_succ | n1_tx_fail);
 
     #100000;
-    $fdisplay(handle, "\nTASK7, N1 to N3, CLK stuck at 0");
+    $fdisplay(handle, "\nTASK7, N1 to N3");
+    $fdisplay(handle, "Result: N1 TX Success");
+    $fdisplay(handle, "Result: N3 RX Success");
     state = TASK7;
-	err_start <= 1;
-	err_type <= 5;
-	#1000000;
-	err_start <= 0;
+    @ (posedge n1_tx_succ | n1_tx_fail);
 
     #300000;
     $display("*************************************");

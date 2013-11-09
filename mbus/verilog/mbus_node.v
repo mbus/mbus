@@ -81,6 +81,8 @@
  * 3/6 '13
  * switch clock mux to posedge edge trigger, clock holds at high if a node request 
  * interrupt, bypass clock once interrupt occurred
+ * 11/8 '13 by: Ye-Sheng Kuo
+ * fix POWER_GATING macro
  * */
 
 `include "include/mbus_def.v"
@@ -187,7 +189,9 @@ reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state, bus_state_neg;
 reg		[log2(`DATA_WIDTH-1)-1:0] bit_position, next_bit_position; 
 reg		req_interrupt, next_req_interrupt;
 reg		out_reg_pos, next_out_reg_pos, out_reg_neg;
+`ifdef POWER_GATING
 reg		next_clr_busy;
+`endif
 
 // tx registers
 reg		[`ADDR_WIDTH-1:0] ADDR, next_addr;
@@ -495,7 +499,9 @@ begin
 		bit_position <= `ADDR_WIDTH - 1'b1;
 		req_interrupt <= 0;
 		out_reg_pos <= 0;
+	`ifdef POWER_GATING
 		CLR_BUSY <= 0;
+	`endif
 		// Transmitter registers
 		ADDR <= 0;
 		DATA <= 0;
@@ -532,7 +538,9 @@ begin
 		end
 		req_interrupt <= next_req_interrupt;
 		out_reg_pos <= next_out_reg_pos;
+	`ifdef POWER_GATING
 		CLR_BUSY <= next_clr_busy;
+	`endif
 		// Transmitter registers
 		ADDR <= next_addr;
 		DATA <= next_data;
@@ -561,7 +569,9 @@ begin
 	next_bit_position = bit_position;
 	next_req_interrupt = req_interrupt;
 	next_out_reg_pos = out_reg_pos;
+`ifdef POWER_GATING
 	next_clr_busy = CLR_BUSY;
+`endif
 
 	// Transmitter registers
 	next_addr = ADDR;
@@ -618,7 +628,9 @@ begin
 
 		BUS_PRIO:
 		begin
+		`ifdef POWER_GATING
 			next_clr_busy = 0;
+		`endif
 			next_mode = mode_temp;
 			next_bus_state = BUS_ADDR;
 			// no matter this node wins the arbitration or not, must clear
@@ -818,6 +830,7 @@ begin
 							case (ADDR[`FUNC_WIDTH-1:0])
 								`CHANNEL_POWER:
 								begin
+								`ifdef POWER_GATING
 									case (DATA[`DATA_WIDTH-1:`DATA_WIDTH-`BROADCAST_CMD_WIDTH ])
 										`CMD_CHANNEL_POWER_ALL_SLEEP:
 										begin
@@ -836,6 +849,7 @@ begin
 												next_shutdown = 1;
 										end
 									endcase
+								`endif
 								end
 							endcase
 						end
@@ -917,6 +931,7 @@ begin
 										endcase
 									end
 
+									`ifdef POWER_GATING
 									`CHANNEL_POWER:
 									begin
 										// PWR Command
@@ -939,6 +954,7 @@ begin
 											end
 										endcase
 									end
+									`endif
 
 									// shoud only be active at master
 									`CHANNEL_CTRL:
@@ -985,7 +1001,9 @@ begin
 
 		BUS_BACK_TO_IDLE:
 		begin
+		`ifdef POWER_GATING
 			next_clr_busy = 1;
+		`endif
 			next_bus_state = BUS_IDLE;
 			next_req_interrupt = 0;
 			next_mode = MODE_RX;

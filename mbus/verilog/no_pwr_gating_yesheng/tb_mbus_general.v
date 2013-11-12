@@ -75,7 +75,7 @@ module tb_mbus();
    
    	// connection between nodes
    	wire 		  				w_n0n1, w_n1n2, w_n2n3, w_n3c0, w_c0n0;
-   	wire 		  				w_n0_clk_out, w_n1_clk_out, w_n2_clk_out, w_n3_clk_out, w_c0_clk_out;
+   	wire 		  				w_n0_clk_out, w_n1_clk_out, w_n2_clk_out, w_n3_clk_out, SCLK;
 
 	// testbench variables
    	reg [31:0] 		  			rand_dat, rand_dat2;
@@ -119,35 +119,35 @@ module tb_mbus();
 
 mbus_general_layer_wrapper n0
      (.CLK_EXT(clk), .MASTER_EN(1'b0), .ADDRESS(20'hbbbb0),
-	  .CLKIN(w_c0_clk_out), .CLKOUT(w_n0_clk_out), .RESETn(resetn), .DIN(w_c0n0), .DOUT(w_n0n1), 
+	  .CLKIN(SCLK), .CLKOUT(w_n0_clk_out), .RESETn(resetn), .DIN(w_c0n0), .DOUT(w_n0n1), 
       .TX_ADDR(n0_tx_addr), .TX_DATA(n0_tx_data), .TX_REQ(n0_tx_req), .TX_ACK(n0_tx_ack), .TX_PEND(n0_tx_pend), .TX_PRIORITY(n0_priority),
       .RX_ADDR(n0_rx_addr), .RX_DATA(n0_rx_data), .RX_REQ(n0_rx_req), .RX_ACK(n0_rx_ack), .RX_FAIL(n0_rx_fail), .RX_PEND(n0_rx_pend),
       .TX_SUCC(n0_tx_succ), .TX_FAIL(n0_tx_fail), .TX_RESP_ACK(n0_tx_resp_ack), .RX_BROADCAST(n0_rx_broadcast));
 
-mbus_layer_wrapper n1
+mbus_general_layer_wrapper n1
      (.CLK_EXT(clk), .MASTER_EN(1'b0), .ADDRESS(20'hbbbb1),
       .CLKIN(w_n0_clk_out), .CLKOUT(w_n1_clk_out), .RESETn(resetn), .DIN(w_n0n1), .DOUT(w_n1n2), 
       .TX_ADDR(n1_tx_addr), .TX_DATA(n1_tx_data), .TX_REQ(n1_tx_req), .TX_ACK(n1_tx_ack), .TX_PEND(n1_tx_pend), .TX_PRIORITY(n1_priority),
       .RX_ADDR(n1_rx_addr), .RX_DATA(n1_rx_data), .RX_REQ(n1_rx_req), .RX_ACK(n1_rx_ack), .RX_FAIL(n1_rx_fail), .RX_PEND(n1_rx_pend),
       .TX_SUCC(n1_tx_succ), .TX_FAIL(n1_tx_fail), .TX_RESP_ACK(n1_tx_resp_ack), .RX_BROADCAST(n1_rx_broadcast));
 
-mbus_layer_wrapper n2
+mbus_general_layer_wrapper n2
      (.CLK_EXT(clk), .MASTER_EN(1'b0), .ADDRESS(20'hbbbb2),
       .CLKIN(w_n1_clk_out), .CLKOUT(w_n2_clk_out), .RESETn(resetn), .DIN(w_n1n2), .DOUT(w_n2n3), 
       .TX_ADDR(n2_tx_addr), .TX_DATA(n2_tx_data), .TX_REQ(n2_tx_req), .TX_ACK(n2_tx_ack), .TX_PEND(n2_tx_pend), .TX_PRIORITY(n2_priority),
       .RX_ADDR(n2_rx_addr), .RX_DATA(n2_rx_data), .RX_REQ(n2_rx_req), .RX_ACK(n2_rx_ack), .RX_FAIL(n2_rx_fail), .RX_PEND(n2_rx_pend),
       .TX_SUCC(n2_tx_succ), .TX_FAIL(n2_tx_fail), .TX_RESP_ACK(n2_tx_resp_ack), .RX_BROADCAST(n2_rx_broadcast));
 
-mbus_layer_wrapper n3
+mbus_general_layer_wrapper n3
      (.CLK_EXT(clk), .MASTER_EN(1'b0), .ADDRESS(20'hbbbb2),
       .CLKIN(w_n2_clk_out), .CLKOUT(w_n3_clk_out), .RESETn(resetn), .DIN(w_n2n3), .DOUT(w_n3c0), 
       .TX_ADDR(n3_tx_addr), .TX_DATA(n3_tx_data), .TX_REQ(n3_tx_req), .TX_ACK(n3_tx_ack), .TX_PEND(n3_tx_pend), .TX_PRIORITY(n3_priority),
       .RX_ADDR(n3_rx_addr), .RX_DATA(n3_rx_data), .RX_REQ(n3_rx_req), .RX_ACK(n3_rx_ack), .RX_FAIL(n3_rx_fail), .RX_PEND(n3_rx_pend),
       .TX_SUCC(n3_tx_succ), .TX_FAIL(n3_tx_fail), .TX_RESP_ACK(n3_tx_resp_ack), .RX_BROADCAST(n3_rx_broadcast));
 
-mbus_ctrl_layer_wrapper c0 
+mbus_general_layer_wrapper c0 
      (.CLK_EXT(clk), .MASTER_EN(1'b1), .ADDRESS(20'haaaa0),
-      .CLKIN(w_n3_clk_out), .CLKOUT(w_c0_clk_out), .RESETn(resetn), .DIN(w_n3c0), .DOUT(w_c0n0), 
+      .CLKIN(w_n3_clk_out), .CLKOUT(SCLK), .RESETn(resetn), .DIN(w_n3c0), .DOUT(w_c0n0), 
       .TX_ADDR(c0_tx_addr), .TX_DATA(c0_tx_data), .TX_REQ(c0_tx_req), .TX_ACK(c0_tx_ack), .TX_PEND(c0_tx_pend), .TX_PRIORITY(c0_priority),
       .RX_ADDR(c0_rx_addr), .RX_DATA(c0_rx_data), .RX_REQ(c0_rx_req), .RX_ACK(c0_rx_ack), .RX_FAIL(c0_rx_fail), .RX_PEND(c0_rx_pend),
       .TX_SUCC(c0_tx_succ), .TX_FAIL(c0_tx_fail), .TX_RESP_ACK(c0_tx_resp_ack),  .RX_BROADCAST(c0_rx_broadcast));

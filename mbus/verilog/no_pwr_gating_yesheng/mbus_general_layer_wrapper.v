@@ -1,7 +1,7 @@
 
 `include "include/mbus_def.v"
 
-module mbus_general_wrapper(
+module mbus_general_layer_wrapper(
 	input 	CLK_EXT,
 	input	MASTER_EN,
 	input	[19:0] ADDRESS,

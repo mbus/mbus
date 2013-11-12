@@ -17,13 +17,13 @@ INTFLAGS = -I +memcbk
 #####
 
 #TESTBENCH = tb_mbus.v
-TESTBENCH = tb_bus_general.v
+TESTBENCH = tb_mbus_general.v
 SIMFILES = 	mbus_addr_rf.v \
 		mbus_swapper.v \
 		mbus_wire_ctrl.v \
 		mbus_ctrl.v \
 		mbus_node_master_en.v \
-		mbus_general_wrapper.v \
+		mbus_general_layer_wrapper.v \
 		#mbus_node.v \
 		#mbus_ctrl_wrapper.v \
 		#mbus_layer_wrapper.v \

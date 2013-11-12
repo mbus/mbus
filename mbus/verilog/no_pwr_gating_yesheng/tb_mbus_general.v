@@ -139,7 +139,7 @@ mbus_general_layer_wrapper n2
       .TX_SUCC(n2_tx_succ), .TX_FAIL(n2_tx_fail), .TX_RESP_ACK(n2_tx_resp_ack), .RX_BROADCAST(n2_rx_broadcast));
 
 mbus_general_layer_wrapper n3
-     (.CLK_EXT(clk), .MASTER_EN(1'b0), .ADDRESS(20'hbbbb2),
+     (.CLK_EXT(clk), .MASTER_EN(1'b0), .ADDRESS(20'hbbbb2),	// n2 and n3 have the same long address
       .CLKIN(w_n2_clk_out), .CLKOUT(w_n3_clk_out), .RESETn(resetn), .DIN(w_n2n3), .DOUT(w_n3c0), 
       .TX_ADDR(n3_tx_addr), .TX_DATA(n3_tx_data), .TX_REQ(n3_tx_req), .TX_ACK(n3_tx_ack), .TX_PEND(n3_tx_pend), .TX_PRIORITY(n3_priority),
       .RX_ADDR(n3_rx_addr), .RX_DATA(n3_rx_data), .RX_REQ(n3_rx_req), .RX_ACK(n3_rx_ack), .RX_FAIL(n3_rx_fail), .RX_PEND(n3_rx_pend),

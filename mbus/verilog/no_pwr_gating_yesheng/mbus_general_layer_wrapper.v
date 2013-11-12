@@ -25,7 +25,7 @@ module mbus_general_layer_wrapper(
 	output 	RX_PEND, 
 	output 	TX_FAIL, 
 	output 	TX_SUCC, 
-	input 	TX_RESP_ACK,
+	input 	TX_RESP_ACK
 
 	`ifdef POWER_GATING
 	// power gated signals from sleep controller
@@ -42,9 +42,8 @@ module mbus_general_layer_wrapper(
 	// wake up processor
 	output	reg SLEEP_REQUEST_TO_SLEEP_CTRL,
 	`endif
-
-	input 	[`WATCH_DOG_WIDTH-1:0] THRESHOLD
 );
+parameter THRESHOLD = 20'h05fff;
 
 wire	CLK_CTRL_TO_NODE;
 wire	DOUT_CTRL_TO_NODE;

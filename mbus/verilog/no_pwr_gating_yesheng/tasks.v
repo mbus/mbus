@@ -14,6 +14,7 @@ begin
 	@ (posedge c0_rx_req);
 	@ (posedge c0_rx_req);
 
+/*
     #100000;
     $fdisplay(handle, "\nTASK2, Master node enumerate with address 4'h2");
     state = TASK2;
@@ -40,7 +41,6 @@ begin
     $fdisplay(handle, "Result: N0 RX Success");
     state = TASK6;
 	@ (posedge n1_tx_succ|n1_tx_fail);
-/*
     #100000;
     $fdisplay(handle, "\nTASK7, N1 to N2 using long address");
     $fdisplay(handle, "Result: N1 TX Success");

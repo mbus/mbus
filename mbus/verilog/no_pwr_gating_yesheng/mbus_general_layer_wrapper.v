@@ -64,7 +64,7 @@ wire [3:0] rf_addr_out_to_node;
 wire [3:0] assigned_addr_in = (MASTER_EN==1'b1)? 4'h1 : rf_addr_out_to_node;
 
 wire rf_addr_valid;
-wire [3:0] assigned_addr_valid = (MASTER_EN==1'b1)? 1'b1 : rf_addr_valid;
+wire assigned_addr_valid = (MASTER_EN==1'b1)? 1'b1 : rf_addr_valid;
 
 wire assigned_addr_write;
 wire rf_addr_write = (MASTER_EN==1'b1)? 1'b0 : assigned_addr_write;

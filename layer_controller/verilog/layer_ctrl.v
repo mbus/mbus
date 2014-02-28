@@ -61,7 +61,7 @@
  * Change memory interface, MEM_ACK_IN is no longer asynchronously reset MEM_REQ_OUT
  * 5/6 '13
  * first added
- * */
+  * */
 `include "include/mbus_def.v"
 
 module layer_ctrl(

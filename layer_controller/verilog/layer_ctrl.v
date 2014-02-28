@@ -228,7 +228,7 @@ wire	[`SHORT_ADDR_WIDTH-1:0] rf_relay_addr = rx_dat_buffer[LC_RF_DATA_WIDTH-LC_R
 */
 wire	[LC_RF_ADDR_WIDTH-1:0] rf_dma_length = rx_dat_buffer[23:16];
 wire	[log2(LC_RF_DEPTH-1)-1:0] rf_idx_temp = rx_dat_buffer[(24+log2(LC_RF_DEPTH-1)-1):24];
-wire	[`SHORT_ADDR_WIDTH-1:0] rf_relay_addr = rx_dat_buffer[15:15-`SHORT_ADDR_WIDTH];
+wire	[`SHORT_ADDR_WIDTH-1:0] rf_relay_addr = rx_dat_buffer[15:15-`SHORT_ADDR_WIDTH+1];
 reg		[log2(LC_RF_DEPTH-1)-1:0] rf_idx, next_rf_idx;
 
 // Mem interface

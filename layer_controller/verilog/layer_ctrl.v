@@ -219,7 +219,7 @@ generate
 	end
 endgenerate
 reg		[LC_RF_DEPTH-1:0] next_rf_load;
-wire	[LC_RF_DEPTH-1:0] rf_load_temp = (1'b1<<(rx_dat_buffer[`DATA_WIDTH-1:`DATA_WIDTH-LC_RF_ADDR_WIDTH-1]));
+wire	[LC_RF_DEPTH-1:0] rf_load_temp = (1'b1<<(rx_dat_buffer[`DATA_WIDTH-1:`DATA_WIDTH-LC_RF_ADDR_WIDTH]));
 reg		[LC_RF_DATA_WIDTH-1:0] next_rf_dout;
 /*
 wire	[LC_RF_ADDR_WIDTH-1:0] rf_dma_length = rx_dat_buffer[LC_RF_DATA_WIDTH-1:LC_RF_DATA_WIDTH-LC_RF_ADDR_WIDTH];

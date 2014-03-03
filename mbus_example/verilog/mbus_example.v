@@ -552,7 +552,7 @@ module mbus_example
 	.INT_VECTOR		(timer_irq),
 	.CLR_INT		(timer_clr_irq),
 	.INT_FU_ID		({4'h1}),
-	.INT_CMD		({8'h05,8'h00,rf2lc_mbus_reply_address_timer,8'h00,32'h00000000})
+	.INT_CMD		({8'h02,8'h00,rf2lc_mbus_reply_address_timer,8'h00,32'h00000000})
 	);
 
    //******************************

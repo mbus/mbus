@@ -150,13 +150,9 @@ module mbus_example_test();
       #1000000;
       load_rf;
       #1000000;
-//      start_timer;
-      $display("");
-      $display("");
-      $display("");
-      $display("");
-      $display("");
-//      target_sleep_long;
+      start_timer;
+      #1000000;
+      target_sleep_long;
       #1000000;
       success;
    end

@@ -142,7 +142,7 @@ task start_timer;
       @(posedge RX_REQ);	// Wait for RX_REQ
       $display("* CTR: Interrupt Message received");
       //Check Payload
-      CheckValue( RX_DATA[31:0], {10'h0, 1'h0, 8'h0}, 32'h007FFFFF );
+      CheckValue( RX_DATA[31:0], {10'h0, 1'h0, 8'h1F}, 32'h007FFFFF );
       @(posedge MBUS_CLKIN);
       //Acknolwedge
       RX_ACK = 1'b1;
@@ -164,9 +164,9 @@ task target_sleep_long;
       $display("***********************************************");
       $display("*************Targeted Sleep (Long)*************");
       $display("***********************************************");
-      
-      $display("* Set every layer to sleep mode");
-      Send_MBus( 32'h01, 32'h40000EAD );
+
+      $display("* Set mbus_example layer to sleep mode");
+      Send_MBus( 32'h01, 32'h400DEAD0 );
    end
 endtask // target_sleep_long
 

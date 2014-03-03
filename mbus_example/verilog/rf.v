@@ -128,7 +128,7 @@ module rf
    //timer_irq READ ONLY
 
    //Register 3
-   always @(posedge address_in_iso[1] or negedge RESETn) begin
+   always @(posedge address_in_iso[3] or negedge RESETn) begin
       if (~RESETn) begin
 	 ablk_pg 	<= `SD 1'h1;
 	 ablk_resetn 	<= `SD 1'h0;

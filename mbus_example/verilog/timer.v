@@ -35,7 +35,7 @@ module timer
    output reg [7:0] TIMER_VAL;
    output reg 	    TIMER_IRQ;
 
-   reg [8:0] 	    next_TIMER_VAL;
+   reg [7:0] 	    next_TIMER_VAL;
    reg 		    next_TIMER_IRQ;
    
    always @* begin
@@ -67,7 +67,7 @@ module timer
       else if (TIMER_CLR_IRQ) begin
 	 next_TIMER_IRQ <= 1'b0;
       end
-      else if (~TIMER_VAL && next_TIMER_VAL) begin
+      else if ((next_TIMER_VAL == TIMER_SAT) && (next_TIMER_VAL != TIMER_VAL)) begin
 	 next_TIMER_IRQ <= 1'b1;
       end
    end

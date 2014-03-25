@@ -1,0 +1,1 @@
+`define CLK_HALF_PERIOD #2000 //~250KHz

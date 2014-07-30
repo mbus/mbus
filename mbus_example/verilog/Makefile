@@ -19,17 +19,16 @@ clean:
 
 mbus_example:
 	$(VV) $(VFLAGS)$(VCSFLAGS) -l $@.log \
-	+incdir+../../mbus/verilog/ \
 	./$@_test_def.v \
-	../../mbus/verilog/mbus_ctrl_wrapper.v \
-	../../mbus/verilog/mbus_ctrl.v \
-	../../mbus/verilog/mbus_wire_ctrl.v \
-	../../mbus/verilog/mbus_node.v \
-	../../mbus/verilog/mbus_swapper.v \
-	../../mbus/verilog/mbus_addr_rf.v \
-	../../mbus/verilog/mbus_int_ctrl.v \
-	../../mbus/verilog/mbus_regular_sleep_ctrl.v \
-	../../layer_controller/verilog/layer_ctrl.v \
+	./mbus_ctrl_wrapper.v \
+	./mbus_ctrl.v \
+	./mbus_wire_ctrl.v \
+	./mbus_node.v \
+	./mbus_swapper.v \
+	./mbus_addr_rf.v \
+	./mbus_int_ctrl.v \
+	./mbus_regular_sleep_ctrl.v \
+	./layer_ctrl.v \
 	./ablk.v \
 	./clkgen_def.v \
 	./clkgen.v \

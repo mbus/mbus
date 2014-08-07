@@ -31,6 +31,7 @@ SIMFILES = 	mbus_addr_rf.v \
 			mbus_swapper.v \
 			mbus_ext_int.v \
 			mbus_wire_ctrl.v \
+			mbus_master_wire_ctrl.v \
 			mbus_clk_sim.v \
 			mbus_regular_isolation.v \
 			mbus_regular_sleep_ctrl.v \
@@ -53,6 +54,7 @@ SYNFILES = 	mbus_addr_rf.v \
 			mbus_swapper.v \
 			mbus_ext_int.v \
 			mbus_wire_ctrl.v \
+			mbus_master_wire_ctrl.v \
 			mbus_clk_sim.v \
 			mbus_regular_isolation.v \
 			mbus_regular_sleep_ctrl.v \

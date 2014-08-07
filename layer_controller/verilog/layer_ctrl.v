@@ -50,9 +50,13 @@
  * However, user should be aware of the memory/RF depth at any time.
  * 
  *
- * Last modified date: 05/06 '13
+ * Last modified date: 08/07 '14
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  * Update log:
+ * 8/7 '14
+ * Fix priority of TX_FAIL. If TX_FAIL, fsm should go to IDLE state.
+ * Add INT_VECTOR double latch
+ * Clean up the interface
  * 6/9 '13
  * Fix non-24 bit RF
  * 5/22 '13
@@ -64,111 +68,75 @@
   * */
 `include "include/mbus_def.v"
 
-module layer_ctrl(
-	CLK,
-	RESETn,
+module layer_ctrl #(
+	parameter LC_RF_DATA_WIDTH = 24,
+	parameter LC_RF_ADDR_WIDTH = 8,		// don't change this value
+	parameter LC_RF_DEPTH = 128,		// 1 ~ 2^8
+
+	parameter LC_MEM_ADDR_WIDTH = 32,	// should ALWAYS less than DATA_WIDTH
+	parameter LC_MEM_DATA_WIDTH = 32,	// should ALWAYS less than DATA_WIDTH
+	parameter LC_MEM_DEPTH = 65536,	// 1 ~ 2^30
+
+	parameter LC_INT_DEPTH = 8
+)
+(
+	input		CLK,
+	input		RESETn,
 
 	// Interface with MBus
-	TX_ADDR, 
-	TX_DATA, 
-	TX_PEND, 
-	TX_REQ, 
-	TX_ACK, 
-	TX_PRIORITY,
+	output reg	[`ADDR_WIDTH-1:0] TX_ADDR,
+	output reg	[`DATA_WIDTH-1:0] TX_DATA, 
+	output reg	TX_PEND,
+	output reg	TX_REQ,
+	input		TX_ACK, 
+	output reg	TX_PRIORITY,
 
-	RX_ADDR, 
-	RX_DATA, 
-	RX_PEND, 
-	RX_REQ, 
-	RX_ACK, 
-	RX_BROADCAST,
+	input		[`ADDR_WIDTH-1:0] RX_ADDR,
+	input		[`DATA_WIDTH-1:0] RX_DATA, 
+	input		RX_PEND,
+	input		RX_REQ,
+	output reg	RX_ACK, 
+	input		RX_BROADCAST,
 
-	RX_FAIL,
-	TX_FAIL, 
-	TX_SUCC, 
-	TX_RESP_ACK,
+	input		RX_FAIL,
+	input		TX_FAIL,
+	input		TX_SUCC, 
+	output reg	TX_RESP_ACK,
 
-	RELEASE_RST_FROM_MBUS,
+	input 		RELEASE_RST_FROM_MBUS,
 	// End of interface
 	
 	// Interface with Registers
-	REG_RD_DATA,
-	REG_WR_DATA,
-	REG_WR_EN,
+	input		[(LC_RF_DATA_WIDTH*LC_RF_DEPTH)-1:0] REG_RD_DATA,
+	output reg	[LC_RF_DATA_WIDTH-1:0] REG_WR_DATA,
+	output reg	[LC_RF_DEPTH-1:0] REG_WR_EN,
 	// End of interface
 	
 	// Interface with MEM
-	MEM_REQ_OUT,
-	MEM_WRITE,
-	MEM_ACK_IN,
-	MEM_WR_DATA,
-	MEM_RD_DATA,
-	MEM_ADDR,
+	output 		MEM_REQ_OUT,
+	output 		MEM_WRITE,
+	input		MEM_ACK_IN,
+	output reg	[LC_MEM_DATA_WIDTH-1:0] MEM_WR_DATA,
+	input		[LC_MEM_DATA_WIDTH-1:0] MEM_RD_DATA,
+	output reg	[LC_MEM_ADDR_WIDTH-3:0] MEM_ADDR,
 	// End of interface
 	
 	// Interrupt
-	INT_VECTOR,
-	CLR_INT,
-	INT_FU_ID,
-	INT_CMD
+	input		[LC_INT_DEPTH-1:0] INT_VECTOR,
+	output reg	[LC_INT_DEPTH-1:0] CLR_INT,
+	input		[`FUNC_WIDTH*LC_INT_DEPTH-1:0] INT_FU_ID,
+	input		[(`DATA_WIDTH<<1)*LC_INT_DEPTH-1:0] INT_CMD
 );
 
-	parameter LC_RF_DATA_WIDTH = 24;
-	parameter LC_RF_ADDR_WIDTH = 8;		// don't change this value
-	parameter LC_RF_DEPTH = 128;		// 1 ~ 2^8
 
-	parameter LC_MEM_ADDR_WIDTH = 32;	// should ALWAYS less than DATA_WIDTH
-	parameter LC_MEM_DATA_WIDTH = 32;	// should ALWAYS less than DATA_WIDTH
-	parameter LC_MEM_DEPTH = 65536;	// 1 ~ 2^30
+wire		[LC_INT_DEPTH-1:0] INT_VECTOR_clocked;
 
-	parameter LC_INT_DEPTH = 8;
-
-	input		CLK;
-	input		RESETn;
-
-	// Interface with MBus
-	output reg	[`ADDR_WIDTH-1:0] TX_ADDR;
-	output reg	[`DATA_WIDTH-1:0] TX_DATA; 
-	output reg	TX_PEND; 
-	output reg	TX_REQ;
-	input		TX_ACK; 
-	output reg	TX_PRIORITY;
-
-	input		[`ADDR_WIDTH-1:0] RX_ADDR;
-	input		[`DATA_WIDTH-1:0] RX_DATA; 
-	input		RX_PEND;
-	input		RX_REQ;
-	output reg	RX_ACK; 
-	input		RX_BROADCAST;
-
-	input		RX_FAIL;
-	input		TX_FAIL;
-	input		TX_SUCC; 
-	output reg	TX_RESP_ACK;
-
-	input 		RELEASE_RST_FROM_MBUS;
-	// End of interface
-	
-	// Interface with Registers
-	input		[(LC_RF_DATA_WIDTH*LC_RF_DEPTH)-1:0] REG_RD_DATA;
-	output reg	[LC_RF_DATA_WIDTH-1:0] REG_WR_DATA;
-	output reg	[LC_RF_DEPTH-1:0] REG_WR_EN;
-	// End of interface
-	
-	// Interface with MEM
-	output 		MEM_REQ_OUT;
-	output 		MEM_WRITE;
-	input		MEM_ACK_IN;
-	output reg	[LC_MEM_DATA_WIDTH-1:0] MEM_WR_DATA;
-	input		[LC_MEM_DATA_WIDTH-1:0] MEM_RD_DATA;
-	output reg	[LC_MEM_ADDR_WIDTH-3:0] MEM_ADDR;
-	// End of interface
-	
-	// Interrupt
-	input		[LC_INT_DEPTH-1:0] INT_VECTOR;
-	output reg	[LC_INT_DEPTH-1:0] CLR_INT;
-	input		[`FUNC_WIDTH*LC_INT_DEPTH-1:0] INT_FU_ID;
-	input		[(`DATA_WIDTH<<1)*LC_INT_DEPTH-1:0] INT_CMD;
+input_stabilizer_layer_ctrl input_stabilizer_layer_ctrl0[LC_INT_DEPTH-1:0]  (
+		.clk(CLK),
+		.reset(~RESETn),
+		.a(INT_VECTOR),
+		.a_clocked(INT_VECTOR_clocked)
+);
 
 `include "include/mbus_func.v"
 
@@ -176,16 +144,16 @@ wire	RESETn_local = (RESETn & (~RELEASE_RST_FROM_MBUS));
 
 parameter MAX_DMA_LENGTH = 24; // cannot greater than `DATA_WIDTH - `SHORT_ADDR_WIDTH
 
-parameter LC_STATE_IDLE 		= 4'd0;
-parameter LC_STATE_RF_READ 		= 4'd1;
-parameter LC_STATE_RF_WRITE 	= 4'd2;
-parameter LC_STATE_MEM_READ 	= 4'd3;
-parameter LC_STATE_MEM_WRITE 	= 4'd4;
-parameter LC_STATE_BUS_TX		= 4'd5;
-parameter LC_STATE_WAIT_CPL		= 4'd6;
-parameter LC_STATE_ERROR		= 4'd7;
-parameter LC_STATE_INT_ARBI		= 4'd8;
-parameter LC_STATE_INT_HANDLED	= 4'd9;
+localparam LC_STATE_IDLE		= 4'd0;
+localparam LC_STATE_RF_READ 	= 4'd1;
+localparam LC_STATE_RF_WRITE 	= 4'd2;
+localparam LC_STATE_MEM_READ 	= 4'd3;
+localparam LC_STATE_MEM_WRITE 	= 4'd4;
+localparam LC_STATE_BUS_TX		= 4'd5;
+localparam LC_STATE_WAIT_CPL	= 4'd6;
+localparam LC_STATE_ERROR		= 4'd7;
+localparam LC_STATE_INT_ARBI	= 4'd8;
+localparam LC_STATE_INT_HANDLED	= 4'd9;
 
 // Double latching registers
 reg		TX_ACK_DL1, TX_ACK_DL2;
@@ -221,11 +189,6 @@ endgenerate
 reg		[LC_RF_DEPTH-1:0] next_rf_load;
 wire	[LC_RF_DEPTH-1:0] rf_load_temp = (1'b1<<(rx_dat_buffer[`DATA_WIDTH-1:`DATA_WIDTH-LC_RF_ADDR_WIDTH]));
 reg		[LC_RF_DATA_WIDTH-1:0] next_rf_dout;
-/*
-wire	[LC_RF_ADDR_WIDTH-1:0] rf_dma_length = rx_dat_buffer[LC_RF_DATA_WIDTH-1:LC_RF_DATA_WIDTH-LC_RF_ADDR_WIDTH];
-wire	[log2(LC_RF_DEPTH-1)-1:0] rf_idx_temp = rx_dat_buffer[(LC_RF_DATA_WIDTH+log2(LC_RF_DEPTH-1)-1):LC_RF_DATA_WIDTH];
-wire	[`SHORT_ADDR_WIDTH-1:0] rf_relay_addr = rx_dat_buffer[LC_RF_DATA_WIDTH-LC_RF_ADDR_WIDTH-1:LC_RF_DATA_WIDTH-LC_RF_ADDR_WIDTH-`SHORT_ADDR_WIDTH];
-*/
 wire	[LC_RF_ADDR_WIDTH-1:0] rf_dma_length = rx_dat_buffer[23:16];
 wire	[log2(LC_RF_DEPTH-1)-1:0] rf_idx_temp = rx_dat_buffer[(24+log2(LC_RF_DEPTH-1)-1):24];
 wire	[`SHORT_ADDR_WIDTH-1:0] rf_relay_addr = rx_dat_buffer[15:15-`SHORT_ADDR_WIDTH+1];
@@ -377,7 +340,7 @@ begin
 	if ((~(RX_REQ_DL2 | RX_FAIL)) & RX_ACK)
 		next_rx_ack = 0;
 	
-	if (CLR_INT & (~INT_VECTOR))
+	if (CLR_INT & (~INT_VECTOR_clocked))
 		next_clr_int = 0;
 
 	if (TX_ACK_DL2 & TX_REQ)
@@ -401,9 +364,9 @@ begin
 		begin
 			next_mem_sub_state = 0;
 			next_layer_interrupted = 0;
-			if ((INT_VECTOR>0) && (CLR_INT==0))
+			if ((INT_VECTOR_clocked>0) && (CLR_INT==0))
 			begin
-				next_int_vector_copied = INT_VECTOR;
+				next_int_vector_copied = INT_VECTOR_clocked;
 				next_lc_state = LC_STATE_INT_ARBI;
 				next_int_idx = 0;
 			end
@@ -432,7 +395,6 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					//if ((~rx_pend_reg)&&((rx_dat_buffer[`DATA_WIDTH-1:LC_RF_DATA_WIDTH]) < LC_RF_DEPTH))	// prevent aliasing
 					if ((~rx_pend_reg)&&((rx_dat_buffer[`DATA_WIDTH-1:24]) < LC_RF_DEPTH))	// prevent aliasing
 					begin 
 						next_dma_counter = {{(MAX_DMA_LENGTH-LC_RF_ADDR_WIDTH){1'b0}}, rf_dma_length};
@@ -481,7 +443,6 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					//if ((rx_dat_buffer[`DATA_WIDTH-1:LC_RF_DATA_WIDTH]) < LC_RF_DEPTH)
 					if ((rx_dat_buffer[`DATA_WIDTH-1:24]) < LC_RF_DEPTH)
 					begin
 						next_rf_dout = rx_dat_buffer[LC_RF_DATA_WIDTH-1:0];
@@ -676,15 +637,15 @@ begin
 
 		LC_STATE_BUS_TX:
 		begin // cannot modify mem_sub_state here
-			if (TX_ACK_DL2)
+			if (TX_FAIL)
+				next_lc_state = LC_STATE_IDLE;
+			else if (TX_ACK_DL2)
 			begin
 				if (TX_PEND)
 					next_lc_state = lc_return_state;
 				else
 					next_lc_state = LC_STATE_WAIT_CPL;
 			end
-			else if (TX_FAIL)
-				next_lc_state = LC_STATE_WAIT_CPL;
 		end
 
 		LC_STATE_WAIT_CPL:
@@ -753,3 +714,22 @@ end
 
 
 endmodule
+module input_stabilizer_layer_ctrl (
+	input clk,
+	input reset,
+	input a,
+	output a_clocked
+);
+
+	reg [1:0] a_reg;
+
+   // synopsys async_set_reset "reset"
+   always @ (posedge reset or posedge clk)
+     if (reset)
+       a_reg <= #1 2'b00; // `SD not used due to cluster_clock hold constraint
+     else
+       a_reg <= #1 {a,a_reg[1]};
+
+	 assign a_clocked = a_reg[0];
+
+endmodule // input_stabilizer

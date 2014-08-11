@@ -88,11 +88,17 @@ mbus_node#(.ADDRESS(ADDRESS)) n0
 	  .ASSIGNED_ADDR_IN(rf_addr_out_to_node), .ASSIGNED_ADDR_OUT(rf_addr_in_from_node), 
 	  .ASSIGNED_ADDR_VALID(rf_addr_valid), .ASSIGNED_ADDR_WRITE(rf_addr_write), .ASSIGNED_ADDR_INVALIDn(rf_addr_rstn));
 
-// always on block
+
+//mbus_regular_sleep_ctrl sc0
+//	(.CLKIN(CLKIN), .RESETn(RESETn), .SLEEP_REQ(mbc_sleep_req), 
+//	 .POWER_ON(mbc_sleep), .RELEASE_CLK(), .RELEASE_ISO(mbc_isolate), .BC_PG_CLR_BUSY(sleep_ctrl_clr_busy),
+//	.RELEASE_RST(mbc_reset));
+
+//always on block
 mbus_regular_sleep_ctrl sc0
 	(.MBUS_CLKIN(CLKIN), .RESETn(RESETn), .SLEEP_REQ(mbc_sleep_req), 
 	 .MBC_SLEEP(mbc_sleep), .MBC_SLEEP_B(), .MBC_ISOLATE(mbc_isolate), .MBC_ISOLATE_B(),
-	 .MBC_CLK_EN(), .MBC_CLK_EN_B(), .MBC_RESET(mbc_reset), .MBC_RESET_B());
+	 .MBC_CLK_EN(), .MBC_CLK_EN_B(), .MBC_RESET(mbc_reset), .MBC_RESET_B(), .INT_CLR_BUSY(sleep_ctrl_clr_busy));
 	//.POWER_ON(mbc_sleep), .RELEASE_CLK(), .RELEASE_RST(mbc_reset), .RELEASE_ISO(mbc_isolate), .BC_PG_CLR_BUSY(sleep_ctrl_clr_busy));
 
 // always on wire controller
@@ -119,7 +125,8 @@ mbus_int_ctrl mic0(
 	.CLKIN					(CLKIN),
 	.RESETn					(RESETn),
 	.MBC_ISOLATE			(mbc_isolate),
-	.SC_CLR_BUSY			(mbc_sleep),
+//	.SC_CLR_BUSY			(mbc_sleep),
+	.SC_CLR_BUSY			(sleep_ctrl_clr_busy),
 	.MBUS_CLR_BUSY			(clr_busy),
 
 	.REQ_INT				(REQ_INT), 

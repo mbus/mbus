@@ -104,7 +104,8 @@ wire	[LC_RF_DATA_WIDTH*RF_DEPTH-1:0] rf_dout_f_rf;
 // ROM
 wire	[LC_RF_DATA_WIDTH*ROM_DEPTH-1:0] sensor_dat_f_rom;
 wire	[`FUNC_WIDTH*LC_INT_DEPTH-1:0] int_func_id_f_rom;
-wire	[(`DATA_WIDTH<<1)*LC_INT_DEPTH-1:0] int_payload_f_rom;
+wire	[(`DATA_WIDTH*3)*LC_INT_DEPTH-1:0] int_payload_f_rom;
+wire	[2*LC_INT_DEPTH-1:0] int_length_f_rom; 
 
 // Mbus
 wire	[`ADDR_WIDTH-1:0]	rx_addr;
@@ -185,7 +186,8 @@ layer_ctrl
 	.INT_VECTOR(INT_VECTOR),
 	.CLR_INT(clr_int),
 	.INT_FU_ID(int_func_id_f_rom),
-	.INT_CMD(int_payload_f_rom)
+	.INT_CMD(int_payload_f_rom),
+	.INT_CMD_LEN(int_length_f_rom),
 );
 
 mbus_layer_wrapper #(.ADDRESS(ADDRESS)) mbus_node0
@@ -292,7 +294,8 @@ sensor_rom #(.ROM_DEPTH(ROM_DEPTH)) r0(
 // always on interrupt command roms
 int_action_rom #(.LC_INT_DEPTH(LC_INT_DEPTH), .LC_RF_DEPTH(LC_RF_DEPTH), .LC_MEM_DEPTH(LC_MEM_DEPTH)) ir0(
 	.int_func_id(int_func_id_f_rom),
-	.int_payload(int_payload_f_rom)
+	.int_payload(int_payload_f_rom),
+	.int_cmd_len(int_length_f_rom)
 );
 
 

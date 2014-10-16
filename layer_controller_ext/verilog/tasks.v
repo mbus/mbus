@@ -60,7 +60,6 @@ begin
 	word_counter = 3;
     state = TASK7;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-	word_counter = 0;
 
     #100000;
     $fdisplay(handle, "\nTASK7, write to Layer 1 RF address 67 (ROM, not writable)");
@@ -70,15 +69,17 @@ begin
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
     #100000;
-    $fdisplay(handle, "\nTASK8, read from Layer 1 RF address 0");
+    $fdisplay(handle, "\nTASK8, read from Layer 1 RF address 0, and write to Layer 2 RF address 0xa");
 	rf_addr = 0;
 	dest_short_addr = 4'h3;
-	relay_addr = 8'h03;
+	relay_addr = 8'h40;
+	relay_loc = 8'ha;
+	word_counter = 0;
     state = TASK8;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge c0_rx_req|c0_rx_fail);
+	@ (posedge n1_tx_succ|n1_tx_fail);
    	$fdisplay(handle, "RF Addr: 8'h%h,\tData: 24'h%h", rf_addr, (c0_rx_data & 32'h00ff_ffff));
-
+/*
     #100000;
     $fdisplay(handle, "\nTASK8, read from Laer 1 RF address 1-4");
 	rf_addr = 1;
@@ -402,7 +403,7 @@ begin
 	n1_int_vector <= 8'h5;
 	@ (posedge layer1.tx_succ|layer1.tx_fail);
 	@ (posedge layer1.tx_succ|layer1.tx_fail);
-
+*/
     #300000;
     $display("*************************************");
     $display("************TASK0 Complete***********");

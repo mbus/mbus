@@ -108,15 +108,16 @@ always @ (posedge clk or negedge resetn) begin
 			end
 
 			// C0 reads data from layer X's RF and relay to layer Y with
-			// channel Z
+			// channel Z and location W
 			// layer X: dest_short_addr
 			// layer Y, channel Z: delay_addr (4'hY, 4'hZ)
+			// layer W, destination location
 			// addr: 	rf_addr
 			// length: 	word_counter
 			TASK8:
 			begin
 				c0_tx_addr <= {24'h0, dest_short_addr, `LC_CMD_RF_READ};
-				c0_tx_data <= (rf_addr<<24 | word_counter<<16 | relay_addr<<8 | 8'h0);
+				c0_tx_data <= (rf_addr<<24 | word_counter<<16 | relay_addr<<8 | relay_loc);
 				c0_tx_pend <= 0;
 				c0_tx_req <= 1;
 				c0_priority <= 0;

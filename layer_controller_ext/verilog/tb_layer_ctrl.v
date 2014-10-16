@@ -6,7 +6,7 @@
 
 module tb_layer_ctrl();
 
-	parameter LC_INT_DEPTH=8;
+	parameter LC_INT_DEPTH=16;
 	parameter LC_MEM_DEPTH=65536;
 	parameter LC_RF_DEPTH=128;
 
@@ -59,42 +59,43 @@ module tb_layer_ctrl();
 	reg [29:0]					mem_addr;
 	reg							mem_ptr_set;
 	reg	[`SHORT_ADDR_WIDTH-1:0]	relay_addr;
+	reg [7:0]					relay_loc;
 	reg	[31:0]					addr_increment;
 	reg	[3:0]					dest_short_addr;
 	reg [23:0]					rf_data;
 	reg [31:0]					mem_data;
    	integer 		  			handle;
 
-   parameter 		  TASK0=0;
-   parameter 		  TASK1=1;
-   parameter 		  TASK2=2;
-   parameter 		  TASK3=3;
-   parameter 		  TASK4=4;
-   parameter 		  TASK5=5;
-   parameter 		  TASK6=6;
-   parameter 		  TASK7=7;
-   parameter 		  TASK8=8;
-   parameter 		  TASK9=9;
-   parameter 		  TASK10=10;
-   parameter 		  TASK11=11;
-   parameter 		  TASK12=12;
-   parameter 		  TASK13=13;
-   parameter 		  TASK14=14;
-   parameter 		  TASK15=15;
-   parameter 		  TASK16=16;
-   parameter 		  TASK17=17;
-   parameter 		  TASK18=18;
-   parameter 		  TASK19=19;
-   parameter 		  TASK20=20;
-   parameter 		  TASK21=21;
-   parameter 		  TASK22=22;
-   parameter 		  TASK23=23;
-   parameter 		  TASK24=24;
-   parameter 		  TASK25=25;
-   parameter 		  TASK26=26;
-   parameter 		  TASK27=27;
+   localparam  TASK0=0;
+   localparam  TASK1=1;
+   localparam  TASK2=2;
+   localparam  TASK3=3;
+   localparam  TASK4=4;
+   localparam  TASK5=5;
+   localparam  TASK6=6;
+   localparam  TASK7=7;
+   localparam  TASK8=8;
+   localparam  TASK9=9;
+   localparam  TASK10=10;
+   localparam  TASK11=11;
+   localparam  TASK12=12;
+   localparam  TASK13=13;
+   localparam  TASK14=14;
+   localparam  TASK15=15;
+   localparam  TASK16=16;
+   localparam  TASK17=17;
+   localparam  TASK18=18;
+   localparam  TASK19=19;
+   localparam  TASK20=20;
+   localparam  TASK21=21;
+   localparam  TASK22=22;
+   localparam  TASK23=23;
+   localparam  TASK24=24;
+   localparam  TASK25=25;
+   localparam  TASK26=26;
+   localparam  TASK27=27;
    
-   parameter 		  TX_WAIT=31;
+   localparam TX_WAIT=31;
 
    reg	c0_auto_rx_ack;
 
@@ -144,6 +145,7 @@ begin
 	mem_addr = 0;
 	mem_ptr_set = 0;
 	relay_addr = 0;
+	relay_loc = 0;
 	addr_increment = 0;
 	rf_data = 0;
 	mem_data = 0;
@@ -212,11 +214,7 @@ end // initial begin
 always #1250 clk = ~clk;
 
    
-`ifdef TASK0
-	`include "task0.v"
-`elsif TASK1
-	`include "task0.v"
-`endif
+`include "task0.v"
 
 always @ (posedge layer0.lc_pwr_on)
 	$fdisplay(handle, "N0 LC Sleep");

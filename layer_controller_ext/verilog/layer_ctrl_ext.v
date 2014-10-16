@@ -549,9 +549,7 @@ begin
 						next_mem_sub_state = MEM_WAIT_REPYADDR_LENGTH; 
 					end
 					else if (rx_pend_reg & (~layer_interrupted))	// Invalid address
-					begin
 						next_lc_state = LC_STATE_ERROR;
-					end
 					else 					// Invalid message
 						next_lc_state = LC_STATE_CLR_INT;
 				end

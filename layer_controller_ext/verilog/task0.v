@@ -137,40 +137,12 @@ always @ (posedge clk or negedge resetn) begin
 				end
 			end
 
-			// MEM Read lagacy command (2 words command, should not use this)
-			// Parameters:	dest_short_addr (4 bits)
-			//				mem_addr (30 bits)
-			//				relay_addr (8 bits)
-			//				mem_read_length (24 bits)
-			TB_MEM_READ_OLD:
-			begin
-				if ((~c0_tx_ack) & (~c0_tx_req))
-				begin
-					c0_priority <= 0;
-					c0_tx_addr <= {24'h0, dest_short_addr, `LC_CMD_MEM_READ};
-					c0_tx_req <= 1;
-					if (~mem_access_state)
-					begin
-						c0_tx_data <= ((mem_addr<<2) | 2'b0);
-						c0_tx_pend <= 1;
-						mem_access_state <= 1;
-					end
-					else
-					begin
-						c0_tx_data <= ((relay_addr<<24) | mem_read_length);
-						c0_tx_pend <= 0;
-						state <= TX_WAIT;
-						mem_access_state <= 0;
-					end
-				end
-			end
-
 			// MEM Read command (3 words command)
 			// Parameters:	dest_short_addr (4 bits)
+			//				mem_read_length (20 bits)
 			//				mem_addr (30 bits)
 			//				relay_addr (8 bits)
-			//				mem_read_length (24 bits)
-			//				mem_relay_loc (32 bits)
+			//				mem_relay_loc (30 bits)
 			TB_MEM_READ:
 			begin
 				if ((~c0_tx_ack) & (~c0_tx_req))
@@ -181,21 +153,21 @@ always @ (posedge clk or negedge resetn) begin
 					case (mem_access_state)
 						0:
 						begin
-							c0_tx_data <= ((mem_addr<<2) | 2'b0);
+							c0_tx_data <= ((relay_addr<<24) | (4'b0<<20) | mem_read_length);
 							c0_tx_pend <= 1;
 							mem_access_state <= 1;
 						end
 
 						1:
 						begin
-							c0_tx_data <= ((relay_addr<<24) | mem_read_length);
+							c0_tx_data <= ((mem_addr<<2) | 2'b0);
 							c0_tx_pend <= 1;
 							mem_access_state <= 2;
 						end
 
 						2:
 						begin
-							c0_tx_data <= mem_relay_loc;
+							c0_tx_data <= ((mem_relay_loc<<2) | 2'b0);
 							c0_tx_pend <= 0;
 							mem_access_state <= 0;
 							state <= TX_WAIT;

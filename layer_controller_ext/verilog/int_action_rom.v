@@ -48,13 +48,10 @@ endgenerate
 
 /* Interrupt Test case C : MEM READ
  *
- * 1: Read 10 location, write to another layer (MEM), length = 2 (Lagacy compatible)
- * 2: Read 1 location, write to another layer (MEM), length = 3
- * 3: Read 10 location, write to another layer (MEM), length = 3
- * 4: Read 1 location, out of range, write to another layer (MEM), length = 2 (Lagacy compatible)
- * 5: Read 10 location, out of range, write to another layer (MEM), length = 2 (Lagacy compatible)
- * 6: Read 1 location, out of range, write to another layer (MEM), length = 3
- * 7: Read 10 location, out of range, write to another layer (MEM), length = 3
+ * 1: Read 1 location, write to another layer (MEM), length = 3
+ * 2: Read 10 location, write to another layer (MEM), length = 3
+ * 3: Read 1 location, out of range, write to another layer (MEM), length = 3
+ * 4: Read 10 location, out of range, write to another layer (MEM), length = 3
  *
  */
 
@@ -75,8 +72,8 @@ reg		[23:0] rf_write_data [0:RF_WRITE_INT_DEPTH-1];
 
 reg		[29:0] mem_read_start_addr [0:MEM_READ_INT_DEPTH-1];
 reg		[7:0]  mem_read_reply_addr [0:MEM_READ_INT_DEPTH-1];
-reg		[23:0] mem_read_length [0:MEM_READ_INT_DEPTH-1];
-reg		[31:0] mem_read_reply_locs [0:MEM_READ_INT_DEPTH-1];
+reg		[19:0] mem_read_length [0:MEM_READ_INT_DEPTH-1];
+reg		[29:0] mem_read_reply_locs [0:MEM_READ_INT_DEPTH-1];
 
 integer i;
 initial
@@ -170,71 +167,47 @@ begin
 	int_payload_array[7] <= ((rf_write_to[6]<<24 | rf_write_data[6])<<`DATA_WIDTH*2) | ((rf_write_to[7]<<24 | rf_write_data[7])<<`DATA_WIDTH) | (rf_write_to[8]<<24 | rf_write_data[8]);
 
 
-	// Test Case C1, 1: Read 10 location, write to another layer (MEM), length = 2 (Lagacy compatible)
-	mem_read_start_addr[0] <= 30'h0;			// Read from address 0
-	mem_read_reply_addr[0] <= (4'd2<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2, SRAM write
-	mem_read_length[0]	<= 24'd9;				// Read 10 word
-	int_cmd_len_array[8]		<= 2'b10;				// Lagecy compatible command
-	int_func_array[8] <= `LC_CMD_MEM_READ;
-	int_payload_array[8] <= ((mem_read_start_addr[0]<<2)<<`DATA_WIDTH*2) | (((mem_read_reply_addr[0]<<24) | mem_read_length[0])<<`DATA_WIDTH) | {(`DATA_WIDTH){1'b0}};
+	// Test Case C1, 1: Read 1 location, write to another layer (MEM), length = 3
+	mem_read_start_addr[0]	<= 30'h0;			// Read from address 0
+	mem_read_reply_addr[0]	<= (4'd2<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2, SRAM write
+	mem_read_length[0]		<= 20'd0;			// Read 1 word
+	mem_read_reply_locs[0]	<= 30'd1;			// Send to address 1
+	int_cmd_len_array[8]	<= 2'b11;
+	int_func_array[8]		<= `LC_CMD_MEM_READ;
+	int_payload_array[8]	<= ((((mem_read_reply_addr[0]<<24) | (4'b0<<20) | mem_read_length[0])<<`DATA_WIDTH*2) | ((mem_read_start_addr[0]<<2) | 2'b0)<<`DATA_WIDTH) | ((mem_read_reply_locs[0]<<2) | 2'b0);
 
-	// Test Case C2, 2: Read 1 location, write to another layer (MEM), length = 3
-	mem_read_start_addr[1] <= 30'h0;			// Read from address 0
-	mem_read_reply_addr[1] <= (4'd2<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2, SRAM write
-	mem_read_length[1]	<= 24'd0;				// Read 1 word
-	mem_read_reply_locs[1] <= (30'd1<<30|2'b0);	// Send to address 1
-	int_cmd_len_array[9]		<= 2'b11;				// Standard mem read command
-	int_func_array[9] <= `LC_CMD_MEM_READ;
-	int_payload_array[9] <= ((mem_read_start_addr[1]<<2)<<`DATA_WIDTH*2) | (((mem_read_reply_addr[1]<<24) | mem_read_length[1])<<`DATA_WIDTH) | mem_read_reply_locs[1];
+	// Test Case C2, 2: Read 10 location, write to another layer (MEM), length = 3
+	mem_read_start_addr[1]	<= 30'h1;			// Read from address 1
+	mem_read_reply_addr[2]	<= (4'd2<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2, SRAM write
+	mem_read_length[1]		<= 20'd2;			// Read 3 word
+	mem_read_reply_locs[1]	<= 30'd2;			// Send to address 2
+	int_cmd_len_array[9]	<= 2'b11;
+	int_func_array[9]		<= `LC_CMD_MEM_READ;
+	int_payload_array[9]	<= ((((mem_read_reply_addr[1]<<24) | (4'b0<<20) | mem_read_length[1])<<`DATA_WIDTH*2) | ((mem_read_start_addr[1]<<2) | 2'b0)<<`DATA_WIDTH) | ((mem_read_reply_locs[1]<<2) | 2'b0);
 
-	// Test Case C3, 3: Read 10 location, write to another layer (MEM), length = 3
-	mem_read_start_addr[2] <= 30'h1;			// Read from address 1
-	mem_read_reply_addr[2] <= (4'd2<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2, SRAM write
-	mem_read_length[2]	<= 24'd2;				// Read 3 word
-	mem_read_reply_locs[2] <= (30'd2<<30|2'b0);	// Send to address 2
-	int_cmd_len_array[10]		<= 2'b11;				// Standard mem read command
-	int_func_array[10] <= `LC_CMD_MEM_READ;
-	int_payload_array[10] <= ((mem_read_start_addr[2]<<2)<<`DATA_WIDTH*2) | (((mem_read_reply_addr[2]<<24) | mem_read_length[2])<<`DATA_WIDTH) | mem_read_reply_locs[2];
+	// Test Case C3, 3: Read 1 location, out of range, wrap around, write to another layer (MEM), length = 3
+	mem_read_start_addr[2]	<= 30'd66666;		// Read from a non-existing address
+	mem_read_reply_addr[2]	<= (4'd2<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2,  SRAM write
+	mem_read_length[2]		<= 20'd0;			// Read 1 word
+	mem_read_reply_locs[2]	<= 30'd3;			// Send to address 3
+	int_cmd_len_array[10]	<= 2'b11;
+	int_func_array[10]		<= `LC_CMD_MEM_READ;
+	int_payload_array[10]	<= ((((mem_read_reply_addr[2]<<24) | (4'b0<<20) | mem_read_length[2])<<`DATA_WIDTH*2) | ((mem_read_start_addr[2]<<2) | 2'b0)<<`DATA_WIDTH) | ((mem_read_reply_locs[2]<<2) | 2'b0);
 
-	// Test Case C4, 4: Read 1 location, out of range, write to another layer (MEM), length = 2 (Lagacy compatible)
-	mem_read_start_addr[3] <= 30'd66666;		// Read from a non-existing address
-	mem_read_reply_addr[3] <= (4'b0<<4 | `LC_CMD_MEM_WRITE); // Write to layer 0 (CPU), SRAM write
-	mem_read_length[3]	<= 24'd0;				// Read 1 word
-	int_cmd_len_array[11]		<= 2'b10;				// Legacy compatible command
-	int_func_array[11] <= `LC_CMD_MEM_READ;
-	int_payload_array[11] <= ((mem_read_start_addr[3]<<2)<<`DATA_WIDTH*2) | (((mem_read_reply_addr[3]<<24) | mem_read_length[3])<<`DATA_WIDTH) | {(`DATA_WIDTH){1'b0}};
-
-	// Test Case C5, 5: Read 10 location, out of range, write to another layer (MEM), length = 2 (Lagacy compatible)
-	mem_read_start_addr[4] <= 30'd65533;		// Read over memory boundary
-	mem_read_reply_addr[4] <= (4'b0<<4 | `LC_CMD_MEM_WRITE); // Write to layer 0 (CPU), SRAM write
-	mem_read_length[4]	<= 24'd9;				// Read 10 word
-	int_cmd_len_array[12]		<= 2'b10;				// Legacy compatible command
-	int_func_array[12] <= `LC_CMD_MEM_READ;
-	int_payload_array[12] <= ((mem_read_start_addr[4]<<2)<<`DATA_WIDTH*2) | (((mem_read_reply_addr[4]<<24) | mem_read_length[4])<<`DATA_WIDTH) | {(`DATA_WIDTH){1'b0}};
-
-	// Test Case C6, 6: Read 1 location, out of range, write to another layer (MEM), length = 3
-	mem_read_start_addr[5] <= 30'd66666;		// Read from a non-existing address
-	mem_read_reply_addr[5] <= (4'd2<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2,  SRAM write
-	mem_read_length[5]	<= 24'd0;				// Read 1 word
-	mem_read_reply_locs[5] <= (30'd3<<30|2'b0);	// Send to address 3
-	int_cmd_len_array[13]		<= 2'b11;				// Standard mem read command
-	int_func_array[13] <= `LC_CMD_MEM_READ;
-	int_payload_array[13] <= ((mem_read_start_addr[5]<<2)<<`DATA_WIDTH*2) | (((mem_read_reply_addr[5]<<24) | mem_read_length[5])<<`DATA_WIDTH) | mem_read_reply_locs[5];
-
-	// Test Case C7, 7: Read 10 location, out of range, write to another layer (MEM), length = 3
-	mem_read_start_addr[6] <= 30'd65533;		// Read over memory boundary
-	mem_read_reply_addr[6] <= (4'd2<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2, SRAM write
-	mem_read_length[6]	<= 24'd9;				// Read 10 word
-	mem_read_reply_locs[6] <= (30'd3<<30|2'b0);	// Send to address 3
-	int_cmd_len_array[14]		<= 2'b11;				// Standard mem read command
-	int_func_array[14] <= `LC_CMD_MEM_READ;
-	int_payload_array[14] <= ((mem_read_start_addr[6]<<2)<<`DATA_WIDTH*2) | (((mem_read_reply_addr[6]<<24) | mem_read_length[6])<<`DATA_WIDTH) | mem_read_reply_locs[6];
+	// Test Case C4, 4: Read 10 location, out of range, wrap around, write to another layer (MEM), length = 3
+	mem_read_start_addr[3]	<= 30'd65533;		// Read over memory boundary
+	mem_read_reply_addr[3]	<= (4'd2<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2, SRAM write
+	mem_read_length[3]		<= 20'd9;			// Read 10 word
+	mem_read_reply_locs[3]	<= 30'd3;			// Send to address 3
+	int_cmd_len_array[11]	<= 2'b11;
+	int_func_array[11]		<= `LC_CMD_MEM_READ;
+	int_payload_array[11]	<= ((((mem_read_reply_addr[6]<<24) | (4'b0<<20) | mem_read_length[6])<<`DATA_WIDTH*2) | ((mem_read_start_addr[6]<<2) | 2'b0)<<`DATA_WIDTH) | ((mem_read_reply_locs[6]<<2) | 2'b0);
 
 	
 	// Test case D1, 1: Wake up system only
-	int_cmd_len_array[15]		<= 2'b00;				// wake up only
-	int_func_array[15]	<= 0;					// Don't care
-	int_payload_array[15] <= 0;					// Don't care
+	int_cmd_len_array[12]	<= 2'b00;				// wake up only
+	int_func_array[12]		<= 0;					// Don't care
+	int_payload_array[12]	<= 0;					// Don't care
 end
 
 

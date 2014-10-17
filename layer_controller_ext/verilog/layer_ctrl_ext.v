@@ -151,7 +151,7 @@ input_stabilizer_layer_ctrl input_stabilizer_layer_ctrl0[LC_INT_DEPTH-1:0]  (
 
 wire	RESETn_local = (RESETn & (~RELEASE_RST_FROM_MBUS));
 
-parameter MAX_DMA_LENGTH = 24; // cannot greater than `DATA_WIDTH - `SHORT_ADDR_WIDTH
+parameter MAX_DMA_LENGTH = 20; // cannot greater than `DATA_WIDTH - `SHORT_ADDR_WIDTH
 
 localparam LC_STATE_IDLE		= 4'd0;
 localparam LC_STATE_RF_READ 	= 4'd1;
@@ -166,12 +166,12 @@ localparam LC_STATE_INT_HANDLED	= 4'd9;
 localparam LC_STATE_CLR_INT		= 4'd10;
 
 // CANNOT assign anything to 3'd0 (in use)
-localparam MEM_WAIT_REPYADDR_LENGTH = 3'd1;
+localparam MEM_WAIT_START_ADDRESS	= 3'd1;
 localparam MEM_WAIT_DEST_LOCATION	= 3'd2;
-localparam MEM_TX_DEST_LOC			= 3'd3;
-localparam MEM_ACCESS_READ			= 3'd4;
-localparam MEM_ACCESS_WAIT			= 3'd5;
-localparam MEM_ACCESS_ADDR_INC		= 3'd6;
+localparam MEM_ADDRESS_RANGE_CHECK	= 3'd3;
+localparam MEM_TX_DEST_LOC			= 3'd4;
+localparam MEM_ACCESS_READ			= 3'd5;
+localparam MEM_ACCESS_WAIT			= 3'd6;
 
 // Double latching registers
 reg		TX_ACK_DL1, TX_ACK_DL2;
@@ -218,6 +218,7 @@ assign	MEM_REQ_OUT = (mem_write | mem_read);
 assign	MEM_WRITE = mem_write;
 reg		[LC_MEM_ADDR_WIDTH-3:0] next_mem_aout;
 reg		[LC_MEM_DATA_WIDTH-1:0] next_mem_dout;
+reg		mem_read_started, next_mem_read_started; 
 
 // Interrupt register
 reg		[LC_INT_DEPTH-1:0] next_clr_int, int_vector_copied, next_int_vector_copied;
@@ -283,6 +284,7 @@ begin
 		mem_read 	<= 0;
 		MEM_ADDR <= 0;
 		MEM_WR_DATA <= 0;
+		mem_read_started <= 1'b0;
 		// Interrupt interface
 		CLR_INT <= 0;
 		int_idx <= 0;
@@ -317,6 +319,7 @@ begin
 		mem_read 	<= next_mem_read;
 		MEM_ADDR <= next_mem_aout;
 		MEM_WR_DATA <= next_mem_dout;
+		mem_read_started <= next_mem_read_started;
 		// Interrupt interface
 		CLR_INT <= next_clr_int;
 		int_idx <= next_int_idx;
@@ -353,6 +356,7 @@ begin
 	next_mem_dout	= MEM_WR_DATA;
 	next_mem_write	= mem_write;
 	next_mem_read	= mem_read;
+	next_mem_read_started = mem_read_started;
 	// Interrupt registers
 	next_clr_int = CLR_INT;
 	next_int_idx = int_idx;
@@ -477,7 +481,7 @@ begin
 						next_lc_state = LC_STATE_CLR_INT;
 					else if (rx_pend_reg)	// Invalid address
 						next_lc_state = LC_STATE_ERROR;
-					else
+					else					// Invalid command
 						next_lc_state = LC_STATE_IDLE;
 				end
 
@@ -542,40 +546,30 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					if ((rx_pend_reg)&&(rx_dat_buffer[LC_MEM_ADDR_WIDTH-1:2] < LC_MEM_DEPTH))
-					begin
-						next_mem_aout = rx_dat_buffer[LC_MEM_ADDR_WIDTH-1:2];
-						next_dma_counter = 0;
-						next_mem_sub_state = MEM_WAIT_REPYADDR_LENGTH; 
-					end
-					else if (rx_pend_reg & (~layer_interrupted))	// Invalid address
-						next_lc_state = LC_STATE_ERROR;
-					else 					// Invalid message
+					next_mem_read_started = 1'b0;
+					next_dma_counter = rx_dat_buffer[MAX_DMA_LENGTH-1:0];	
+					next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, rx_dat_buffer[`DATA_WIDTH-1:`DATA_WIDTH-`SHORT_ADDR_WIDTH]};
+					if (RX_PEND)
+						next_mem_sub_state = MEM_WAIT_START_ADDRESS;
+					else // Error command
 						next_lc_state = LC_STATE_CLR_INT;
 				end
 
-				MEM_WAIT_REPYADDR_LENGTH:
+				MEM_WAIT_START_ADDRESS:
 				begin
 					if (layer_interrupted)
-					begin
-						next_dma_counter = interrupt_payload[int_idx][MAX_DMA_LENGTH-1:0];	
-						next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, interrupt_payload[int_idx][((`DATA_WIDTH<<1)-1):((`DATA_WIDTH<<1)-`SHORT_ADDR_WIDTH)]};
-						if ((interrupt_command_length[int_idx])==2'b11)
-							next_mem_sub_state = MEM_WAIT_DEST_LOCATION;
-						else // Legacy compatible
-							next_mem_sub_state = MEM_ACCESS_READ;
-					end
+						next_mem_aout = interrupt_payload[int_idx][(`DATA_WIDTH<<1)-1:`DATA_WIDTH+2]; // bit 63 ~ 34
+						next_mem_sub_state = MEM_WAIT_DEST_LOCATION;
 					else
 					begin
 						if (RX_REQ_DL2 & (~RX_ACK))
 						begin
 							next_rx_ack = 1;
-							next_dma_counter = RX_DATA[MAX_DMA_LENGTH-1:0];	
-							next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, RX_DATA[`DATA_WIDTH-1:`DATA_WIDTH-`SHORT_ADDR_WIDTH]};
+							next_mem_aout = RX_DATA[(`DATA_WIDTH<<1)-1:`DATA_WIDTH+2]; // bit 63 ~ 34
 							if (RX_PEND)
 								next_mem_sub_state = MEM_WAIT_DEST_LOCATION;
-							else // Legacy compatible
-								next_mem_sub_state = MEM_ACCESS_READ;
+							else // Error command
+								next_lc_state = LC_STATE_IDLE;
 						end
 						else if (RX_FAIL & (~RX_ACK))
 						begin
@@ -589,19 +583,19 @@ begin
 				begin
 					if (layer_interrupted)
 					begin
-						next_tx_data = interrupt_payload[int_idx][`DATA_WIDTH-1:0];
-						next_mem_sub_state = MEM_TX_DEST_LOC;
+						next_tx_data = (interrupt_payload[int_idx][`DATA_WIDTH-1:0] & 32'hfffffffc); // clear last two bits, address is 30 bits only
+						next_mem_sub_state = MEM_ADDRESS_RANGE_CHECK;
 					end
 					else
 					begin
 						if (RX_REQ_DL2 & (~RX_ACK))
 						begin
 							next_rx_ack = 1;
-							next_tx_data = RX_DATA;
+							next_tx_data = (RX_DATA & 32'hfffffffc);	// clear last two bits, address is 30 bits only
 							if (RX_PEND) // Error MBus command
 								next_mem_sub_state = LC_STATE_ERROR;
 							else 
-								next_mem_sub_state = MEM_TX_DEST_LOC;
+								next_mem_sub_state = MEM_ADDRESS_RANGE_CHECK;
 						end
 						else if (RX_FAIL & (~RX_ACK))
 						begin
@@ -609,6 +603,19 @@ begin
 							next_lc_state = LC_STATE_IDLE;
 						end
 					end
+				end
+
+				MEM_ADDRESS_RANGE_CHECK:
+				begin
+					if (MEM_ADDR < LC_MEM_DEPTH)
+					begin
+						if (mem_read_started)
+							next_mem_sub_state = MEM_ACCESS_READ;
+						else
+							next_mem_sub_state = MEM_TX_DEST_LOC;
+					end
+					else // Calculate modular
+						next_mem_aout = MEM_ADDR - LC_MEM_DEPTH;
 				end
 
 				MEM_TX_DEST_LOC:
@@ -641,22 +648,19 @@ begin
 						next_tx_data = MEM_RD_DATA;
 						next_lc_state = LC_STATE_BUS_TX;
 						next_lc_return_state = LC_STATE_MEM_READ;
-						next_mem_sub_state = MEM_ACCESS_ADDR_INC;
-						if ((dma_counter)&&(MEM_ADDR < (LC_MEM_DEPTH-1'b1)))
+						next_mem_sub_state = MEM_ADDRESS_RANGE_CHECK;
+						next_mem_aout = MEM_ADDR + 1'b1;
+						next_mem_read_started = 1'b1;
+						if (dma_counter)
 						begin
-							next_tx_pend = 1;
 							next_dma_counter = dma_counter - 1'b1;
+							next_tx_pend = 1;
 						end
 						else
 							next_tx_pend = 0;
 					end
 				end
 
-				MEM_ACCESS_ADDR_INC:	// increment address
-				begin
-					next_mem_aout = MEM_ADDR + 1'b1;
-					next_mem_sub_state = MEM_ACCESS_READ;
-				end
 			endcase
 		end
 
@@ -665,26 +669,26 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					if ((rx_pend_reg)&&(rx_dat_buffer[LC_MEM_ADDR_WIDTH-1:2] < LC_MEM_DEPTH))
-					begin
-						next_mem_aout = rx_dat_buffer[LC_MEM_ADDR_WIDTH-1:2];
-						next_mem_sub_state = 1;
-					end
-					else if (rx_pend_reg)	// Invalid Address
-					begin
-						next_lc_state = LC_STATE_ERROR;
-						next_mem_sub_state = 0;
-					end
-					else 					// Invalid message
+					next_mem_aout = rx_dat_buffer[LC_MEM_ADDR_WIDTH-1:2];
+					next_mem_sub_state = 1;
+					if (~rx_pend_reg) // Invalid message
 						next_lc_state = LC_STATE_IDLE;
 				end
 
 				1:
 				begin
+					if (MEM_ADDR < LC_MEM_DEPTH)
+						next_mem_sub_state = 2;
+					else
+						next_mem_aout = MEM_ADDR - LC_MEM_DEPTH;
+				end
+
+				2:
+				begin
 					if (RX_REQ_DL2 & (~RX_ACK))
 					begin
 						next_rx_ack = 1;
-						next_mem_sub_state = 2;
+						next_mem_sub_state = 3;
 						next_mem_dout = RX_DATA[LC_MEM_DATA_WIDTH-1:0];
 						next_rx_pend_reg = RX_PEND;
 					end
@@ -695,29 +699,24 @@ begin
 					end
 				end
 
-				2:
+				3:
 				begin
 					if (~MEM_REQ_OUT)
 					begin
 						next_mem_write = 1;
-						next_mem_sub_state = 3;
+						next_mem_sub_state = 4;
 					end
 				end
 
-				3:
+				4:
 				begin
 					// write complete
 					if (MEM_ACK_IN)
 					begin
-						if ((rx_pend_reg)&&(MEM_ADDR<(LC_MEM_DEPTH-1'b1)))
+						if (rx_pend_reg)
 						begin
 							next_mem_aout = MEM_ADDR + 1'b1;
 							next_mem_sub_state = 1;
-						end
-						else if (rx_pend_reg)	// Invalid Address
-						begin
-							next_lc_state = LC_STATE_ERROR;
-							next_mem_sub_state = 0;
 						end
 						else
 							next_lc_state = LC_STATE_IDLE;

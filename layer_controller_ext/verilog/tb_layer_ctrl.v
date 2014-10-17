@@ -61,47 +61,29 @@ module tb_layer_ctrl();
 	reg			mem_ptr_set;
 	reg	[1:0]	mem_access_state;
 	reg	[7:0]	relay_addr;
-	reg [31:0]	mem_relay_loc;
+	reg [29:0]	mem_relay_loc;
 	reg [7:0]	rf_relay_loc;
 	reg	[31:0]	addr_increment;
 	reg	[3:0]	dest_short_addr;
 	reg [23:0]	rf_data;
 	reg [31:0]	mem_data;
-	reg [23:0]	mem_read_length;
+	reg [19:0]	mem_read_length;
 	reg [3:0]	enum_short_addr;
 	reg [19:0]	long_addr;
    	integer 	handle;
 
-   localparam  TASK0=0;
-   localparam  TASK1=1;
-   localparam  TASK2=2;
-   localparam  TASK3=3;
-   localparam  TASK4=4;
-   localparam  TASK5=5;
-   localparam  TASK6=6;
-   localparam  TASK7=7;
-   localparam  TASK8=8;
-   localparam  TASK9=9;
-   localparam  TASK10=10;
-   localparam  TASK11=11;
-   localparam  TASK12=12;
-   localparam  TASK13=13;
-   localparam  TASK14=14;
-   localparam  TASK15=15;
-   localparam  TASK16=16;
-   localparam  TASK17=17;
-   localparam  TASK18=18;
-   localparam  TASK19=19;
-   localparam  TASK20=20;
-   localparam  TASK21=21;
-   localparam  TASK22=22;
-   localparam  TASK23=23;
-   localparam  TASK24=24;
-   localparam  TASK25=25;
-   localparam  TASK26=26;
-   localparam  TASK27=27;
-   
-   localparam TX_WAIT=31;
+	localparam TB_PROC_UP					= 0;
+	localparam TB_QUERY						= 1;
+	localparam TB_ENUM						= 2;
+	localparam TB_ALL_WAKEUP				= 3;
+	localparam TB_RF_WRITE					= 4;
+	localparam TB_RF_READ					= 5;
+	localparam TB_MEM_WRITE					= 6;
+	localparam TB_MEM_READ					= 7;
+	localparam TB_SEL_SLEEP_FULL_PREFIX		= 8;
+	localparam TB_ALL_SLEEP					= 9;
+	localparam TB_ALL_SHORT_ADDR_INVALID	= 10;
+	localparam TX_WAIT						= 31;
 
    reg	c0_auto_rx_ack;
 
@@ -226,7 +208,7 @@ end // initial begin
 always #1250 clk = ~clk;
 
    
-`include "task0.v"
+`include "task_list.v"
 
 always @ (posedge layer0.lc_pwr_on)
 	$fdisplay(handle, "N0 LC Sleep");

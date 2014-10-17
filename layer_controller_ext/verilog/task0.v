@@ -124,6 +124,7 @@ always @ (posedge clk or negedge resetn) begin
 				state <= TX_WAIT;
 			end
 
+			// Lagacy command, SHOULD NOT USE THIS
 			// C0 writes random data to layer X's MEM
 			// layer X: dest_short_addr
 			// addr: 	mem_addr
@@ -157,6 +158,35 @@ always @ (posedge clk or negedge resetn) begin
    	      				$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", (mem_addr+addr_increment)<<2, rand_dat);
 						mem_ptr_set <= 0;
 						state <= TX_WAIT;
+					end
+				end
+			end
+
+			// C0 reads data from layer X's MEM and relay to layer Y with
+			// channel Z
+			// layer X: dest_short_addr
+			// layer Y, channel Z: delay_addr (4'hY, 4'hZ)
+			// addr: 	mem_addr
+			// length: 	word_counter
+			TASK23:
+			begin
+				if ((~c0_tx_ack) & (~c0_tx_req))
+				begin
+					c0_priority <= 0;
+					c0_tx_addr <= {24'h0, dest_short_addr, `LC_CMD_MEM_READ};
+					c0_tx_req <= 1;
+					if (~mem_ptr_set)
+					begin
+						c0_tx_data <= ((mem_addr<<2) | 2'b0);
+						c0_tx_pend <= 1;
+						mem_ptr_set <= 1;
+					end
+					else
+					begin
+						c0_tx_data <= ((relay_addr<<24) | word_counter);
+						c0_tx_pend <= 0;
+						state <= TX_WAIT;
+						mem_ptr_set <= 0;
 					end
 				end
 			end

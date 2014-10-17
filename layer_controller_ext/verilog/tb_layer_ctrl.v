@@ -100,28 +100,28 @@ module tb_layer_ctrl();
    reg	c0_auto_rx_ack;
 
 
-layer_wrapper #(.ADDRESS(20'hbbbb0)) layer0(
+layer_wrapper #(.ADDRESS(20'hbbbb0), .LC_INT_DEPTH(LC_INT_DEPTH)) layer0(
 	.CLK(clk), .RESETn(resetn),
 	.INT_VECTOR(n0_int_vector),
 	.CLR_INT_EXTERNAL(n0_clr_int),
 	// mbus
 	.CLKIN(SCLK), .CLKOUT(w_n0_clk_out), .DIN(w_c0n0), .DOUT(w_n0n1)); 
 
-layer_wrapper #(.ADDRESS(20'hbbbb1)) layer1(
+layer_wrapper #(.ADDRESS(20'hbbbb1), .LC_INT_DEPTH(LC_INT_DEPTH)) layer1(
 	.CLK(clk), .RESETn(resetn),
 	.INT_VECTOR(n1_int_vector),
 	.CLR_INT_EXTERNAL(n1_clr_int),
 	// mbus
 	.CLKIN(w_n0_clk_out), .CLKOUT(w_n1_clk_out), .DIN(w_n0n1), .DOUT(w_n1n2)); 
 
-layer_wrapper #(.ADDRESS(20'hbbbb2)) layer2(
+layer_wrapper #(.ADDRESS(20'hbbbb2), .LC_INT_DEPTH(LC_INT_DEPTH)) layer2(
 	.CLK(clk), .RESETn(resetn),
 	.INT_VECTOR(n2_int_vector),
 	.CLR_INT_EXTERNAL(n2_clr_int),
 	// mbus
 	.CLKIN(w_n1_clk_out), .CLKOUT(w_n2_clk_out), .DIN(w_n1n2), .DOUT(w_n2n3)); 
 
-layer_wrapper #(.ADDRESS(20'hbbbb2)) layer3(
+layer_wrapper #(.ADDRESS(20'hbbbb2), .LC_INT_DEPTH(LC_INT_DEPTH)) layer3(
 	.CLK(clk), .RESETn(resetn),
 	.INT_VECTOR(n3_int_vector),
 	.CLR_INT_EXTERNAL(n3_clr_int),

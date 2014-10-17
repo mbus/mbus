@@ -440,7 +440,7 @@ begin
 					if (~TX_REQ)
 					begin
 						// Warning!! non-32 bit DATA_WIDTH and non-24 bit RF_WIDTH may fail
-						next_tx_data = (((rx_dat_buffer[(`DATA_WIDTH-24-1):0] + (rf_idx-rf_idx_temp))<<24) | ({(24-LC_RF_DATA_WIDTH){1'b0}}<<LC_RD_DATA_WIDTH) | rf_in_array[rf_idx]);
+						next_tx_data = (((rx_dat_buffer[(`DATA_WIDTH-24-1):0] + (rf_idx-rf_idx_temp))<<24) | rf_in_array[rf_idx]);
 						next_tx_req = 1;
 						next_lc_state = LC_STATE_BUS_TX;
 						next_mem_sub_state = 2;
@@ -638,7 +638,7 @@ begin
 					if (MEM_ACK_IN & (~TX_REQ))
 					begin
 						next_tx_req = 1;
-						next_tx_data = {{(`DATA_WIDTH - LC_MEM_DATA_WIDTH){1'b0}}}, MEM_RD_DATA};
+						next_tx_data = MEM_RD_DATA;
 						next_lc_state = LC_STATE_BUS_TX;
 						next_lc_return_state = LC_STATE_MEM_READ;
 						next_mem_sub_state = MEM_ACCESS_ADDR_INC;

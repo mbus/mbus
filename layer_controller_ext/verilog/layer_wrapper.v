@@ -187,7 +187,7 @@ layer_ctrl
 	.CLR_INT(clr_int),
 	.INT_FU_ID(int_func_id_f_rom),
 	.INT_CMD(int_payload_f_rom),
-	.INT_CMD_LEN(int_length_f_rom),
+	.INT_CMD_LEN(int_length_f_rom)
 );
 
 mbus_layer_wrapper #(.ADDRESS(ADDRESS)) mbus_node0

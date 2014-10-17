@@ -77,14 +77,15 @@ begin
 	word_counter = 0;
     state = TASK8;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge n1_tx_succ|n1_tx_fail);
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
    	$fdisplay(handle, "RF Addr: 8'h%h,\tData: 24'h%h", rf_addr, (c0_rx_data & 32'h00ff_ffff));
-/*
+
     #100000;
-    $fdisplay(handle, "\nTASK8, read from Laer 1 RF address 1-4");
+    $fdisplay(handle, "\nTASK8, read from Laer 1 RF address 1-4, and write to layer 2 RF address 0x1");
 	rf_addr = 1;
 	dest_short_addr = 4'h3;
-	relay_addr = 8'h03;
+	relay_addr = 8'h40;
+	relay_loc = 8'h1;
 	word_counter = 3;
     state = TASK8;
 	@ (posedge c0_tx_succ|c0_tx_fail);
@@ -92,10 +93,11 @@ begin
 	word_counter = 0;
 
     #100000;
-    $fdisplay(handle, "\nTASK8, read from Layer 1 RF address 67 (ROM)");
+    $fdisplay(handle, "\nTASK8, read from Layer 1 RF address 67 (ROM), and send to layer 0");
 	rf_addr = 67;
 	dest_short_addr = 4'h3;
 	relay_addr = 8'h03;
+	relay_loc = 8'hff;
     state = TASK8;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge c0_rx_req|c0_rx_fail);
@@ -109,7 +111,7 @@ begin
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
     #100000;
-    $fdisplay(handle, "\nTASK10, read from Layer 1 MEM address 0");
+    $fdisplay(handle, "\nTASK10, read from Layer 1 MEM address 0, and write to layer 2 MEM address 0x1");
 	mem_addr = 0;
 	dest_short_addr = 4'h3;
 	relay_addr = 8'h03;
@@ -118,6 +120,7 @@ begin
 	@ (posedge c0_rx_req|c0_rx_fail);
    	$fdisplay(handle, "MEM Addr: 32'h%h,\tData: 32'h%h", mem_addr, c0_rx_data);
 
+/*
     #100000;
     $fdisplay(handle, "\nTASK11, sleep N1");
     state = TASK11;

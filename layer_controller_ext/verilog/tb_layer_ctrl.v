@@ -52,19 +52,25 @@ module tb_layer_ctrl();
    	wire 		  				w_n0_clk_out, w_n1_clk_out, w_n2_clk_out, w_n3_clk_out;
 
 	// testbench variables
-   	reg [31:0] 		  			rand_dat, rand_dat2;
-   	reg [4:0] 		  			state;
-   	reg [5:0] 		  			word_counter;
-	reg [7:0]					rf_addr;
-	reg [29:0]					mem_addr;
-	reg							mem_ptr_set;
-	reg	[`SHORT_ADDR_WIDTH-1:0]	relay_addr;
-	reg [7:0]					relay_loc;
-	reg	[31:0]					addr_increment;
-	reg	[3:0]					dest_short_addr;
-	reg [23:0]					rf_data;
-	reg [31:0]					mem_data;
-   	integer 		  			handle;
+   	reg [31:0]	rand_dat, rand_dat2;
+   	reg [4:0] 	state;
+   	reg [5:0] 	word_counter;
+	reg [7:0]	rf_read_length;
+	reg [7:0]	rf_addr;
+	reg [29:0]	mem_addr;
+	reg			mem_ptr_set;
+	reg	[1:0]	mem_access_state;
+	reg	[7:0]	relay_addr;
+	reg [31:0]	mem_relay_loc;
+	reg [7:0]	rf_relay_loc;
+	reg	[31:0]	addr_increment;
+	reg	[3:0]	dest_short_addr;
+	reg [23:0]	rf_data;
+	reg [31:0]	mem_data;
+	reg [23:0]	mem_read_length;
+	reg [3:0]	enum_short_addr;
+	reg [19:0]	long_addr;
+   	integer 	handle;
 
    localparam  TASK0=0;
    localparam  TASK1=1;
@@ -141,14 +147,20 @@ initial
 begin
     clk = 0;
     resetn = 1;
-	rf_addr = 0;
 	mem_addr = 0;
 	mem_ptr_set = 0;
-	relay_addr = 0;
-	relay_loc = 0;
-	addr_increment = 0;
-	rf_data = 0;
+	mem_access_state = 0;
 	mem_data = 0;
+	mem_relay_loc = 0;
+	mem_read_length = 0;
+	rf_addr = 0;
+	rf_data = 0;
+	rf_read_length = 0;
+	rf_relay_loc = 0;
+	relay_addr = 0;
+	addr_increment = 0;
+	enum_short_addr = 4'h2;
+	long_addr = 20'haaaa0;
 
     @ (posedge clk);
     @ (posedge clk);

@@ -73,7 +73,7 @@ begin
 	rf_addr = 0;
 	dest_short_addr = 4'h3;
 	relay_addr = 8'h40;
-	relay_loc = 8'ha;
+	rf_relay_loc = 8'ha;
 	word_counter = 0;
     state = TASK8;
 	@ (posedge c0_tx_succ|c0_tx_fail);
@@ -85,7 +85,7 @@ begin
 	rf_addr = 1;
 	dest_short_addr = 4'h3;
 	relay_addr = 8'h40;
-	relay_loc = 8'h1;
+	rf_relay_loc = 8'h1;
 	word_counter = 3;
     state = TASK8;
 	@ (posedge c0_tx_succ|c0_tx_fail);

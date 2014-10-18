@@ -17,7 +17,8 @@ begin
 
     #100000;
     $fdisplay(handle, "\n-------------------------------------------------------------------------");
-    $fdisplay(handle, "TASK1, Master node sends out querry");
+    $fdisplay(handle, "TASK1, Query");
+    $fdisplay(handle, "Master node sends out query");
     $fdisplay(handle, "-------------------------------------------------------------------------");
     state = TB_QUERY;
 	@ (posedge c0_rx_req);
@@ -27,7 +28,8 @@ begin
 
     #100000;
     $fdisplay(handle, "\n-------------------------------------------------------------------------");
-    $fdisplay(handle, "TASK2, Master node enumerate with address 4'h2");
+    $fdisplay(handle, "TASK2, Enumerate");
+    $fdisplay(handle, "Master node enumerate with address 4'h2");
     $fdisplay(handle, "-------------------------------------------------------------------------");
 	enum_short_addr = 4'h2;
     state = TB_ENUM;
@@ -35,7 +37,8 @@ begin
 
     #100000;
     $fdisplay(handle, "\n-------------------------------------------------------------------------");
-    $fdisplay(handle, "TASK3, Master node enumerate with address 4'h3");
+    $fdisplay(handle, "TASK3, Enumerate");
+    $fdisplay(handle, "Master node enumerate with address 4'h3");
     $fdisplay(handle, "-------------------------------------------------------------------------");
 	enum_short_addr = 4'h3;
     state = TB_ENUM;
@@ -43,7 +46,8 @@ begin
 
     #100000;
     $fdisplay(handle, "\n-------------------------------------------------------------------------");
-    $fdisplay(handle, "TASK4, Master node enumerate with address 4'h4");
+    $fdisplay(handle, "TASK4, Enumerate");
+    $fdisplay(handle, "Master node enumerate with address 4'h4");
     $fdisplay(handle, "-------------------------------------------------------------------------");
 	enum_short_addr = 4'h4;
     state = TB_ENUM;
@@ -51,7 +55,8 @@ begin
 
     #100000;
     $fdisplay(handle, "\n-------------------------------------------------------------------------");
-    $fdisplay(handle, "TASK5, Master node enumerate with address 4'h5");
+    $fdisplay(handle, "TASK5, Enumerate");
+    $fdisplay(handle, "Master node enumerate with address 4'h5");
     $fdisplay(handle, "-------------------------------------------------------------------------");
 	enum_short_addr = 4'h5;
     state = TB_ENUM;
@@ -66,7 +71,8 @@ begin
 
     #100000;
     $fdisplay(handle, "\n-------------------------------------------------------------------------");
-    $fdisplay(handle, "TASK7, RF Write, write random data to Layer 1 RF address 0");
+    $fdisplay(handle, "TASK7, RF Write");
+    $fdisplay(handle, "CPU writes random data to Layer 1 RF address 0");
     $fdisplay(handle, "-------------------------------------------------------------------------");
 	rf_addr = 0;
 	dest_short_addr = 4'h3;
@@ -75,7 +81,8 @@ begin
 
     #100000;
     $fdisplay(handle, "\n-------------------------------------------------------------------------");
-    $fdisplay(handle, "TASK8, RF Write, bulk write random data to Layer 1 RF address 1-4");
+    $fdisplay(handle, "TASK8, RF Write");
+    $fdisplay(handle, "CPU bulk writes random data to Layer 1 RF address 1-4");
     $fdisplay(handle, "-------------------------------------------------------------------------");
 	rf_addr = 1;
 	dest_short_addr = 4'h3;
@@ -85,7 +92,8 @@ begin
 
     #100000;
     $fdisplay(handle, "\n-------------------------------------------------------------------------");
-    $fdisplay(handle, "TASK9, RF Write, write to Layer 1 RF address 128 (Non-existing location)");
+    $fdisplay(handle, "TASK9, RF Write");
+    $fdisplay(handle, "CPU write to Layer 1 non-existing location RF address 128");
     $fdisplay(handle, "-------------------------------------------------------------------------");
 	rf_addr = 128;
 	dest_short_addr = 4'h3;
@@ -94,7 +102,8 @@ begin
 
     #100000;
     $fdisplay(handle, "\n-------------------------------------------------------------------------");
-    $fdisplay(handle, "TASK10, RF Read, read from Layer 1 RF address 0, and write to Layer 2 RF address 0xa");
+    $fdisplay(handle, "TASK10, RF Read");
+    $fdisplay(handle, "Read Layer 1's RF address 0, and write to Layer 2's RF address 0xa");
     $fdisplay(handle, "-------------------------------------------------------------------------");
 	dest_short_addr = 4'h3;
 	rf_addr = 0;
@@ -105,9 +114,11 @@ begin
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge layer1.tx_succ|layer1.tx_fail);
 
-/*
     #100000;
-    $fdisplay(handle, "\nTASK11, RF Read, read from Laer 1 RF address 1-4, and write to layer 2 RF address 0x1");
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK11, RF Read");
+    $fdisplay(handle, "Bulk read Layer 1's RF address 1-4, and write to Layer 2's RF address 0x1");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
 	dest_short_addr = 4'h3;
 	rf_addr = 1;
 	rf_read_length = 3;
@@ -118,7 +129,10 @@ begin
 	@ (posedge layer1.tx_succ|layer1.tx_fail);
 
     #100000;
-    $fdisplay(handle, "\nTASK12, RF Read, read from Layer 1 RF address 128 (non-existing location), and send to layer 0 (CPU)");
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK12, RF Read");
+    $fdisplay(handle, "CPU read Layer 1's non-existing RF address 128, and send to layer 0");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
 	dest_short_addr = 4'h3;
 	rf_addr = 128;
 	rf_read_length = 3;
@@ -126,10 +140,12 @@ begin
 	rf_relay_loc = 8'hff;		// Don't care
     state = TB_RF_READ;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge c0_rx_req|c0_rx_fail);
 
     #100000;
-    $fdisplay(handle, "\nTASK13, MEM Write, write random data to Layer 1 MEM, address 0");
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK13, MEM Write");
+    $fdisplay(handle, "CPU writes random data to Layer 1's MEM address 0");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
 	dest_short_addr = 4'h3;
 	mem_addr = 0;
 	word_counter = 0;
@@ -137,74 +153,115 @@ begin
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
     #100000;
-    $fdisplay(handle, "\nTASK14, MEM Read, read from Layer 1 MEM, address 0, write to layer 2 MEM, address 0x1");
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK14, MEM Read");
+    $fdisplay(handle, "Read Layer 1's MEM address 0, and write to layer 2's MEM, address 0x1");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
 	dest_short_addr = 4'h3;
 	mem_read_length = 0;
 	mem_addr = 0;
 	relay_addr = ((4'h4<<4) | `LC_CMD_MEM_WRITE);
+	mem_relay_loc = 30'd1;
     state = TB_MEM_READ;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge layer2.rx_fail|layer2.rx_succ);
-   	$fdisplay(handle, "MEM Addr: 32'h%h,\tData: 32'h%h", mem_addr, c0_rx_data);
+	@ (posedge layer1.tx_succ | layer1.tx_fail);
 
     #100000;
-    $fdisplay(handle, "\nTASK11, sleep N1");
-    state = TASK11;
-	@ (posedge c0_tx_succ|c0_tx_fail);
-
-    #100000;
-    $fdisplay(handle, "\nTASK9, write to Layer 1 MEM address 1");
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK15, MEM Write");
+    $fdisplay(handle, "CPU bulk writes random data to Layer 1's MEM address 1-10");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
 	mem_addr = 1;
-	dest_short_addr = 4'h3;
-    state = TASK9;
+	word_counter = 9;
+    state = TB_MEM_WRITE;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
     #100000;
-    $fdisplay(handle, "\nTASK9, write to Layer 1 MEM address 2");
-	mem_addr = 2;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK16, MEM Read");
+    $fdisplay(handle, "Bulk read Layer 1's MEM address 1-10, and write to layer 3's MEM, address 0x0");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
 	dest_short_addr = 4'h3;
-    state = TASK9;
-	@ (posedge c0_tx_succ|c0_tx_fail);
-
-    #100000;
-    $fdisplay(handle, "\nTASK10, read from Layer 1 MEM address 1");
+	mem_read_length = 9;
 	mem_addr = 1;
-	dest_short_addr = 4'h3;
-	relay_addr = 8'h03;
-    state = TASK10;
+	relay_addr = ((4'h5<<4) | `LC_CMD_MEM_WRITE);
+	mem_relay_loc = 30'd0;
+    state = TB_MEM_READ;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge c0_rx_req|c0_rx_fail);
-   	$fdisplay(handle, "MEM Addr: 32'h%h,\tData: 32'h%h", mem_addr, c0_rx_data);
+	@ (posedge layer1.tx_succ | layer1.tx_fail);
 
     #100000;
-    $fdisplay(handle, "\nTASK10, read from Layer 1 MEM address 2");
-	mem_addr = 2;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK17, MEM Write");
+    $fdisplay(handle, "CPU writes random data to Layer 1's MEM address 65540 (overflow)");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
 	dest_short_addr = 4'h3;
-	relay_addr = 8'h03;
-    state = TASK10;
-	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge c0_rx_req|c0_rx_fail);
-   	$fdisplay(handle, "MEM Addr: 32'h%h,\tData: 32'h%h", mem_addr, c0_rx_data);
-
-    #100000;
-    $fdisplay(handle, "\nTASK9, DMA write 16-word to Layer 1 MEM address 3-18");
-	mem_addr = 3;
-	dest_short_addr = 4'h3;
-	word_counter = 15;
-    state = TASK9;
-	@ (posedge c0_tx_succ|c0_tx_fail);
+	mem_addr = 65540;
 	word_counter = 0;
+    state = TB_MEM_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
 
     #100000;
-    $fdisplay(handle, "\nTASK10, DMA read 16-word from Layer 1 MEM address 3-18");
-	mem_addr = 3;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK18, MEM Write");
+    $fdisplay(handle, "CPU bulk writes random data to Layer 1's MEM address 65533-6 (overflow)");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
 	dest_short_addr = 4'h3;
-	relay_addr = 8'h03;
-	word_counter = 15;
-    state = TASK10;
+	mem_addr = 65533;
+	word_counter = 9;
+    state = TB_MEM_WRITE;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge layer1.tx_succ|layer1.tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK19, MEM Read");
+    $fdisplay(handle, "Read Layer 1's MEM address 65540 (overflow), and write to layer 2's MEM, address 0x0");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	mem_read_length = 0;
+	mem_addr = 65540;
+	relay_addr = ((4'h4<<4) | `LC_CMD_MEM_WRITE);
+	mem_relay_loc = 30'd0;
+    state = TB_MEM_READ;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge layer1.tx_succ | layer1.tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK20, MEM Read");
+    $fdisplay(handle, "Bulk read Layer 1's MEM address 65533-6 (overflow), and write to layer 2's MEM, address 0x65533");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	mem_read_length = 9;
+	mem_addr = 65533;
+	relay_addr = ((4'h4<<4) | `LC_CMD_MEM_WRITE);
+	mem_relay_loc = 30'd65533;
+    state = TB_MEM_READ;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge layer1.tx_succ | layer1.tx_fail);
+
+
+    #100000;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK21, Select sleep");
+    $fdisplay(handle, "Select sleep using long prefix, Sleep layer 1");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	long_addr = 20'hbbbb1;
+	state = TB_SEL_SLEEP_FULL_PREFIX;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK21, MEM Write");
+    $fdisplay(handle, "CPU writes random data to Layer 1's MEM address 0xa");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	mem_addr = 30'ha;
 	word_counter = 0;
+    state = TB_MEM_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+/*
 
     #100000;
     $fdisplay(handle, "\nTASK11, sleep N1");

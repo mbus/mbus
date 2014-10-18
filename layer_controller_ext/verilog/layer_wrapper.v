@@ -27,7 +27,7 @@ parameter LC_MEM_DATA_WIDTH = 32;	// should ALWAYS less than DATA_WIDTH
 parameter LC_MEM_ADDR_WIDTH = 32;	// should ALWAYS less than DATA_WIDTH
 parameter LC_MEM_DEPTH = 65536;	// 1 ~ 2^30
 
-parameter LC_INT_DEPTH = 8;
+parameter LC_INT_DEPTH = 13;
 
 input 	CLK;
 input 	RESETn;

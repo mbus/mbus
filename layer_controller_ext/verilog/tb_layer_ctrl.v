@@ -7,7 +7,7 @@
 module tb_layer_ctrl();
 `include "include/mbus_func.v"
 
-	parameter LC_INT_DEPTH=16;
+	parameter LC_INT_DEPTH=13;
 	parameter LC_MEM_DEPTH=65536;
 	parameter LC_RF_DEPTH=128;
 
@@ -423,43 +423,43 @@ end
    end
    
 // RF Write output
-	wire [7:0] layer0_rf0_addr = log2(layer0.rf0.LOAD) - 1;
-	wire [7:0] layer1_rf0_addr = log2(layer1.rf0.LOAD) - 1;
-	wire [7:0] layer2_rf0_addr = log2(layer2.rf0.LOAD) - 1;
-	wire [7:0] layer3_rf0_addr = log2(layer3.rf0.LOAD) - 1;
+	wire [31:0] layer0_rf0_addr = log2(layer0.rf0.LOAD) - 1;
+	wire [31:0] layer1_rf0_addr = log2(layer1.rf0.LOAD) - 1;
+	wire [31:0] layer2_rf0_addr = log2(layer2.rf0.LOAD) - 1;
+	wire [31:0] layer3_rf0_addr = log2(layer3.rf0.LOAD) - 1;
 	genvar idx;
 	generate 
 		for (idx=0; idx<64; idx = idx+1)
 		begin: rf_write
 			always @ (posedge layer0.rf0.LOAD[idx])
-				$fdisplay(handle, "Layer 0, RF Write, Addr: 8'h%h,\tData: 24'h%h", layer0_rf0_addr, layer0.rf0.DIN);
+				$fdisplay(handle, "Layer 0, RF Write, Addr: 8'h%h,\tData: 24'h%h", layer0_rf0_addr[7:0], layer0.rf0.DIN);
 			always @ (posedge layer1.rf0.LOAD[idx])
-				$fdisplay(handle, "Layer 1, RF Write, Addr: 8'h%h,\tData: 24'h%h", layer1_rf0_addr, layer1.rf0.DIN);
+				$fdisplay(handle, "Layer 1, RF Write, Addr: 8'h%h,\tData: 24'h%h", layer1_rf0_addr[7:0], layer1.rf0.DIN);
 			always @ (posedge layer2.rf0.LOAD[idx])
-				$fdisplay(handle, "Layer 2, RF Write, Addr: 8'h%h,\tData: 24'h%h", layer2_rf0_addr, layer2.rf0.DIN);
+				$fdisplay(handle, "Layer 2, RF Write, Addr: 8'h%h,\tData: 24'h%h", layer2_rf0_addr[7:0], layer2.rf0.DIN);
 			always @ (posedge layer3.rf0.LOAD[idx])
-				$fdisplay(handle, "Layer 3, RF Write, Addr: 8'h%h,\tData: 24'h%h", layer3_rf0_addr, layer3.rf0.DIN);
+				$fdisplay(handle, "Layer 3, RF Write, Addr: 8'h%h,\tData: 24'h%h", layer3_rf0_addr[7:0], layer3.rf0.DIN);
 		end
 	endgenerate
 // End of RF Write output
 
 // MEM Write output
-	always @ (layer0.mem0.MEM_ACK_OUT)
+	always @ (posedge layer0.mem0.MEM_ACK_OUT)
 		if (layer0.mem0.MEM_WRITE)
 			$fdisplay(handle, "Layer 0, MEM Write, Addr: 30'h%h,\tData: 32'h%h", layer0.mem0.ADDR, layer0.mem0.DATA_IN);
 		else
 			$fdisplay(handle, "Layer 0, MEM Read, Addr: 30'h%h,\tData: 32'h%h", layer0.mem0.ADDR, layer0.mem0.DATA_OUT);
-	always @ (layer1.mem0.MEM_ACK_OUT)
+	always @ (posedge layer1.mem0.MEM_ACK_OUT)
 		if (layer1.mem0.MEM_WRITE)
 			$fdisplay(handle, "Layer 1, MEM Write, Addr: 30'h%h,\tData: 32'h%h", layer1.mem0.ADDR, layer1.mem0.DATA_IN);
 		else
 			$fdisplay(handle, "Layer 1, MEM Read, Addr: 30'h%h,\tData: 32'h%h", layer1.mem0.ADDR, layer1.mem0.DATA_OUT);
-	always @ (layer2.mem0.MEM_ACK_OUT)
+	always @ (posedge layer2.mem0.MEM_ACK_OUT)
 		if (layer2.mem0.MEM_WRITE)
 			$fdisplay(handle, "Layer 2, MEM Write, Addr: 30'h%h,\tData: 32'h%h", layer2.mem0.ADDR, layer2.mem0.DATA_IN);
 		else
 			$fdisplay(handle, "Layer 2, MEM Read, Addr: 30'h%h,\tData: 32'h%h", layer2.mem0.ADDR, layer2.mem0.DATA_OUT);
-	always @ (layer3.mem0.MEM_ACK_OUT)
+	always @ (posedge layer3.mem0.MEM_ACK_OUT)
 		if (layer3.mem0.MEM_WRITE)
 			$fdisplay(handle, "Layer 3, MEM Write, Addr: 30'h%h,\tData: 32'h%h", layer3.mem0.ADDR, layer3.mem0.DATA_IN);
 		else

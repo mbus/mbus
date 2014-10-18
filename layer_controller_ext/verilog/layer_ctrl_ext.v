@@ -549,7 +549,7 @@ begin
 					next_mem_read_started = 1'b0;
 					next_dma_counter = rx_dat_buffer[MAX_DMA_LENGTH-1:0];	
 					next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, rx_dat_buffer[`DATA_WIDTH-1:`DATA_WIDTH-`SHORT_ADDR_WIDTH]};
-					if (RX_PEND)
+					if (rx_pend_reg)
 						next_mem_sub_state = MEM_WAIT_START_ADDRESS;
 					else // Error command
 						next_lc_state = LC_STATE_CLR_INT;

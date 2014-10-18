@@ -122,14 +122,12 @@ always @ (posedge clk or negedge resetn) begin
 								word_counter <= word_counter - 1;
 							else
 								mem_access_state <= 2;
-   	      					$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", (mem_addr+addr_increment)<<2, rand_dat);
 						end
 
 						2:
 						begin
 							c0_tx_data <= rand_dat;
 							c0_tx_pend <= 0;
-   	      					$fdisplay(handle, "Write mem Addr: 32'h%h,\tData: 32'h%h", (mem_addr+addr_increment)<<2, rand_dat);
 							mem_access_state <= 0;
 							state <= TX_WAIT;
 						end

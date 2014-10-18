@@ -8,14 +8,14 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK0, Master node and Processor wake up");
-    state = TASK0;
+    state = TB_PROC_UP;
 	@ (posedge SCLK);
 	c0_req_int = 0;
     #50000;
 
     #100000;
     $fdisplay(handle, "\nTASK1, Master node sends out querry");
-    state = TASK1;
+    state = TB_QUERY;
 	@ (posedge c0_rx_req);
 	@ (posedge c0_rx_req);
 	@ (posedge c0_rx_req);
@@ -23,104 +23,109 @@ begin
 
     #100000;
     $fdisplay(handle, "\nTASK2, Master node enumerate with address 4'h2");
-    state = TASK2;
+	enum_short_addr = 4'h2;
+    state = TB_ENUM;
 	@ (posedge c0_rx_req);
 
     #100000;
     $fdisplay(handle, "\nTASK3, Master node enumerate with address 4'h3");
-    state = TASK3;
+	enum_short_addr = 4'h3;
+    state = TB_ENUM;
 	@ (posedge c0_rx_req);
 
     #100000;
     $fdisplay(handle, "\nTASK4, Master node enumerate with address 4'h4");
-    state = TASK4;
+	enum_short_addr = 4'h4;
+    state = TB_ENUM;
 	@ (posedge c0_rx_req);
 
     #100000;
     $fdisplay(handle, "\nTASK5, Master node enumerate with address 4'h5");
-    state = TASK5;
+	enum_short_addr = 4'h5;
+    state = TB_ENUM;
 	@ (posedge c0_rx_req);
 
     #100000;
     $fdisplay(handle, "\nTASK6, All Wake");
-    state = TASK6;
+    state = TB_ALL_WAKEUP;
 	@ (posedge c0_tx_succ | c0_tx_fail);
 
     #100000;
-    $fdisplay(handle, "\nTASK7, write to Layer 1 RF address 0");
+    $fdisplay(handle, "\nTASK7, RF Write, write random data to Layer 1 RF address 0");
 	rf_addr = 0;
 	dest_short_addr = 4'h3;
-    state = TASK7;
+    state = TB_RF_WRITE;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-
-    #100000;
-    $fdisplay(handle, "\nTASK7, write to Layer 1 RF address 1-4");
-	rf_addr = 1;
-	dest_short_addr = 4'h3;
-	word_counter = 3;
-    state = TASK7;
-	@ (posedge c0_tx_succ|c0_tx_fail);
-
-    #100000;
-    $fdisplay(handle, "\nTASK7, write to Layer 1 RF address 67 (ROM, not writable)");
-	rf_addr = 67;
-	dest_short_addr = 4'h3;
-    state = TASK7;
-	@ (posedge c0_tx_succ|c0_tx_fail);
-
-    #100000;
-    $fdisplay(handle, "\nTASK8, read from Layer 1 RF address 0, and write to Layer 2 RF address 0xa");
-	rf_addr = 0;
-	dest_short_addr = 4'h3;
-	relay_addr = 8'h40;
-	rf_relay_loc = 8'ha;
-	word_counter = 0;
-    state = TASK8;
-	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge layer1.tx_succ|layer1.tx_fail);
-   	$fdisplay(handle, "RF Addr: 8'h%h,\tData: 24'h%h", rf_addr, (c0_rx_data & 32'h00ff_ffff));
-
-    #100000;
-    $fdisplay(handle, "\nTASK8, read from Laer 1 RF address 1-4, and write to layer 2 RF address 0x1");
-	rf_addr = 1;
-	dest_short_addr = 4'h3;
-	relay_addr = 8'h40;
-	rf_relay_loc = 8'h1;
-	word_counter = 3;
-    state = TASK8;
-	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge layer1.tx_succ|layer1.tx_fail);
-	word_counter = 0;
-
-    #100000;
-    $fdisplay(handle, "\nTASK8, read from Layer 1 RF address 67 (ROM), and send to layer 0");
-	rf_addr = 67;
-	dest_short_addr = 4'h3;
-	relay_addr = 8'h03;
-	relay_loc = 8'hff;
-    state = TASK8;
-	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge c0_rx_req|c0_rx_fail);
-   	$fdisplay(handle, "RF Addr: 8'h%h,\tData: 24'h%h", rf_addr, (c0_rx_data & 32'h00ff_ffff));
-
-    #100000;
-    $fdisplay(handle, "\nTASK9, write to Layer 1 MEM address 0");
-	mem_addr = 0;
-	dest_short_addr = 4'h3;
-    state = TASK9;
-	@ (posedge c0_tx_succ|c0_tx_fail);
-
-    #100000;
-    $fdisplay(handle, "\nTASK10, read from Layer 1 MEM address 0, and write to layer 2 MEM address 0x1");
-	mem_addr = 0;
-	dest_short_addr = 4'h3;
-	relay_addr = 8'h03;
-    state = TASK10;
-	@ (posedge c0_tx_succ|c0_tx_fail);
-	@ (posedge c0_rx_req|c0_rx_fail);
-   	$fdisplay(handle, "MEM Addr: 32'h%h,\tData: 32'h%h", mem_addr, c0_rx_data);
 
 /*
+    #100000;
+    $fdisplay(handle, "\nTASK8, RF Write, bulk write random data to Layer 1 RF address 1-4");
+	rf_addr = 1;
+	dest_short_addr = 4'h3;
+	word_counter = 3;
+    state = TB_RF_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK9, RF Write, write to Layer 1 RF address 128 (Non-existing location)");
+	rf_addr = 128;
+	dest_short_addr = 4'h3;
+    state = TB_RF_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK10, RF Read, read from Layer 1 RF address 0, and write to Layer 2 RF address 0xa");
+	dest_short_addr = 4'h3;
+	rf_addr = 0;
+	rf_read_length = 0;
+	relay_addr = ((4'h4<<4) | `LC_CMD_RF_WRITE);
+	rf_relay_loc = 8'ha;
+    state = TB_RF_READ;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
+   	$fdisplay(handle, "RF Addr: 8'h%h,\tData: 24'h%h", rf_addr, (c0_rx_data & 32'h00ff_ffff));
+
+    #100000;
+    $fdisplay(handle, "\nTASK11, RF Read, read from Laer 1 RF address 1-4, and write to layer 2 RF address 0x1");
+	dest_short_addr = 4'h3;
+	rf_addr = 1;
+	rf_read_length = 3;
+	relay_addr = ((4'h4<<4) | `LC_CMD_RF_WRITE);
+	rf_relay_loc = 8'h1;
+    state = TB_RF_READ;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK12, RF Read, read from Layer 1 RF address 128 (non-existing location), and send to layer 0 (CPU)");
+	dest_short_addr = 4'h3;
+	rf_addr = 128;
+	rf_read_length = 3;
+	relay_addr = ((4'h4<<0) | `LC_CMD_RF_WRITE);
+	rf_relay_loc = 8'hff;		// Don't care
+    state = TB_RF_READ;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge c0_rx_req|c0_rx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK13, MEM Write, write random data to Layer 1 MEM, address 0");
+	dest_short_addr = 4'h3;
+	mem_addr = 0;
+	word_counter = 0;
+    state = TB_MEM_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\nTASK14, MEM Read, read from Layer 1 MEM, address 0, write to layer 2 MEM, address 0x1");
+	dest_short_addr = 4'h3;
+	mem_read_length = 0;
+	mem_addr = 0;
+	relay_addr = ((4'h4<<4) | `LC_CMD_MEM_WRITE);
+    state = TB_MEM_READ;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge layer2.rx_fail|layer2.rx_succ);
+   	$fdisplay(handle, "MEM Addr: 32'h%h,\tData: 32'h%h", mem_addr, c0_rx_data);
+
     #100000;
     $fdisplay(handle, "\nTASK11, sleep N1");
     state = TASK11;

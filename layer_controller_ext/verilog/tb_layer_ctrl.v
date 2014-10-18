@@ -422,4 +422,12 @@ end
    end
    
 
+	genvar idx;
+	generate 
+		for (idx=0; idx<64; idx = idx+1)
+		begin: rf_write
+			always @ (posedge layer1.rf0.LOAD[idx])
+				$fdisplay(handle, "Layer 1, RF Addr: 8'h%h,\tData: 24'h%h", layer1.rf0.LOAD, layer1.rf0.DIN));
+		end
+	endgenerate
 endmodule // tb_layer_ctrl

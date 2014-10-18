@@ -558,14 +558,16 @@ begin
 				MEM_WAIT_START_ADDRESS:
 				begin
 					if (layer_interrupted)
+					begin
 						next_mem_aout = interrupt_payload[int_idx][(`DATA_WIDTH<<1)-1:`DATA_WIDTH+2]; // bit 63 ~ 34
 						next_mem_sub_state = MEM_WAIT_DEST_LOCATION;
+					end
 					else
 					begin
 						if (RX_REQ_DL2 & (~RX_ACK))
 						begin
 							next_rx_ack = 1;
-							next_mem_aout = RX_DATA[(`DATA_WIDTH<<1)-1:`DATA_WIDTH+2]; // bit 63 ~ 34
+							next_mem_aout = RX_DATA[`DATA_WIDTH-1:2]; // bit 63 ~ 34
 							if (RX_PEND)
 								next_mem_sub_state = MEM_WAIT_DEST_LOCATION;
 							else // Error command

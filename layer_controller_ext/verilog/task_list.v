@@ -63,12 +63,12 @@ always @ (posedge clk or negedge resetn) begin
 						c0_tx_pend <= 1;
 						word_counter <= word_counter - 1;
 						rf_addr <= rf_addr + 1;
-   	      				$fdisplay(handle, "Write RF addr: 8'h%h,\tData: 24'h%h", rf_addr, (rand_dat&32'h00ffffff));
+   	      				$fdisplay(handle, "Write RF addr: 8'h%h,\tData: 24'h%h", rf_addr, rand_dat[23:0]);
 					end
 					else
 					begin
 						c0_tx_pend <= 0;
-   	      				$fdisplay(handle, "Write RF addr: 8'h%h,\tData: 24'h%h", rf_addr, (rand_dat&32'h00ffffff));
+   	      				$fdisplay(handle, "Write RF addr: 8'h%h,\tData: 24'h%h", rf_addr, rand_dat[23:0]);
 						state <= TX_WAIT;
 					end
 				end

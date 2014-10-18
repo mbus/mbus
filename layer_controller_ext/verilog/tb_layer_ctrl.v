@@ -5,6 +5,7 @@
 `include "include/mbus_def.v"
 
 module tb_layer_ctrl();
+`include "include/mbus_func.v"
 
 	parameter LC_INT_DEPTH=16;
 	parameter LC_MEM_DEPTH=65536;
@@ -279,7 +280,7 @@ always @ (posedge layer0.rx_fail)
 always @ (posedge layer0.rx_req)
 begin
 	$fdisplay(handle, "N0 RX Success");
-   	$fdisplay(handle, "N0 Data out =\t32'h%h", layer0.rx_data);
+   	//$fdisplay(handle, "N0 Data out =\t32'h%h", layer0.rx_data);
 end
 
 always @ (posedge layer0.tx_succ)
@@ -303,7 +304,7 @@ always @ (posedge layer1.rx_fail)
 always @ (posedge layer1.rx_req)
 begin
 	$fdisplay(handle, "N1 RX Success");
-   	$fdisplay(handle, "N1 Data out =\t32'h%h", layer1.rx_data);
+   	//$fdisplay(handle, "N1 Data out =\t32'h%h", layer1.rx_data);
 end
 
 always @ (posedge layer1.tx_succ)
@@ -327,7 +328,7 @@ always @ (posedge layer2.rx_fail)
 always @ (posedge layer2.rx_req)
 begin
 	$fdisplay(handle, "N2 RX Success");
-   	$fdisplay(handle, "N2 Data out =\t32'h%h", layer2.rx_data);
+   	//$fdisplay(handle, "N2 Data out =\t32'h%h", layer2.rx_data);
 end
 
 always @ (posedge layer2.tx_succ)
@@ -351,7 +352,7 @@ always @ (posedge layer3.rx_fail)
 always @ (posedge layer3.rx_req)
 begin
 	$fdisplay(handle, "N3 RX Success");
-   	$fdisplay(handle, "N3 Data out =\t32'h%h", layer3.rx_data);
+   	//$fdisplay(handle, "N3 Data out =\t32'h%h", layer3.rx_data);
 end
 
 always @ (posedge layer3.tx_succ)
@@ -391,10 +392,10 @@ begin
 end
 
 always @ (posedge c0_tx_succ)
-	$fdisplay(handle, "C0 TX Success\n");
+	$fdisplay(handle, "C0 TX Success");
 
 always @ (posedge c0_tx_fail)
-	$fdisplay(handle, "C0 TX Fail\n");
+	$fdisplay(handle, "C0 TX Fail");
 
 always @ (posedge clk)
 begin
@@ -421,13 +422,48 @@ end
       end
    end
    
-
+// RF Write output
+	wire [7:0] layer0_rf0_addr = log2(layer0.rf0.LOAD) - 1;
+	wire [7:0] layer1_rf0_addr = log2(layer1.rf0.LOAD) - 1;
+	wire [7:0] layer2_rf0_addr = log2(layer2.rf0.LOAD) - 1;
+	wire [7:0] layer3_rf0_addr = log2(layer3.rf0.LOAD) - 1;
 	genvar idx;
 	generate 
 		for (idx=0; idx<64; idx = idx+1)
 		begin: rf_write
+			always @ (posedge layer0.rf0.LOAD[idx])
+				$fdisplay(handle, "Layer 0, RF Write, Addr: 8'h%h,\tData: 24'h%h", layer0_rf0_addr, layer0.rf0.DIN);
 			always @ (posedge layer1.rf0.LOAD[idx])
-				$fdisplay(handle, "Layer 1, RF Addr: 8'h%h,\tData: 24'h%h", layer1.rf0.LOAD, layer1.rf0.DIN));
+				$fdisplay(handle, "Layer 1, RF Write, Addr: 8'h%h,\tData: 24'h%h", layer1_rf0_addr, layer1.rf0.DIN);
+			always @ (posedge layer2.rf0.LOAD[idx])
+				$fdisplay(handle, "Layer 2, RF Write, Addr: 8'h%h,\tData: 24'h%h", layer2_rf0_addr, layer2.rf0.DIN);
+			always @ (posedge layer3.rf0.LOAD[idx])
+				$fdisplay(handle, "Layer 3, RF Write, Addr: 8'h%h,\tData: 24'h%h", layer3_rf0_addr, layer3.rf0.DIN);
 		end
 	endgenerate
+// End of RF Write output
+
+// MEM Write output
+	always @ (layer0.mem0.MEM_ACK_OUT)
+		if (layer0.mem0.MEM_WRITE)
+			$fdisplay(handle, "Layer 0, MEM Write, Addr: 30'h%h,\tData: 32'h%h", layer0.mem0.ADDR, layer0.mem0.DATA_IN);
+		else
+			$fdisplay(handle, "Layer 0, MEM Read, Addr: 30'h%h,\tData: 32'h%h", layer0.mem0.ADDR, layer0.mem0.DATA_OUT);
+	always @ (layer1.mem0.MEM_ACK_OUT)
+		if (layer1.mem0.MEM_WRITE)
+			$fdisplay(handle, "Layer 1, MEM Write, Addr: 30'h%h,\tData: 32'h%h", layer1.mem0.ADDR, layer1.mem0.DATA_IN);
+		else
+			$fdisplay(handle, "Layer 1, MEM Read, Addr: 30'h%h,\tData: 32'h%h", layer1.mem0.ADDR, layer1.mem0.DATA_OUT);
+	always @ (layer2.mem0.MEM_ACK_OUT)
+		if (layer2.mem0.MEM_WRITE)
+			$fdisplay(handle, "Layer 2, MEM Write, Addr: 30'h%h,\tData: 32'h%h", layer2.mem0.ADDR, layer2.mem0.DATA_IN);
+		else
+			$fdisplay(handle, "Layer 2, MEM Read, Addr: 30'h%h,\tData: 32'h%h", layer2.mem0.ADDR, layer2.mem0.DATA_OUT);
+	always @ (layer3.mem0.MEM_ACK_OUT)
+		if (layer3.mem0.MEM_WRITE)
+			$fdisplay(handle, "Layer 3, MEM Write, Addr: 30'h%h,\tData: 32'h%h", layer3.mem0.ADDR, layer3.mem0.DATA_IN);
+		else
+			$fdisplay(handle, "Layer 3, MEM Read, Addr: 30'h%h,\tData: 32'h%h", layer3.mem0.ADDR, layer3.mem0.DATA_OUT);
+// End of MEM Write output
+
 endmodule // tb_layer_ctrl

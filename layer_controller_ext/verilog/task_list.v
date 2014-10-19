@@ -135,6 +135,37 @@ always @ (posedge clk or negedge resetn) begin
 				end
 			end
 
+			// MEM Write, single word with provided data
+			// Parameters:	dest_short_addr (4 bits)
+			//				mem_addr (30 bits)
+			//				mem_w_data (32 bits)
+			TB_SINGLE_MEM_WRITE:
+			begin
+				if ((~c0_tx_ack) & (~c0_tx_req))
+				begin
+					c0_priority <= 0;
+					c0_tx_addr <= {24'h0, dest_short_addr, `LC_CMD_MEM_WRITE};
+					c0_tx_req <= 1;
+					case (mem_access_state)
+						0:
+						begin
+							c0_tx_data <= ((mem_addr<<2) | 2'b0);
+							c0_tx_pend <= 1;
+							addr_increment <= 0;
+							mem_access_state <= 1;
+						end
+						
+						1:
+						begin
+							c0_tx_data <= mem_w_data;
+							c0_tx_pend <= 0;
+							mem_access_state <= 0;
+							state <= TX_WAIT;
+						end
+					endcase
+				end
+			end
+
 			// MEM Read command (3 words command)
 			// Parameters:	dest_short_addr (4 bits)
 			//				mem_read_length (20 bits)
@@ -205,6 +236,20 @@ always @ (posedge clk or negedge resetn) begin
 				c0_tx_req <= 1;
 				c0_tx_pend <= 0;
 				c0_priority <= 0;
+				state <= TX_WAIT;
+			end
+
+			// Interrupt
+			// Parameters:	layer_number (0-3)
+			//				int_vec		 (LC_INT_DEPTH bits)
+			TB_SINGLE_INTERRUPT:
+			begin
+				case (layer_number)
+					0: begin n0_int_vector<= (1'b1<<int_vec); end
+					1: begin n1_int_vector<= (1'b1<<int_vec); end
+					2: begin n2_int_vector<= (1'b1<<int_vec); end
+					3: begin n3_int_vector<= (1'b1<<int_vec); end
+				endcase
 				state <= TX_WAIT;
 			end
 

@@ -518,22 +518,21 @@ begin
 				3:
 				begin
 					next_mem_sub_state = 0;
-					next_int_cmd_cnt = int_cmd_cnt - 1'b1;
-					case(int_cmd_cnt)
-						2'b11:
-						begin
-							next_rx_dat_buffer = interrupt_payload[int_idx][(`DATA_WIDTH<<1)-1:`DATA_WIDTH];
-							next_rx_pend_reg = 1;
-						end
-
-						2'b10:
-						begin
-							next_rx_dat_buffer = interrupt_payload[int_idx][`DATA_WIDTH-1:0];
-							next_rx_pend_reg = 0;
-						end
-
-						default: begin next_lc_state = LC_STATE_CLR_INT; end
-					endcase
+					next_int_cmd_cnt = int_cmd_cnt + 1'b1;
+					if (rx_pend_reg)
+					begin
+						if (int_cmd_cnt==interrupt_command_length[int_idx])
+							next_rx_pend_reg = 1'b0;
+						else
+							next_rx_pend_reg = 1'b1;
+						case(int_cmd_cnt)
+							2'b10: begin next_rx_dat_buffer = interrupt_payload[int_idx][(`DATA_WIDTH<<1)-1:`DATA_WIDTH]; end
+							2'b11: begin next_rx_dat_buffer = interrupt_payload[int_idx][`DATA_WIDTH-1:0]; end
+						endcase
+					end
+					else
+						next_lc_state = LC_STATE_CLR_INT;
+						
 				end
 
 			endcase
@@ -760,14 +759,14 @@ begin
 		LC_STATE_INT_HANDLED:
 		begin
 			// only wake up the system, don't do anything
+			next_layer_interrupted = 1;
 			if ((interrupt_command_length[int_idx])==2'b00)
 				next_lc_state = LC_STATE_CLR_INT;
 			else
 			begin
-				next_layer_interrupted = 1;
 				next_rx_dat_buffer = interrupt_payload[int_idx][(`DATA_WIDTH*3)-1:(`DATA_WIDTH<<1)];
 				case (interrupt_functional_id[int_idx])
-					`LC_CMD_RF_WRITE: begin next_lc_state = LC_STATE_RF_WRITE; next_rx_pend_reg = interrupt_command_length[int_idx][1]; next_int_cmd_cnt = interrupt_command_length[int_idx]; end
+					`LC_CMD_RF_WRITE: begin next_lc_state = LC_STATE_RF_WRITE; next_rx_pend_reg = interrupt_command_length[int_idx][1]; next_int_cmd_cnt = 2; end
 					`LC_CMD_RF_READ: begin next_lc_state = LC_STATE_RF_READ; next_rx_pend_reg = 0; end
 					`LC_CMD_MEM_READ: begin next_lc_state = LC_STATE_MEM_READ; next_rx_pend_reg = 1; end
 					default: begin next_lc_state = LC_STATE_CLR_INT; end	// Invalid interrupt message

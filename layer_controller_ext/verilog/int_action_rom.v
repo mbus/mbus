@@ -87,34 +87,34 @@ endgenerate
 
 	// Test Case A1, 1: Read 1 location, write to another layer, length = 1
 assign rf_read_from[0] = 8'h0;					// Read from address 8'h0
-assign rf_read_length[0] = 8'h0;					// Read 1 loc. (24-bit)
-assign rf_read_reply_addr[0] = (4'd2<<4 | `LC_CMD_RF_WRITE);// Send to layer 2, with RF write command
+assign rf_read_length[0] = 8'h0;				// Read 1 loc. (24-bit)
+assign rf_read_reply_addr[0] = (4'd4<<4 | `LC_CMD_RF_WRITE);// Send to layer 2, with RF write command
 assign rf_read_reply_loc[0] = 8'h0;				// Send to 8'h0
-assign int_cmd_len_array[0] = 2'b01;					// Command length 1
+assign int_cmd_len_array[0] = 2'b01;			// Command length 1
 assign int_func_array[0] = `LC_CMD_RF_READ;
 
 	// Test Case A2, 2: Read 1 location, write to another layer, length = 2
 assign rf_read_from[1] = 8'h1;					// Read from address 8'h1
-assign rf_read_length[1] = 8'h0;					// Read 1 loc. (24-bit)
-assign rf_read_reply_addr[1] = (4'd2<<4 | `LC_CMD_RF_WRITE);// Send to layer 2, with RF write command
+assign rf_read_length[1] = 8'h0;				// Read 1 loc. (24-bit)
+assign rf_read_reply_addr[1] = (4'd4<<4 | `LC_CMD_RF_WRITE);// Send to layer 2, with RF write command
 assign rf_read_reply_loc[1] = 8'h1;				// Send to 8'h1
-assign int_cmd_len_array[1] = 2'b10;					// Command length 2
+assign int_cmd_len_array[1] = 2'b10;			// Command length 2
 assign int_func_array[1] = `LC_CMD_RF_READ;
 
 	// Test Case A3, 3: Read 5 locations, write to another layer, length = 1
 assign rf_read_from[2] = 8'h2;					// Read from address 8'h2
-assign rf_read_length[2] = 8'h4;					// Read 5 loc. (24-bit)
-assign rf_read_reply_addr[2] = (4'd2<<4 | `LC_CMD_RF_WRITE);// Send to layer 2, with RF write command
+assign rf_read_length[2] = 8'h4;				// Read 5 loc. (24-bit)
+assign rf_read_reply_addr[2] = (4'd4<<4 | `LC_CMD_RF_WRITE);// Send to layer 2, with RF write command
 assign rf_read_reply_loc[2] = 8'h2;				// Send to 8'h2
-assign int_cmd_len_array[2] = 2'b01;					// Command length 1
+assign int_cmd_len_array[2] = 2'b01;			// Command length 1
 assign int_func_array[2] = `LC_CMD_RF_READ;
 
 	// Test Case A4, 4: Read 5 locations, over RF range in the middle, write to another layer, length = 1
-assign rf_read_from[3] = 8'd126;					// Read from address 8'd126
-assign rf_read_length[3] = 8'h4;					// Read 5 loc. (24-bit)
-assign rf_read_reply_addr[3] = (4'd2<<4 | `LC_CMD_RF_WRITE);// Send to layer 2, with RF write command
-assign rf_read_reply_loc[3] = 8'h3;				// Send to 8'h3
-assign int_cmd_len_array[3] = 2'b01;					// Command length 1
+assign rf_read_from[3] = 8'd126;				// Read from address 8'd126
+assign rf_read_length[3] = 8'h4;				// Read 5 loc. (24-bit)
+assign rf_read_reply_addr[3] = (4'd4<<4 | `LC_CMD_RF_WRITE);// Send to layer 2, with RF write command
+assign rf_read_reply_loc[3] = 8'h7;				// Send to 8'h7
+assign int_cmd_len_array[3] = 2'b01;			// Command length 1
 assign int_func_array[3] = `LC_CMD_RF_READ;
 
 
@@ -144,18 +144,18 @@ assign rf_write_to[4] = 8'd4;						// Write 0xabccba to address 4
 assign rf_write_data[4] = 24'habccba;				// 
 assign rf_write_to[5] = 8'd6;						// Write 0x090785 to address 6
 assign rf_write_data[5] = 24'h090785;				// 
-assign int_cmd_len_array[6] = 2'b11;					// Command length 3
+assign int_cmd_len_array[6] = 2'b11;				// Command length 3
 assign int_func_array[6] = `LC_CMD_RF_WRITE;
 assign int_payload_array[6] = ((rf_write_to[3]<<24 | rf_write_data[3])<<(`DATA_WIDTH*2)) | ((rf_write_to[4]<<24 | rf_write_data[4])<<`DATA_WIDTH) | (rf_write_to[5]<<24 | rf_write_data[5]);
 
 	// Test Case B4, 4: Write 3 locations, over RF range in the middle, length = 3
 assign rf_write_to[6] = 8'd5;						// Write 0x052986 to address 5
 assign rf_write_data[6] = 24'h052986;				// 
-assign rf_write_to[7] = 8'd127;					// Write 0x031783 to address 127
+assign rf_write_to[7] = 8'd127;						// Write 0x031783 to address 127 (not writable address)
 assign rf_write_data[7] = 24'h031783;				// 
-assign rf_write_to[8] = 8'd128;					// Write 0x101614 to address 128, should fail
+assign rf_write_to[8] = 8'd128;						// Write 0x101614 to address 128 (non-exist address)
 assign rf_write_data[8] = 24'h101614;				// 
-assign int_cmd_len_array[7] = 2'b11;					// Command length 3
+assign int_cmd_len_array[7] = 2'b11;				// Command length 3
 assign int_func_array[7] = `LC_CMD_RF_WRITE;
 assign int_payload_array[7] = ((rf_write_to[6]<<24 | rf_write_data[6])<<(`DATA_WIDTH*2)) | ((rf_write_to[7]<<24 | rf_write_data[7])<<`DATA_WIDTH) | (rf_write_to[8]<<24 | rf_write_data[8]);
 
@@ -172,23 +172,23 @@ endgenerate
 
 	// Test Case C1, 1: Read 1 location, write to another layer (MEM), length = 3
 assign mem_read_start_addr[0]	= 30'h0;			// Read from address 0
-assign mem_read_reply_addr[0]	= (4'd2<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2, SRAM write
+assign mem_read_reply_addr[0]	= (4'd4<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2, SRAM write
 assign mem_read_length[0]		= 20'd0;			// Read 1 word
 assign mem_read_reply_locs[0]	= 30'd1;			// Send to address 1
 assign int_cmd_len_array[8]	= 2'b11;
 assign int_func_array[8]		= `LC_CMD_MEM_READ;
 
-	// Test Case C2, 2: Read 10 location, write to another layer (MEM), length = 3
+	// Test Case C2, 2: Read 5 location, write to another layer (MEM), length = 3
 assign mem_read_start_addr[1]	= 30'h1;			// Read from address 1
-assign mem_read_reply_addr[1]	= (4'd2<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2, SRAM write
-assign mem_read_length[1]		= 20'd2;			// Read 3 word
+assign mem_read_reply_addr[1]	= (4'd4<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2, SRAM write
+assign mem_read_length[1]		= 20'd4;			// Read 5 word
 assign mem_read_reply_locs[1]	= 30'd2;			// Send to address 2
 assign int_cmd_len_array[9]	= 2'b11;
 assign int_func_array[9]		= `LC_CMD_MEM_READ;
 
 	// Test Case C3, 3: Read 1 location, out of range, wrap around, write to another layer (MEM), length = 3
-assign mem_read_start_addr[2]	= 30'd66666;		// Read from a non-existing address
-assign mem_read_reply_addr[2]	= (4'd2<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2,  SRAM write
+assign mem_read_start_addr[2]	= 30'd65538;		// Read from a non-existing address, overflow
+assign mem_read_reply_addr[2]	= (4'd4<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2,  SRAM write
 assign mem_read_length[2]		= 20'd0;			// Read 1 word
 assign mem_read_reply_locs[2]	= 30'd3;			// Send to address 3
 assign int_cmd_len_array[10]	= 2'b11;
@@ -196,7 +196,7 @@ assign int_func_array[10]		= `LC_CMD_MEM_READ;
 
 	// Test Case C4, 4: Read 10 location, out of range, wrap around, write to another layer (MEM), length = 3
 assign mem_read_start_addr[3]	= 30'd65533;		// Read over memory boundary
-assign mem_read_reply_addr[3]	= (4'd2<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2, SRAM write
+assign mem_read_reply_addr[3]	= (4'd4<<4 | `LC_CMD_MEM_WRITE); // Write to layer 2, SRAM write
 assign mem_read_length[3]		= 20'd9;			// Read 10 word
 assign mem_read_reply_locs[3]	= 30'd3;			// Send to address 3
 assign int_cmd_len_array[11]	= 2'b11;

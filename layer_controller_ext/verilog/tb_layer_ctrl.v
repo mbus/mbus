@@ -71,6 +71,9 @@ module tb_layer_ctrl();
 	reg [19:0]	mem_read_length;
 	reg [3:0]	enum_short_addr;
 	reg [19:0]	long_addr;
+	reg [1:0]	layer_number;
+	reg [LC_INT_DEPTH-1:0] int_vec;
+	reg [31:0]	mem_w_data;
    	integer 	handle;
 
 	localparam TB_PROC_UP					= 0;
@@ -84,6 +87,9 @@ module tb_layer_ctrl();
 	localparam TB_SEL_SLEEP_FULL_PREFIX		= 8;
 	localparam TB_ALL_SLEEP					= 9;
 	localparam TB_ALL_SHORT_ADDR_INVALID	= 10;
+	localparam TB_SINGLE_INTERRUPT			= 11;
+	localparam TB_MULTIPLE_INTERRUPT		= 12;
+	localparam TB_SINGLE_MEM_WRITE			= 13;
 	localparam TX_WAIT						= 31;
 
    reg	c0_auto_rx_ack;
@@ -144,8 +150,11 @@ begin
 	addr_increment = 0;
 	enum_short_addr = 4'h2;
 	long_addr = 20'haaaa0;
+	layer_number = 0;
+	int_vec = 0;
+	mem_w_data = 0;
 
-    @ (posedge clk);
+	@ (posedge clk);
     @ (posedge clk);
     @ (posedge clk);
     `SD resetn = 0;

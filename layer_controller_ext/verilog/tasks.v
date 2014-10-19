@@ -418,20 +418,126 @@ begin
     #50000;
 
 
-//    #100000;
-//    $fdisplay(handle, "\n-------------------------------------------------------------------------");
-//    $fdisplay(handle, "TASK37, Error command test");
-//    $fdisplay(handle, "Bulk read Layer 1's MEM address 0-9, and read layer 3's RF");
-//    $fdisplay(handle, "-------------------------------------------------------------------------");
-//	dest_short_addr = 4'h3;
-//	mem_read_length = 9;
-//	mem_addr = 0;
-//	relay_addr = ((4'h5<<4) | `LC_CMD_RF_READ);		// Fake RF read
-//	// Read RF from 192-197 (non-existing location), write to layer 2's RF location 0 <- This is an invalid RF read command
-//	mem_relay_loc = (8'd192<<22 | 8'd5<<14 | 4'h4<<10 | `LC_CMD_RF_WRITE<<6 | 6'h0);
-//    state = TB_MEM_READ;
-//	@ (posedge c0_tx_succ|c0_tx_fail);
-//	@ (posedge layer1.tx_succ | layer1.tx_fail);
+    #100000;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK37, Error command test");
+    $fdisplay(handle, "Bulk read Layer 1's MEM address 0-1, and read layer 3's RF");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	mem_read_length = 1;
+	mem_addr = 0;
+	relay_addr = ((4'h5<<4) | `LC_CMD_RF_READ);		// Fake RF read
+	// Read RF from 192-197 (non-existing location), write to layer 2's RF location 0 <- This is an invalid RF read command
+	mem_relay_loc = (8'd192<<22 | 8'd5<<14 | 4'h4<<10 | `LC_CMD_RF_WRITE<<6 | 6'h0);
+    state = TB_MEM_READ;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge layer1.tx_succ | layer1.tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK38, Error command test");
+    $fdisplay(handle, "Read Layer 1's MEM address 0, and read layer 3's RF");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	mem_read_length = 0;
+	mem_addr = 0;
+	relay_addr = ((4'h5<<4) | `LC_CMD_RF_READ);		// Fake RF read
+	// Read RF from 192-197 (non-existing location), write to layer 2's RF location 0 <- This is an invalid RF read command
+	mem_relay_loc = (8'd192<<22 | 8'd5<<14 | 4'h4<<10 | `LC_CMD_RF_WRITE<<6 | 6'h0);
+    state = TB_MEM_READ;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge layer1.tx_succ | layer1.tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK39, Error command test");
+    $fdisplay(handle, "CPU sends a command with an unknown functional ID");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	functional_id = 4'b0100;
+	word_counter = 1;
+    state = TB_ARBITRARY_CMD;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK40, Error command test");
+    $fdisplay(handle, "CPU bulk writes random data to Layer 1 RF address 128-130");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	rf_addr = 128;
+	dest_short_addr = 4'h3;
+	word_counter = 2;
+    state = TB_RF_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK41, Error command test");
+    $fdisplay(handle, "Invalid MEM read command");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	functional_id = `LC_CMD_MEM_READ;
+	word_counter = 0;
+    state = TB_ARBITRARY_CMD;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK42, Error command test");
+    $fdisplay(handle, "Invalid MEM read command");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	functional_id = `LC_CMD_MEM_READ;
+	word_counter = 1;
+    state = TB_ARBITRARY_CMD;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK43, Error command test");
+    $fdisplay(handle, "Invalid MEM read command");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	functional_id = `LC_CMD_MEM_READ;
+	word_counter = 5;
+    state = TB_ARBITRARY_CMD;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK44, Error command test");
+    $fdisplay(handle, "Invalid MEM wriet command");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	functional_id = `LC_CMD_MEM_WRITE;
+	word_counter = 0;
+    state = TB_ARBITRARY_CMD;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK45, MEM Write");
+    $fdisplay(handle, "CPU bulk writes random data to Layer 1's MEM address 0-63");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	mem_addr = 0;
+	word_counter = 63;
+    state = TB_MEM_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK46, MEM Read");
+    $fdisplay(handle, "Read Layer 1's MEM address 0, and write to layer 2's MEM, address 0x0");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	mem_read_length = 63;
+	mem_addr = 0;
+	relay_addr = ((4'h4<<4) | `LC_CMD_MEM_WRITE);
+	mem_relay_loc = 30'd0;
+    state = TB_MEM_READ;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge layer1.tx_succ | layer1.tx_fail);
 
 
     #300000;
@@ -442,126 +548,3 @@ begin
 end
 endtask // task0
 
-
-//****************************************
-//Task 1 testbench: DMA between layers
-//****************************************
-//task task1;
-//begin
-//    handle=$fopen("result_task1.txt");
-//
-//    #100000;
-//    $fdisplay(handle, "\nTASK0, Master node and Processor wake up");
-//    state = TASK0;
-//	@ (posedge SCLK);
-//	c0_req_int = 0;
-//    #50000;
-//
-//    #100000;
-//    $fdisplay(handle, "\nTASK1, Master node sends out querry");
-//    state = TASK1;
-//	@ (posedge c0_rx_req);
-//	@ (posedge c0_rx_req);
-//	@ (posedge c0_rx_req);
-//	@ (posedge c0_rx_req);
-//
-//    #100000;
-//    $fdisplay(handle, "\nTASK2, Master node enumerate with address 4'h2");
-//    state = TASK2;
-//	@ (posedge c0_rx_req);
-//
-//    #100000;
-//    $fdisplay(handle, "\nTASK3, Master node enumerate with address 4'h3");
-//    state = TASK3;
-//	@ (posedge c0_rx_req);
-//
-//    #100000;
-//    $fdisplay(handle, "\nTASK4, Master node enumerate with address 4'h4");
-//    state = TASK4;
-//	@ (posedge c0_rx_req);
-//
-//    #100000;
-//    $fdisplay(handle, "\nTASK5, Master node enumerate with address 4'h5");
-//    state = TASK5;
-//	@ (posedge c0_rx_req);
-//
-//    #100000;
-//    $fdisplay(handle, "\nTASK13, write 1 word to Layer 0 MEM address 0");
-//	mem_addr = 0;
-//	dest_short_addr = 4'h2;
-//	mem_data = (1<<2);	// DMA destination ptr
-//    state = TASK13;
-//	@ (posedge c0_tx_succ|c0_tx_fail);
-//
-//    #100000;
-//    $fdisplay(handle, "\nTASK9, write 63 words to Layer 0 MEM address 1");
-//	mem_addr = 1;
-//	dest_short_addr = 4'h2;
-//	word_counter = 62;
-//    state = TASK9;
-//	@ (posedge c0_tx_succ|c0_tx_fail);
-//	word_counter = 0;
-//
-//    #100000;
-//    $fdisplay(handle, "\nTASK10, DMA copy 64 words from Layer 0 MEM address 0 to Layer 1 MEM address 0");
-//	mem_addr = 0;
-//	dest_short_addr = 4'h2;
-//	relay_addr = {4'h3, `LC_CMD_MEM_WRITE};
-//	word_counter = 63;
-//    state = TASK10;
-//	@ (posedge layer0.tx_succ|layer0.tx_fail);
-//	word_counter = 0;
-//	
-//	// Layer 0 and 1 has consistent memory except address 0
-//
-//    #100000;
-//    $fdisplay(handle, "\nTASK10, CPU reads 63 words from Layer 1 MEM address 0");
-//	mem_addr = 1;
-//	dest_short_addr = 4'h3;
-//	relay_addr = {4'h0, `CHANNEL_MEMBER_EVENT};
-//	word_counter = 62;
-//    state = TASK10;
-//	@ (posedge layer1.tx_succ|layer1.tx_fail);
-//	word_counter = 0;
-//
-//	// write to layer 2 MEM
-//    #100000;
-//    $fdisplay(handle, "\nTASK14, write 64-word to Layer 2 MEM address 0 in RF-write type");
-//	mem_addr = 0;
-//	dest_short_addr = 4'h4;
-//	rf_addr = 0;
-//	word_counter = 63;
-//    state = TASK14;
-//	@ (posedge c0_tx_succ|c0_tx_fail);
-//	word_counter = 0;
-//
-//	// read from layer 2 MEM write to layer 3 RF
-//    #100000;
-//    $fdisplay(handle, "\nTASK10, layer 2 reads its MEM and relay to layer 3 RF");
-//	mem_addr = 0;
-//	dest_short_addr = 4'h4;
-//	relay_addr = {4'h5, `LC_CMD_RF_WRITE};
-//	word_counter = 63;
-//    state = TASK10;
-//	@ (posedge layer2.tx_succ|layer2.tx_fail);
-//	word_counter = 0;
-//
-//	// read from layer 3 RF to CPU
-//    #100000;
-//    $fdisplay(handle, "\nTASK8, read from Layer 3 RF address 0");
-//	rf_addr = 0;
-//	dest_short_addr = 4'h5;
-//	relay_addr = {4'h0, `CHANNEL_MEMBER_EVENT};
-//	word_counter = 63;
-//    state = TASK8;
-//	@ (posedge c0_tx_succ|c0_tx_fail);
-//	@ (posedge layer3.tx_succ|layer3.tx_fail);
-//
-//
-//    #300000;
-//    $display("*************************************");
-//    $display("************TASK1 Complete***********");
-//    $display("*************************************");
-//    $finish;
-//end
-//endtask // task1

@@ -74,6 +74,7 @@ module tb_layer_ctrl();
 	reg [1:0]	layer_number;
 	reg [LC_INT_DEPTH-1:0] int_vec;
 	reg [31:0]	mem_w_data;
+	reg [3:0]	functional_id;
    	integer 	handle;
 
 	localparam TB_PROC_UP					= 0;
@@ -90,6 +91,7 @@ module tb_layer_ctrl();
 	localparam TB_SINGLE_INTERRUPT			= 11;
 	localparam TB_MULTIPLE_INTERRUPT		= 12;
 	localparam TB_SINGLE_MEM_WRITE			= 13;
+	localparam TB_ARBITRARY_CMD				= 14;
 	localparam TX_WAIT						= 31;
 
    reg	c0_auto_rx_ack;
@@ -153,6 +155,7 @@ begin
 	layer_number = 0;
 	int_vec = 0;
 	mem_w_data = 0;
+	functional_id = 0;
 
 	@ (posedge clk);
     @ (posedge clk);

@@ -50,10 +50,16 @@
  * However, user should be aware of the memory/RF depth at any time.
  * 
  *
- * Last modified date: 10/15 '14
+ * Last modified date: 10/19 '14
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  *
  * Update log:
+ *
+ * 10/19 '14
+ * Fixed MEM_READ and RF_READ, Added interrupt support for wakeup only and RF_WRITE
+ * Note: RF_READ and RF_WRITE don't wrap around, if address fall outside the range would
+ *		 be treated as an invalid command.
+ *
  * 10/15 '14
  * Start working on generation 2
  *
@@ -464,6 +470,7 @@ begin
 					next_rf_idx = rf_idx + 1'b1;
 					next_mem_sub_state = 1;
 				end
+
 			endcase
 		end
 
@@ -480,7 +487,10 @@ begin
 					else if (layer_interrupted)
 						next_lc_state = LC_STATE_CLR_INT;
 					else if (rx_pend_reg)	// Invalid address
+					begin
+						next_mem_sub_state = 0;
 						next_lc_state = LC_STATE_ERROR;
+					end
 					else					// Invalid command
 						next_lc_state = LC_STATE_IDLE;
 				end
@@ -594,7 +604,11 @@ begin
 							next_rx_ack = 1;
 							next_tx_data = (RX_DATA & 32'hfffffffc);	// clear last two bits, address is 30 bits only
 							if (RX_PEND) // Error MBus command
-								next_mem_sub_state = LC_STATE_ERROR;
+							begin
+								next_rx_pend_reg = 1;
+								next_mem_sub_state = 0;
+								next_lc_state = LC_STATE_ERROR;
+							end
 							else 
 								next_mem_sub_state = MEM_ADDRESS_RANGE_CHECK;
 						end
@@ -775,7 +789,8 @@ begin
 
 		end
 
-		// This state handles errors, junk message coming in. disgarding all
+		// This state handles errors, junk message coming in.
+		// Do not assert RX_ACK until it fails
 		// the message before return idle state
 		LC_STATE_ERROR:
 		begin
@@ -791,12 +806,12 @@ begin
 
 				1:
 				begin
-					if (rx_pend_reg & RX_FAIL)
+					if (~rx_pend_reg)
 					begin
 						next_rx_ack = 1;
 						next_lc_state = LC_STATE_IDLE;
 					end
-					else if (~rx_pend_reg)
+					else if (RX_FAIL)
 					begin
 						next_rx_ack = 1;
 						next_lc_state = LC_STATE_IDLE;

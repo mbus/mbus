@@ -209,34 +209,43 @@ always @ (posedge clk or negedge resetn) begin
 			// Parameters:	long_addr (20 bits)
 			TB_SEL_SLEEP_FULL_PREFIX:
 			begin
-				c0_tx_addr <= {28'hf00000, `CHANNEL_POWER};
-				c0_tx_data <= {`CMD_CHANNEL_POWER_SEL_SLEEP_FULL, 4'h0, long_addr, 4'h0};
-				c0_tx_req <= 1;
-				c0_tx_pend <= 0;
-				c0_priority <= 0;
-				state <= TX_WAIT;
+				if ((~c0_tx_ack) & (~c0_tx_req))
+				begin
+					c0_tx_addr <= {28'hf00000, `CHANNEL_POWER};
+					c0_tx_data <= {`CMD_CHANNEL_POWER_SEL_SLEEP_FULL, 4'h0, long_addr, 4'h0};
+					c0_tx_req <= 1;
+					c0_tx_pend <= 0;
+					c0_priority <= 0;
+					state <= TX_WAIT;
+				end
 			end
 
 			// All layers sleep
 			TB_ALL_SLEEP:
 			begin
-				c0_tx_addr <= {28'hf00000, `CHANNEL_POWER};
-				c0_tx_data <= {`CMD_CHANNEL_POWER_ALL_SLEEP, 28'h0};
-				c0_tx_req <= 1;
-				c0_tx_pend <= 0;
-				c0_priority <= 0;
-				state <= TX_WAIT;
+				if ((~c0_tx_ack) & (~c0_tx_req))
+				begin
+					c0_tx_addr <= {28'hf00000, `CHANNEL_POWER};
+					c0_tx_data <= {`CMD_CHANNEL_POWER_ALL_SLEEP, 28'h0};
+					c0_tx_req <= 1;
+					c0_tx_pend <= 0;
+					c0_priority <= 0;
+					state <= TX_WAIT;
+				end
 			end
 
 			// Invalidate all short address
 			TB_ALL_SHORT_ADDR_INVALID:
 			begin
-				c0_tx_addr <= {24'he0000, 4'h0, `CHANNEL_ENUM};
-				c0_tx_data <= {`CMD_CHANNEL_ENUM_INVALIDATE, 4'hf, 24'h0}; // 4'hf -> all short address
-				c0_tx_req <= 1;
-				c0_tx_pend <= 0;
-				c0_priority <= 0;
-				state <= TX_WAIT;
+				if ((~c0_tx_ack) & (~c0_tx_req))
+				begin
+					c0_tx_addr <= {24'he0000, 4'h0, `CHANNEL_ENUM};
+					c0_tx_data <= {`CMD_CHANNEL_ENUM_INVALIDATE, 4'hf, 24'h0}; // 4'hf -> all short address
+					c0_tx_req <= 1;
+					c0_tx_pend <= 0;
+					c0_priority <= 0;
+					state <= TX_WAIT;
+				end
 			end
 
 			// Interrupt
@@ -251,6 +260,31 @@ always @ (posedge clk or negedge resetn) begin
 					3: begin n3_int_vector<= (1'b1<<int_vec); end
 				endcase
 				state <= TX_WAIT;
+			end
+
+			// Arbitrary command
+			// Parameters:	dest_short_addr (4 bits)
+			//				functional_id (4 bits)
+			//				word_counter
+			TB_ARBITRARY_CMD:
+			begin
+				if ((~c0_tx_ack) & (~c0_tx_req))
+				begin
+					c0_tx_addr <= {24'h0, dest_short_addr, functional_id};
+					c0_tx_data <= rand_dat;
+					c0_tx_req <= 1;
+					c0_priority <= 0;
+					if (word_counter)
+					begin
+						c0_tx_pend <= 1;
+						word_counter <= word_counter - 1;
+					end
+					else
+					begin
+						c0_tx_pend <= 0;
+						state <= TX_WAIT;
+					end
+				end
 			end
 
       	endcase // case (state)

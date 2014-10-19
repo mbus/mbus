@@ -61,6 +61,8 @@ wire	n0_tx_req_t_bc, n0_tx_pend_t_bc, n0_priority_t_bc, n0_rx_ack_t_bc, n0_tx_re
 
 wire	[`DYNA_WIDTH-1:0] rf_addr_out_to_node, rf_addr_in_from_node;
 wire	rf_addr_valid, rf_addr_write, rf_addr_rstn;
+
+wire	sleep_ctrl_clr_busy;
    
 // always on block, interface with layer controller
 mbus_regular_isolation iso0

@@ -18,7 +18,7 @@
  * Interrupt
  * 1. LC_INT_DEPTH;
  *
- * In normal application, users need to configure LC_RF_DEPTH, LC_MEM_DEPTH,
+ * In normal application, users need to configure LC_RF_DEPTH,
  * LC_INT_DEPTH for their application. Changing the width causes bits waste
  * on the MBus; thus, it's not recommended.
  *
@@ -171,6 +171,7 @@ localparam LC_STATE_INT_ARBI	= 4'd8;
 localparam LC_STATE_INT_HANDLED	= 4'd9;
 localparam LC_STATE_CLR_INT		= 4'd10;
 localparam LC_STATE_STREAM_ALERT= 4'd11;
+localparam LC_STATE_STREAM_WRITE= 4'd12;
 
 // CANNOT assign anything to 3'd0 (in use)
 // MEM Read sub state definition
@@ -186,7 +187,7 @@ localparam RF_WRITE_STREAM_COUNTER	= 3'd2;
 localparam RF_WRITE_STREAM_LOAD		= 3'd3;
 localparam RF_WRITE_CHECK			= 3'd4;
 localparam RF_WRITE_RECEIVE			= 3'd5;
-localparam RF_WRITE_INT_COPY		= 3'd6
+localparam RF_WRITE_INT_COPY		= 3'd6;
 
 // Stream MEM Write sub state definition
 localparam STREAM_MEM_WRITE			= 3'd1;
@@ -270,7 +271,7 @@ reg		stream_double_bf_alert, next_stream_double_bf_alert;
 reg		stream_overflow_alert, next_stream_overflow_alert;
 wire	stream_remaining	= (stream_reg3[stream_channel][19:0] > 0)? 1'b1 : 1'b0;
 wire	stream_enable		= stream_reg2[stream_channel][LC_RF_DATA_WIDTH-1];
-wire	stream_wrapping		= stream_reg2[stream_channel[LC_RF_DATA_WIDTH-2];
+wire	stream_wrapping		= stream_reg2[stream_channel][LC_RF_DATA_WIDTH-2];
 wire	stream_double_bf	= stream_reg2[stream_channel][LC_RF_DATA_WIDTH-3];
 wire	[7:0] stream_alert_address = stream_reg0[stream_channel][LC_RF_DATA_WIDTH-1:LC_RF_DATA_WIDTH-8];
 wire	[LC_MEM_ADDR_WIDTH-3:0] stream_write_buffer = {stream_reg1[stream_channel][15:0], stream_reg0[stream_channel][15:2]};
@@ -450,6 +451,9 @@ begin
 
 	if ((~(TX_SUCC | TX_FAIL)) & TX_RESP_ACK)
 		next_tx_resp_ack = 0;
+
+	if (TX_FAIL & (~TX_RESP_ACK) & (TX_REQ))
+		next_tx_req = 0;
 	
 	if (MEM_ACK_IN & MEM_REQ_OUT)
 	begin
@@ -491,7 +495,7 @@ begin
 						`LC_CMD_MEM_WRITE: begin next_lc_state = LC_STATE_MEM_WRITE; end
 						default: 
 						begin 
-							if ((RX_ADDR[`FUNC_WIDTH-1:FUNC_WIDTH-2]==`LC_CMD_MEM_STREAM) && (STREAM_CH < LC_MEM_STREAM_CHANNELS))
+							if ((RX_ADDR[`FUNC_WIDTH-1:`FUNC_WIDTH-2]==`LC_CMD_MEM_STREAM) && (STREAM_CH < LC_MEM_STREAM_CHANNELS))
 							begin
 								next_stream_channel = STREAM_CH;
 								next_lc_state = LC_STATE_STREAM_WRITE;
@@ -567,8 +571,10 @@ begin
 				RF_WRITE_LOAD:
 				begin
 					next_rf_load = rf_load_temp;
-					if (channel_enable_set)	// streaming is enabled
+					if (channel_enable_set)	// enable is being set to configuration registers
 						next_mem_sub_state = RF_WRITE_STREAM_COUNTER;
+					else
+						next_mem_sub_state = RF_WRITE_CHECK;
 				end
 
 				RF_WRITE_STREAM_COUNTER:
@@ -875,7 +881,7 @@ begin
 					next_mem_sub_state = STREAM_RF_WRITE;
 					if (stream_remaining)
 					begin
-						next_rf_dout = (stream_reg3[stream_channel][`LC_RF_DATA_WIDTH-1:20]<<20) | (stream_reg3[stream_channel][19:0] - 1'b1);
+						next_rf_dout = (stream_reg3[stream_channel][LC_RF_DATA_WIDTH-1:20]<<20) | (stream_reg3[stream_channel][19:0] - 1'b1);
 						if ((stream_reg3[stream_channel][18:0]==stream_reg2[stream_channel][19:1]) && (~stream_double_bf_alert))
 							next_stream_double_bf_alert = 1'b1;
 					end
@@ -883,9 +889,9 @@ begin
 					begin
 						next_stream_overflow_alert = 1'b1;
 						if (stream_wrapping)
-							next_rf_dout = (stream_reg3[stream_channel][`LC_RF_DATA_WIDTH-1:20]<<20) | stream_reg2[stream_channel][19:0];
+							next_rf_dout = (stream_reg3[stream_channel][LC_RF_DATA_WIDTH-1:20]<<20) | stream_reg2[stream_channel][19:0];
 						else
-							next_rf_dout = (1'b1<<(`LC_RF_DATA_WIDTH-1)) | stream_reg2[stream_channel][`LC_RF_DATA_WIDTH-2:0]; // clear enable
+							next_rf_dout = (1'b1<<(LC_RF_DATA_WIDTH-1)) | stream_reg2[stream_channel][LC_RF_DATA_WIDTH-2:0]; // clear enable
 					end
 				end
 

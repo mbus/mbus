@@ -20,7 +20,7 @@ parameter RF_DEPTH = 256;		// this number is intend to be less than LC_RF_DEPTH
 parameter ADDRESS = 20'hccccc;
 
 parameter LC_RF_DATA_WIDTH =24;
-parameter LC_RF_DEPTH = 128;		// 1 ~ 2^8
+parameter LC_RF_DEPTH = 256;		// 1 ~ 2^8
 
 parameter LC_MEM_DATA_WIDTH = 32;	// should ALWAYS less than DATA_WIDTH
 parameter LC_MEM_ADDR_WIDTH = 32;	// should ALWAYS less than DATA_WIDTH
@@ -43,6 +43,7 @@ output	DOUT;
 wire	mem_req_out, mem_write;
 wire	[LC_MEM_DATA_WIDTH-1:0] mem_dout;
 wire	[LC_MEM_ADDR_WIDTH-3:0] mem_aout;
+wire	mem_pend;
 
 // RF
 wire	[LC_RF_DATA_WIDTH-1:0] rf_dout;
@@ -148,7 +149,7 @@ layer_ctrl_isolation #(
 
 layer_ctrl 
 	#(.LC_RF_DATA_WIDTH(LC_RF_DATA_WIDTH), .LC_RF_DEPTH(LC_RF_DEPTH), 
-	.LC_MEM_DATA_WIDTH(LC_MEM_DATA_WIDTH), .LC_MEM_ADDR_WIDTH(LC_MEM_ADDR_WIDTH), .LC_MEM_DEPTH(LC_MEM_DEPTH), 
+	.LC_MEM_DATA_WIDTH(LC_MEM_DATA_WIDTH), .LC_MEM_ADDR_WIDTH(LC_MEM_ADDR_WIDTH),
 	.LC_INT_DEPTH(LC_INT_DEPTH)) lc0(
 	.CLK(CLK_LC),
 	.RESETn(RESETn),
@@ -181,6 +182,7 @@ layer_ctrl
 	.MEM_WR_DATA(mem_dout),
 	.MEM_RD_DATA(mem_data_f_mem),
 	.MEM_ADDR(mem_aout),
+	.MEM_PEND(mem_pend),
 	// Interrupt
 	.INT_VECTOR(INT_VECTOR),
 	.CLR_INT(clr_int),
@@ -286,7 +288,7 @@ rf_ctrl #(.RF_DEPTH(RF_DEPTH)) rf0(
 );
 
 // always on interrupt command roms
-int_action_rom #(.LC_INT_DEPTH(LC_INT_DEPTH), .LC_RF_DEPTH(LC_RF_DEPTH), .LC_MEM_DEPTH(LC_MEM_DEPTH)) ir0(
+int_action_rom #(.LC_INT_DEPTH(LC_INT_DEPTH)) ir0(
 	.int_func_id(int_func_id_f_rom),
 	.int_payload(int_payload_f_rom),
 	.int_cmd_len(int_length_f_rom)

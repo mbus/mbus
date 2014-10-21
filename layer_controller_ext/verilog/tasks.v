@@ -78,6 +78,18 @@ begin
     #100000;
 	task_counter = task_counter + 1;
     $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, MEM Write", task_counter);
+    $fdisplay(handle, "CPU writes random data to Layer 1's MEM address 0, bulk write enable is not set, it won't fail but no memory operation");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	mem_addr = 0;
+	word_counter = 0;
+    state = TB_MEM_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
     $fdisplay(handle, "TASK%d, RF Write", task_counter);
     $fdisplay(handle, "CPU configures Layer 0 default sys register bulk mem message control");
     $fdisplay(handle, "-------------------------------------------------------------------------");
@@ -176,7 +188,6 @@ begin
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge layer1.tx_succ|layer1.tx_fail);
 
-/*
     #100000;
 	task_counter = task_counter + 1;
     $fdisplay(handle, "\n-------------------------------------------------------------------------");
@@ -208,6 +219,30 @@ begin
 	task_counter = task_counter + 1;
     $fdisplay(handle, "\n-------------------------------------------------------------------------");
     $fdisplay(handle, "TASK%d, MEM Write", task_counter);
+    $fdisplay(handle, "CPU bulk writes random data to Layer 1's MEM address 1-10, with 0 length, it should write only 1 word");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	mem_addr = 1;
+	word_counter = 3;
+    state = TB_MEM_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, RF Write", task_counter);
+    $fdisplay(handle, "CPU configures Layer 1 default sys register bulk mem message control, set to maximum length 16");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	rf_addr = 242;
+	dest_short_addr = 4'h3;
+	rf_w_data = 24'h80_000f;
+    state = TB_SINGLE_RF_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, MEM Write", task_counter);
     $fdisplay(handle, "CPU bulk writes random data to Layer 1's MEM address 1-10");
     $fdisplay(handle, "-------------------------------------------------------------------------");
 	dest_short_addr = 4'h3;
@@ -216,6 +251,7 @@ begin
     state = TB_MEM_WRITE;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
+/*
     #100000;
 	task_counter = task_counter + 1;
     $fdisplay(handle, "\n-------------------------------------------------------------------------");
@@ -612,7 +648,7 @@ begin
 	@ (posedge layer1.tx_succ | layer1.tx_fail);
 */
 
-    #300000;
+    #500000;
     $display("*************************************");
     $display("************TASK0 Complete***********");
     $display("*************************************");

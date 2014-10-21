@@ -9,7 +9,7 @@ module tb_layer_ctrl();
 
 	parameter LC_INT_DEPTH=13;
 	parameter LC_MEM_DEPTH=65536;
-	parameter LC_RF_DEPTH=128;
+	parameter LC_RF_DEPTH=256;
 
    reg		         clk, resetn;
    wire 		 SCLK;
@@ -95,6 +95,7 @@ module tb_layer_ctrl();
 	localparam TB_SINGLE_MEM_WRITE			= 13;
 	localparam TB_ARBITRARY_CMD				= 14;
 	localparam TB_SINGLE_RF_WRITE			= 15;
+	localparam TB_SHORT_MEM_READ			= 16;
 	localparam TX_WAIT						= 31;
 
    reg	c0_auto_rx_ack;
@@ -279,6 +280,7 @@ begin
 	else
 	begin
 		if (c0_tx_ack) c0_tx_req <= 0;
+		if (c0_tx_fail & c0_tx_req) c0_tx_req <= 0;
 	end
 end
 
@@ -439,13 +441,13 @@ end
    end
    
 // RF Write output
-	wire [31:0] layer0_rf0_addr = log2(layer0.rf0.LOAD) - 1;
-	wire [31:0] layer1_rf0_addr = log2(layer1.rf0.LOAD) - 1;
-	wire [31:0] layer2_rf0_addr = log2(layer2.rf0.LOAD) - 1;
-	wire [31:0] layer3_rf0_addr = log2(layer3.rf0.LOAD) - 1;
+	wire [31:0] layer0_rf0_addr = log2long(layer0.rf0.LOAD) - 1;
+	wire [31:0] layer1_rf0_addr = log2long(layer1.rf0.LOAD) - 1;
+	wire [31:0] layer2_rf0_addr = log2long(layer2.rf0.LOAD) - 1;
+	wire [31:0] layer3_rf0_addr = log2long(layer3.rf0.LOAD) - 1;
 	genvar idx;
 	generate 
-		for (idx=0; idx<64; idx = idx+1)
+		for (idx=0; idx<LC_RF_DEPTH; idx = idx+1)
 		begin: rf_write
 			always @ (posedge layer0.rf0.LOAD[idx])
 				$fdisplay(handle, "Layer 0, RF Write, Addr: 8'h%h,\tData: 24'h%h", layer0_rf0_addr[7:0], layer0.rf0.DIN);

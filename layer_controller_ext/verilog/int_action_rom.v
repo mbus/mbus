@@ -3,9 +3,7 @@
 `include "include/mbus_def.v"
 
 module int_action_rom #(
-	parameter LC_INT_DEPTH = 13,
-	parameter LC_RF_DEPTH = 128,		// 1 ~ 2^8
-	parameter LC_MEM_DEPTH = 65536	// 1 ~ 2^30
+	parameter LC_INT_DEPTH = 13
 )
 (
 	output	[`FUNC_WIDTH*LC_INT_DEPTH-1:0] int_func_id,

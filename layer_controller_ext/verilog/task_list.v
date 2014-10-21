@@ -223,6 +223,37 @@ always @ (posedge clk or negedge resetn) begin
 				end
 			end
 
+			// MEM Read command (2 words command)
+			// Parameters:	dest_short_addr (4 bits)
+			//				mem_read_length (20 bits)
+			//				mem_addr (30 bits)
+			//				relay_addr (8 bits)
+			TB_SHORT_MEM_READ:
+			begin
+				if ((~c0_tx_ack) & (~c0_tx_req))
+				begin
+					c0_priority <= 0;
+					c0_tx_addr <= {24'h0, dest_short_addr, `LC_CMD_MEM_READ};
+					c0_tx_req <= 1;
+					case (mem_access_state)
+						0:
+						begin
+							c0_tx_data <= ((relay_addr<<24) | (4'b0<<20) | mem_read_length);
+							c0_tx_pend <= 1;
+							mem_access_state <= 1;
+						end
+
+						1:
+						begin
+							c0_tx_data <= ((mem_addr<<2) | 2'b0);
+							c0_tx_pend <= 0;
+							mem_access_state <= 0;
+							state <= TX_WAIT;
+						end
+					endcase
+				end
+			end
+
 			// Selective sleep N1 using full prefix
 			// Parameters:	long_addr (20 bits)
 			TB_SEL_SLEEP_FULL_PREFIX:

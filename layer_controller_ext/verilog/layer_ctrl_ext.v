@@ -10,12 +10,10 @@
  * Layer controller configuration:
  * Register Files
  * 1. LC_RF_DATA_WIDTH; 1 ~ 24 (24 default)
- * 2. LC_RF_DEPTH; 1~256
  *
  * Memory
  * 1. LC_MEM_ADDR_WIDTH; 1~32 (32 default)
  * 2. LC_MEM_DATA_WIDTH; 1~32 (32 default)
- * 3. LC_MEM_DEPTH; 1~2^30
  *
  * Interrupt
  * 1. LC_INT_DEPTH;
@@ -83,15 +81,15 @@
 `include "include/mbus_def.v"
 
 module layer_ctrl #(
-	parameter LC_RF_DATA_WIDTH = 24,
+	parameter LC_RF_DATA_WIDTH = 24,	// don't change this, stream will fail
 	parameter LC_RF_ADDR_WIDTH = 8,		// don't change this value
 	parameter LC_RF_DEPTH = 128,		// 1 ~ 2^8
 
 	parameter LC_MEM_ADDR_WIDTH = 32,	// should ALWAYS less than DATA_WIDTH
 	parameter LC_MEM_DATA_WIDTH = 32,	// should ALWAYS less than DATA_WIDTH
-	parameter LC_MEM_DEPTH = 65536,	// 1 ~ 2^30
 
-	parameter LC_INT_DEPTH = 8
+	parameter LC_INT_DEPTH = 8,
+	parameter LC_MEM_STREAM_CHANNELS = 4
 )
 (
 	input		CLK,
@@ -130,6 +128,7 @@ module layer_ctrl #(
 	output 		MEM_REQ_OUT,
 	output 		MEM_WRITE,
 	input		MEM_ACK_IN,
+	output reg	MEM_PEND,
 	output reg	[LC_MEM_DATA_WIDTH-1:0] MEM_WR_DATA,
 	input		[LC_MEM_DATA_WIDTH-1:0] MEM_RD_DATA,
 	output reg	[LC_MEM_ADDR_WIDTH-3:0] MEM_ADDR,
@@ -174,7 +173,6 @@ localparam LC_STATE_CLR_INT		= 4'd10;
 // CANNOT assign anything to 3'd0 (in use)
 localparam MEM_WAIT_START_ADDRESS	= 3'd1;
 localparam MEM_WAIT_DEST_LOCATION	= 3'd2;
-localparam MEM_ADDRESS_RANGE_CHECK	= 3'd3;
 localparam MEM_TX_DEST_LOC			= 3'd4;
 localparam MEM_ACCESS_READ			= 3'd5;
 localparam MEM_ACCESS_WAIT			= 3'd6;
@@ -224,7 +222,7 @@ assign	MEM_REQ_OUT = (mem_write | mem_read);
 assign	MEM_WRITE = mem_write;
 reg		[LC_MEM_ADDR_WIDTH-3:0] next_mem_aout;
 reg		[LC_MEM_DATA_WIDTH-1:0] next_mem_dout;
-reg		mem_read_started, next_mem_read_started; 
+reg		next_mem_pend;
 
 // Interrupt register
 reg		[LC_INT_DEPTH-1:0] next_clr_int, int_vector_copied, next_int_vector_copied;
@@ -240,6 +238,28 @@ generate
 		assign interrupt_functional_id[unpk_idx] = INT_FU_ID[((`FUNC_WIDTH)*(unpk_idx+1)-1):((`FUNC_WIDTH)*unpk_idx)]; 
 		assign interrupt_payload[unpk_idx] = INT_CMD[((`DATA_WIDTH*3)*(unpk_idx+1)-1):((`DATA_WIDTH*3)*unpk_idx)]; 
 		assign interrupt_command_length[unpk_idx] = INT_CMD_LEN[(2*(unpk_idx+1)-1):(2*unpk_idx)];
+	end
+endgenerate
+
+// Streaming registers
+wire	[LC_RF_DATA_WIDTH-1:0] stream_reg0 [0:LC_MEM_STREAM_CHANNELS-1];
+wire	[LC_RF_DATA_WIDTH-1:0] stream_reg1 [0:LC_MEM_STREAM_CHANNELS-1];
+wire	[LC_RF_DATA_WIDTH-1:0] stream_reg2 [0:LC_MEM_STREAM_CHANNELS-1];
+wire	[LC_RF_DATA_WIDTH-1:0] stream_reg3 [0:LC_MEM_STREAM_CHANNELS-1];
+wire	[`FUNC_WIDTH-3:0] STREAM_CH = RX_ADDR[`FUNC_WIDTH-3:0];
+reg		[`FUNC_WIDTH-3:0] stream_channel, next_stream_channel;
+wire	stream_remaining = (stream_reg3[stream_channel][19:0] > 0)? 1'b1 : 1'b0;
+wire	stream_wrapping = stream_regY[stream_channel[X];
+wire	stream_enable = stream_regW[stream_channel][Z];
+wire	stream_double_bf = stream_regXXXXX[stream_channel][XXXXXX];
+
+generate
+	for (unpk_idx=0; unpk_idx<(LC_MEM_STREAM_CHANNELS); unpk_idx=unpk_idx+1)
+	begin: UNPACK_STREAM
+		assign stream_reg0[unpk_idx] = rf_in_array[LC_RF_DEPTH-1-(4*unpk_idx)-3];	//8, 14, 2
+		assign stream_reg1[unpk_idx] = rf_in_array[LC_RF_DEPTH-1-(4*unpk_idx)-2];	//8, 16
+		assign stream_reg2[unpk_idx] = rf_in_array[LC_RF_DEPTH-1-(4*unpk_idx)-1];	//4, 20 (Length)
+		assign stream_reg3[unpk_idx] = rf_in_array[LC_RF_DEPTH-1-(4*unpk_idx)];		//4, 20 (Count)
 	end
 endgenerate
 
@@ -290,13 +310,15 @@ begin
 		mem_read 	<= 0;
 		MEM_ADDR <= 0;
 		MEM_WR_DATA <= 0;
-		mem_read_started <= 1'b0;
+		MEM_PEND <= 1'b0;
 		// Interrupt interface
 		CLR_INT <= 0;
 		int_idx <= 0;
 		int_vector_copied <= 0;
 		layer_interrupted <= 0;
 		int_cmd_cnt <= 0;
+		// Stream registers
+		stream_channel <= 0;
 	end
 	else
 	begin
@@ -325,13 +347,15 @@ begin
 		mem_read 	<= next_mem_read;
 		MEM_ADDR <= next_mem_aout;
 		MEM_WR_DATA <= next_mem_dout;
-		mem_read_started <= next_mem_read_started;
+		MEM_PEND <= next_mem_pend;
 		// Interrupt interface
 		CLR_INT <= next_clr_int;
 		int_idx <= next_int_idx;
 		int_vector_copied <= next_int_vector_copied;
 		layer_interrupted <= next_layer_interrupted;
 		int_cmd_cnt <= next_int_cmd_cnt;
+		// Stream registers
+		stream_channel <= next_stream_channel;
 	end
 end
 
@@ -362,13 +386,18 @@ begin
 	next_mem_dout	= MEM_WR_DATA;
 	next_mem_write	= mem_write;
 	next_mem_read	= mem_read;
-	next_mem_read_started = mem_read_started;
+	next_mem_pend	= MEM_PEND;
 	// Interrupt registers
 	next_clr_int = CLR_INT;
 	next_int_idx = int_idx;
 	next_int_vector_copied = int_vector_copied;
 	next_layer_interrupted = layer_interrupted;
 	next_int_cmd_cnt = int_cmd_cnt;
+	// Stream registers
+	next_stream_channel = stream_channel;
+	next_stream_double_bf_alert = stream_double_bf_alert;
+	next_stream_overflow_alert = stream_overflow_alert;
+	next_stream_error = stream_error;
 
 	// Asynchronized interface
 	if ((~(RX_REQ_DL2 | RX_FAIL)) & RX_ACK)
@@ -398,6 +427,8 @@ begin
 		begin
 			next_mem_sub_state = 0;
 			next_layer_interrupted = 0;
+			next_mem_pend = 0;
+			next_tx_pend = 0;
 			if ((INT_VECTOR_clocked>0) && (CLR_INT==0))
 			begin
 				next_int_vector_copied = INT_VECTOR_clocked;
@@ -418,7 +449,16 @@ begin
 						`LC_CMD_RF_WRITE: begin next_lc_state = LC_STATE_RF_WRITE; end
 						`LC_CMD_MEM_READ: begin next_lc_state = LC_STATE_MEM_READ; end
 						`LC_CMD_MEM_WRITE: begin next_lc_state = LC_STATE_MEM_WRITE; end
-						default: begin if (RX_PEND) next_lc_state = LC_STATE_ERROR; end	// Invalid message
+						default: 
+						begin 
+							if ((RX_ADDR[`FUNC_WIDTH-1:FUNC_WIDTH-2]==`LC_CMD_MEM_STREAM) && (STREAM_CH < LC_MEM_STREAM_CHANNELS))
+							begin
+								next_stream_channel = STREAM_CH;
+								next_lc_state = LC_STATE_STREAM_WRITE;
+							end
+							else if (RX_PEND)  // Invalid message
+								next_lc_state = LC_STATE_ERROR; 
+						end	
 					endcase
 				end
 			end
@@ -429,20 +469,18 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					if ((~rx_pend_reg)&&((rx_dat_buffer[`DATA_WIDTH-1:24]) < LC_RF_DEPTH))	// prevent aliasing
-					begin 
+					if (~rx_pend_reg)
+					begin
 						next_dma_counter = {{(MAX_DMA_LENGTH-LC_RF_ADDR_WIDTH){1'b0}}, rf_dma_length};
 						next_rf_idx = rf_idx_temp;
 						next_mem_sub_state = 1;
 						next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, rf_relay_addr};
 					end
-					else if (rx_pend_reg)	// invalid message
-					begin
+					else	// invalid message
+					begin 
 						next_lc_state = LC_STATE_ERROR;
 						next_mem_sub_state = 0;
 					end
-					else					// invalid address
-						next_lc_state = LC_STATE_CLR_INT;
 				end
 
 				1:
@@ -455,7 +493,7 @@ begin
 						next_lc_state = LC_STATE_BUS_TX;
 						next_mem_sub_state = 2;
 						next_lc_return_state = LC_STATE_RF_READ;
-						if ((dma_counter)&&(rf_idx < (LC_RF_DEPTH-1'b1)))
+						if (dma_counter)
 						begin
 							next_tx_pend = 1;
 							next_dma_counter = dma_counter - 1'b1;
@@ -467,7 +505,10 @@ begin
 
 				2:
 				begin
-					next_rf_idx = rf_idx + 1'b1;
+					if (rf_idx < {LC_RF_ADDR_WIDTH{1'b1}})
+						next_rf_idx = rf_idx + 1'b1;
+					else
+						next_rf_idx = 0;
 					next_mem_sub_state = 1;
 				end
 
@@ -479,20 +520,8 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					if ((rx_dat_buffer[`DATA_WIDTH-1:24]) < LC_RF_DEPTH)
-					begin
-						next_rf_dout = rx_dat_buffer[LC_RF_DATA_WIDTH-1:0];
-						next_mem_sub_state = 1;
-					end
-					else if (layer_interrupted)
-						next_lc_state = LC_STATE_CLR_INT;
-					else if (rx_pend_reg)	// Invalid address
-					begin
-						next_mem_sub_state = 0;
-						next_lc_state = LC_STATE_ERROR;
-					end
-					else					// Invalid command
-						next_lc_state = LC_STATE_IDLE;
+					next_rf_dout = rx_dat_buffer[LC_RF_DATA_WIDTH-1:0];
+					next_mem_sub_state = 1;
 				end
 
 				1:
@@ -555,32 +584,36 @@ begin
 			case (mem_sub_state)
 				0:
 				begin
-					next_mem_read_started = 1'b0;
 					next_dma_counter = rx_dat_buffer[MAX_DMA_LENGTH-1:0];	
 					next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, rx_dat_buffer[`DATA_WIDTH-1:`DATA_WIDTH-`SHORT_ADDR_WIDTH]};
 					if (rx_pend_reg)
 						next_mem_sub_state = MEM_WAIT_START_ADDRESS;
-					else // Error command
-						next_lc_state = LC_STATE_CLR_INT;
+					else // Error command, can only come from MBus
+						next_lc_state = LC_STATE_IDLE;
 				end
 
 				MEM_WAIT_START_ADDRESS:
 				begin
 					if (layer_interrupted)
 					begin
+						next_tx_pend = 1;
 						next_mem_aout = interrupt_payload[int_idx][(`DATA_WIDTH<<1)-1:`DATA_WIDTH+2]; // bit 63 ~ 34
-						next_mem_sub_state = MEM_WAIT_DEST_LOCATION;
+						if (interrupt_command_length[int_idx]==2'b11)
+							next_mem_sub_state = MEM_WAIT_DEST_LOCATION;
+						else
+							next_mem_sub_state = MEM_ACCESS_READ;
 					end
 					else
 					begin
 						if (RX_REQ_DL2 & (~RX_ACK))
 						begin
+							next_tx_pend = 1;
 							next_rx_ack = 1;
 							next_mem_aout = RX_DATA[`DATA_WIDTH-1:2]; // bit 63 ~ 34
 							if (RX_PEND)
 								next_mem_sub_state = MEM_WAIT_DEST_LOCATION;
-							else // Error command
-								next_lc_state = LC_STATE_IDLE;
+							else 
+								next_mem_sub_state = MEM_ACCESS_READ;
 						end
 						else if (RX_FAIL & (~RX_ACK))
 						begin
@@ -595,7 +628,7 @@ begin
 					if (layer_interrupted)
 					begin
 						next_tx_data = (interrupt_payload[int_idx][`DATA_WIDTH-1:0] & 32'hfffffffc); // clear last two bits, address is 30 bits only
-						next_mem_sub_state = MEM_ADDRESS_RANGE_CHECK;
+						next_mem_sub_state = MEM_TX_DEST_LOC;
 					end
 					else
 					begin
@@ -610,7 +643,7 @@ begin
 								next_lc_state = LC_STATE_ERROR;
 							end
 							else 
-								next_mem_sub_state = MEM_ADDRESS_RANGE_CHECK;
+								next_mem_sub_state = MEM_TX_DEST_LOC;
 						end
 						else if (RX_FAIL & (~RX_ACK))
 						begin
@@ -620,22 +653,8 @@ begin
 					end
 				end
 
-				MEM_ADDRESS_RANGE_CHECK:
-				begin
-					if (MEM_ADDR < LC_MEM_DEPTH)
-					begin
-						if (mem_read_started)
-							next_mem_sub_state = MEM_ACCESS_READ;
-						else
-							next_mem_sub_state = MEM_TX_DEST_LOC;
-					end
-					else // Calculate modular
-						next_mem_aout = MEM_ADDR - LC_MEM_DEPTH;
-				end
-
 				MEM_TX_DEST_LOC:
 				begin
-					next_tx_pend = 1;
 					if (~TX_REQ)
 					begin
 						next_tx_req = 1;
@@ -651,6 +670,10 @@ begin
 					begin
 						next_mem_read = 1;
 						next_mem_sub_state = MEM_ACCESS_WAIT;
+						if (dma_counter)
+							next_mem_pend = 1'b1;
+						else
+							next_mem_pend = 1'b0;
 					end
 				end
 
@@ -663,9 +686,7 @@ begin
 						next_tx_data = MEM_RD_DATA;
 						next_lc_state = LC_STATE_BUS_TX;
 						next_lc_return_state = LC_STATE_MEM_READ;
-						next_mem_sub_state = MEM_ADDRESS_RANGE_CHECK;
 						next_mem_aout = MEM_ADDR + 1'b1;
-						next_mem_read_started = 1'b1;
 						if (dma_counter)
 						begin
 							next_dma_counter = dma_counter - 1'b1;
@@ -692,18 +713,10 @@ begin
 
 				1:
 				begin
-					if (MEM_ADDR < LC_MEM_DEPTH)
-						next_mem_sub_state = 2;
-					else
-						next_mem_aout = MEM_ADDR - LC_MEM_DEPTH;
-				end
-
-				2:
-				begin
 					if (RX_REQ_DL2 & (~RX_ACK))
 					begin
 						next_rx_ack = 1;
-						next_mem_sub_state = 3;
+						next_mem_sub_state = 2;
 						next_mem_dout = RX_DATA[LC_MEM_DATA_WIDTH-1:0];
 						next_rx_pend_reg = RX_PEND;
 					end
@@ -714,16 +727,20 @@ begin
 					end
 				end
 
-				3:
+				2:
 				begin
 					if (~MEM_REQ_OUT)
 					begin
 						next_mem_write = 1;
-						next_mem_sub_state = 4;
+						next_mem_sub_state = 3;
+						if (rx_pend_reg)
+							next_mem_pend = 1'b1;
+						else
+							next_mem_pend = 1'b0;
 					end
 				end
 
-				4:
+				3:
 				begin
 					// write complete
 					if (MEM_ACK_IN)
@@ -735,6 +752,100 @@ begin
 						end
 						else
 							next_lc_state = LC_STATE_IDLE;
+					end
+				end
+			endcase
+		end
+
+		LC_STATE_STREAM_WRITE:
+		begin
+			case (mem_sub_state)
+				0:
+				begin
+					if (stream_enable)
+					begin
+						next_mem_aout = ((stream_reg1[stream_channel][15:0]<<16) | stream_reg0[stream_channel][15:2]);
+						next_mem_dout = rx_dat_buffer;
+						next_mem_pend = ((stream_wrapping & rx_pend_reg) | (rx_pend_reg & stream_remaining));
+						next_mem_sub_state = STREAM_MEM_WRITE;
+					end
+					else
+					begin
+						if (rx_pend_reg)
+							next_lc_state = LC_STATE_ERROR;
+						else
+							next_lc_state = LC_STATE_IDLE;
+					end
+				end
+
+				STREAM_MEM_WRITE:
+				begin
+					if (~MEM_REQ_OUT)
+					begin
+						next_mem_write = 1;
+						next_mem_sub_state = STREAM_MEM_WAIT;
+					end
+				end
+
+				STREAM_MEM_WAIT:
+				begin
+					if (MEM_ACK_IN)
+						next_mem_sub_state = STREAM_COUNTER_DEC;
+				end
+
+				STREAM_COUNTER_DEC:
+				begin
+					next_mem_sub_state = STREAM_RF_WRITE;
+					if (stream_remaining)
+					begin
+						next_rf_dout = (stream_reg3[stream_channel][`LC_RF_DATA_WIDTH-1:20]<<20) | (stream_reg3[stream_channel][19:0] - 1'b1);
+						if ((stream_reg3[stream_channel][18:0]==stream_reg2[stream_channel][19:1]) && (~stream_double_bf_alert))
+							next_stream_double_bf_alert = 1'b1;
+					end
+					else
+					begin
+						next_stream_overflow_alert = 1'b1;
+						if (stream_wrapping)
+							next_rf_dout = (stream_reg3[stream_channel][`LC_RF_DATA_WIDTH-1:20]<<20) | stream_reg2[stream_channel][19:0];
+						else
+						begin
+							next_rf_dout = (1'b1<<(`LC_RF_DATA_WIDTH-1)) | stream_reg2[stream_channel][`LC_RF_DATA_WIDTH-2:0]; // clear enable
+							if (rx_pend_reg)	// rx_pend = 1, stream_remaining = 0, stream_wrapping = 0
+								next_stream_error = 1'b1;
+						end
+					end
+				end
+
+				STREAM_RF_WRITE:
+				begin
+					if ((~stream_remaining) & (~stream_wrapping))
+						next_rf_load = (1'b1<<(LC_RF_DEPTH - 1'b1 - (stream_channel<<2)) - 1'b1);	// clear enable
+					else
+						next_rf_load = (1'b1<<(LC_RF_DEPTH - 1'b1 - (stream_channel<<2)));			// reload counter
+					if (stream_error)	// wrap = 0, but overflow
+					begin
+						next_mem_sub_state = 0;
+						next_lc_state = LC_STATE_ERROR;
+					end
+					else if (MEM_PEND)
+						next_mem_sub_state = STREAM_RECEIVE;
+					else
+						next_lc_state = LC_STATE_IDLE;
+				end
+
+				STREAM_RECEIVE:
+				begin
+					if (RX_REQ_DL2 & (~RX_ACK))
+					begin
+						next_rx_ack = 1;
+						next_mem_sub_state = 0;
+						next_rx_dat_buffer = RX_DATA;
+						next_rx_pend_reg = RX_PEND;
+					end
+					else if ((RX_FAIL) & (~RX_ACK))
+					begin
+						next_rx_ack = 1;
+						next_lc_state = LC_STATE_IDLE;
 					end
 				end
 			endcase

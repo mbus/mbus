@@ -252,6 +252,8 @@ wire	stream_remaining = (stream_reg3[stream_channel][19:0] > 0)? 1'b1 : 1'b0;
 wire	stream_wrapping = stream_regY[stream_channel[X];
 wire	stream_enable = stream_regW[stream_channel][Z];
 wire	stream_double_bf = stream_regXXXXX[stream_channel][XXXXXX];
+wire	stream_enable_temp = ((rx_dat_buffer[LC_RF_DATA_WIDTH-1])==1'b1)? 1'b1: 1'b0;
+wire	[LC_MEM_STREAM_CHANNELS-1:0] channel_enable_set;
 
 generate
 	for (unpk_idx=0; unpk_idx<(LC_MEM_STREAM_CHANNELS); unpk_idx=unpk_idx+1)
@@ -260,6 +262,7 @@ generate
 		assign stream_reg1[unpk_idx] = rf_in_array[LC_RF_DEPTH-1-(4*unpk_idx)-2];	//8, 16
 		assign stream_reg2[unpk_idx] = rf_in_array[LC_RF_DEPTH-1-(4*unpk_idx)-1];	//4, 20 (Length)
 		assign stream_reg3[unpk_idx] = rf_in_array[LC_RF_DEPTH-1-(4*unpk_idx)];		//4, 20 (Count)
+		assign channel_enable_set[unpk_idx] = (rx_dat_buffer[`DATA_WIDTH-1:`DATA_WIDTH-LC_RF_ADDR_WIDTH]==(LC_RF_DEPTH-1-(4*unpk_idx)-1))? stream_enable_temp : 1'b0;
 	end
 endgenerate
 
@@ -397,7 +400,6 @@ begin
 	next_stream_channel = stream_channel;
 	next_stream_double_bf_alert = stream_double_bf_alert;
 	next_stream_overflow_alert = stream_overflow_alert;
-	next_stream_error = stream_error;
 
 	// Asynchronized interface
 	if ((~(RX_REQ_DL2 | RX_FAIL)) & RX_ACK)
@@ -429,7 +431,11 @@ begin
 			next_layer_interrupted = 0;
 			next_mem_pend = 0;
 			next_tx_pend = 0;
-			if ((INT_VECTOR_clocked>0) && (CLR_INT==0))
+			if (stream_overflow_alert | stream_double_bf_alert)
+			begin
+
+			end
+			else if ((INT_VECTOR_clocked>0) && (CLR_INT==0))
 			begin
 				next_int_vector_copied = INT_VECTOR_clocked;
 				next_lc_state = LC_STATE_INT_ARBI;
@@ -521,24 +527,42 @@ begin
 				0:
 				begin
 					next_rf_dout = rx_dat_buffer[LC_RF_DATA_WIDTH-1:0];
-					next_mem_sub_state = 1;
+					next_mem_sub_state = RF_WRITE_LOAD;
 				end
 
-				1:
+				RF_WRITE_LOAD:
 				begin
 					next_rf_load = rf_load_temp;
+					if (channel_enable_set)	// streaming is enabled
+						next_mem_sub_state = RF_WRITE_STREAM_COUNTER;
+				end
+
+				RF_WRITE_STREAM_COUNTER:
+				begin
+					next_rf_dout = (REG_WR_DATA & 24'h0fffff);
+					next_mem_sub_state = RF_WRITE_STREAM_LOAD;
+				end
+
+				RF_WRITE_STREAM_LOAD:
+				begin
+					next_rf_load = (rf_load_temp<<1);
+					next_mem_sub_state = RF_WRITE_CHECK;
+				end
+
+				RF_WRITE_CHECK:
+				begin
 					if (layer_interrupted)
-						next_mem_sub_state = 3;
+						next_mem_sub_state = RF_WRITE_INT_COPY;
 					else
 					begin
 						if (rx_pend_reg)
-							next_mem_sub_state = 2;
+							next_mem_sub_state = RF_WRITE_RECEIVE;
 						else
 							next_lc_state = LC_STATE_IDLE;
 					end
 				end
 
-				2:
+				RF_WRITE_RECEIVE:
 				begin
 					if (RX_REQ_DL2 & (~RX_ACK))
 					begin
@@ -554,7 +578,7 @@ begin
 					end
 				end
 
-				3:
+				RF_WRITE_INT_COPY:
 				begin
 					next_mem_sub_state = 0;
 					next_int_cmd_cnt = int_cmd_cnt + 1'b1;
@@ -808,26 +832,25 @@ begin
 						if (stream_wrapping)
 							next_rf_dout = (stream_reg3[stream_channel][`LC_RF_DATA_WIDTH-1:20]<<20) | stream_reg2[stream_channel][19:0];
 						else
-						begin
 							next_rf_dout = (1'b1<<(`LC_RF_DATA_WIDTH-1)) | stream_reg2[stream_channel][`LC_RF_DATA_WIDTH-2:0]; // clear enable
-							if (rx_pend_reg)	// rx_pend = 1, stream_remaining = 0, stream_wrapping = 0
-								next_stream_error = 1'b1;
-						end
 					end
 				end
 
 				STREAM_RF_WRITE:
 				begin
 					if ((~stream_remaining) & (~stream_wrapping))
+					begin
 						next_rf_load = (1'b1<<(LC_RF_DEPTH - 1'b1 - (stream_channel<<2)) - 1'b1);	// clear enable
+						if (rx_pend_reg)
+						begin
+							next_mem_sub_state = 0;
+							next_lc_state = LC_STATE_ERROR;
+						end
+					end
 					else
 						next_rf_load = (1'b1<<(LC_RF_DEPTH - 1'b1 - (stream_channel<<2)));			// reload counter
-					if (stream_error)	// wrap = 0, but overflow
-					begin
-						next_mem_sub_state = 0;
-						next_lc_state = LC_STATE_ERROR;
-					end
-					else if (MEM_PEND)
+
+					if (MEM_PEND)
 						next_mem_sub_state = STREAM_RECEIVE;
 					else
 						next_lc_state = LC_STATE_IDLE;

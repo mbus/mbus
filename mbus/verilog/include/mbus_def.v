@@ -53,3 +53,4 @@
 `define LC_CMD_RF_READ		4'h1
 `define LC_CMD_MEM_WRITE	4'h2
 `define LC_CMD_MEM_READ		4'h3
+`define LC_CMD_MEM_STREAM	2'b01

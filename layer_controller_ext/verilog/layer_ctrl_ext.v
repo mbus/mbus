@@ -89,7 +89,8 @@ module layer_ctrl #(
 	parameter LC_MEM_DATA_WIDTH = 32,	// should ALWAYS less than DATA_WIDTH
 
 	parameter LC_INT_DEPTH = 8,
-	parameter LC_MEM_STREAM_CHANNELS = 4
+	parameter LC_MEM_STREAM_CHANNELS = 4,
+	parameter LC_MEM_STREAM_SYSREG_OFFSET = 16
 )
 (
 	input		CLK,
@@ -169,13 +170,30 @@ localparam LC_STATE_ERROR		= 4'd7;
 localparam LC_STATE_INT_ARBI	= 4'd8;
 localparam LC_STATE_INT_HANDLED	= 4'd9;
 localparam LC_STATE_CLR_INT		= 4'd10;
+localparam LC_STATE_STREAM_ALERT= 4'd11;
 
 // CANNOT assign anything to 3'd0 (in use)
-localparam MEM_WAIT_START_ADDRESS	= 3'd1;
-localparam MEM_WAIT_DEST_LOCATION	= 3'd2;
-localparam MEM_TX_DEST_LOC			= 3'd4;
-localparam MEM_ACCESS_READ			= 3'd5;
-localparam MEM_ACCESS_WAIT			= 3'd6;
+// MEM Read sub state definition
+localparam MEM_READ_WAIT_START_ADDRESS	= 3'd1;
+localparam MEM_READ_WAIT_DEST_LOCATION	= 3'd2;
+localparam MEM_READ_TX_DEST_LOC			= 3'd3;
+localparam MEM_READ_ACCESS_READ			= 3'd4;
+localparam MEM_READ_ACCESS_WAIT			= 3'd5;
+
+// RF Write MEM sub state definition
+localparam RF_WRITE_LOAD			= 3'd1;
+localparam RF_WRITE_STREAM_COUNTER	= 3'd2;
+localparam RF_WRITE_STREAM_LOAD		= 3'd3;
+localparam RF_WRITE_CHECK			= 3'd4;
+localparam RF_WRITE_RECEIVE			= 3'd5;
+localparam RF_WRITE_INT_COPY		= 3'd6
+
+// Stream MEM Write sub state definition
+localparam STREAM_MEM_WRITE			= 3'd1;
+localparam STREAM_MEM_WAIT			= 3'd2;
+localparam STREAM_COUNTER_DEC		= 3'd3;
+localparam STREAM_RF_WRITE			= 3'd4;
+localparam STREAM_RECEIVE			= 3'd5;
 
 // Double latching registers
 reg		TX_ACK_DL1, TX_ACK_DL2;
@@ -248,23 +266,35 @@ wire	[LC_RF_DATA_WIDTH-1:0] stream_reg2 [0:LC_MEM_STREAM_CHANNELS-1];
 wire	[LC_RF_DATA_WIDTH-1:0] stream_reg3 [0:LC_MEM_STREAM_CHANNELS-1];
 wire	[`FUNC_WIDTH-3:0] STREAM_CH = RX_ADDR[`FUNC_WIDTH-3:0];
 reg		[`FUNC_WIDTH-3:0] stream_channel, next_stream_channel;
-wire	stream_remaining = (stream_reg3[stream_channel][19:0] > 0)? 1'b1 : 1'b0;
-wire	stream_wrapping = stream_regY[stream_channel[X];
-wire	stream_enable = stream_regW[stream_channel][Z];
-wire	stream_double_bf = stream_regXXXXX[stream_channel][XXXXXX];
+reg		stream_double_bf_alert, next_stream_double_bf_alert;
+reg		stream_overflow_alert, next_stream_overflow_alert;
+wire	stream_remaining	= (stream_reg3[stream_channel][19:0] > 0)? 1'b1 : 1'b0;
+wire	stream_enable		= stream_reg2[stream_channel][LC_RF_DATA_WIDTH-1];
+wire	stream_wrapping		= stream_reg2[stream_channel[LC_RF_DATA_WIDTH-2];
+wire	stream_double_bf	= stream_reg2[stream_channel][LC_RF_DATA_WIDTH-3];
+wire	[7:0] stream_alert_address = stream_reg0[stream_channel][LC_RF_DATA_WIDTH-1:LC_RF_DATA_WIDTH-8];
+wire	[LC_MEM_ADDR_WIDTH-3:0] stream_write_buffer = {stream_reg1[stream_channel][15:0], stream_reg0[stream_channel][15:2]};
 wire	stream_enable_temp = ((rx_dat_buffer[LC_RF_DATA_WIDTH-1])==1'b1)? 1'b1: 1'b0;
 wire	[LC_MEM_STREAM_CHANNELS-1:0] channel_enable_set;
 
 generate
 	for (unpk_idx=0; unpk_idx<(LC_MEM_STREAM_CHANNELS); unpk_idx=unpk_idx+1)
 	begin: UNPACK_STREAM
-		assign stream_reg0[unpk_idx] = rf_in_array[LC_RF_DEPTH-1-(4*unpk_idx)-3];	//8, 14, 2
-		assign stream_reg1[unpk_idx] = rf_in_array[LC_RF_DEPTH-1-(4*unpk_idx)-2];	//8, 16
-		assign stream_reg2[unpk_idx] = rf_in_array[LC_RF_DEPTH-1-(4*unpk_idx)-1];	//4, 20 (Length)
-		assign stream_reg3[unpk_idx] = rf_in_array[LC_RF_DEPTH-1-(4*unpk_idx)];		//4, 20 (Count)
-		assign channel_enable_set[unpk_idx] = (rx_dat_buffer[`DATA_WIDTH-1:`DATA_WIDTH-LC_RF_ADDR_WIDTH]==(LC_RF_DEPTH-1-(4*unpk_idx)-1))? stream_enable_temp : 1'b0;
+		assign stream_reg0[unpk_idx] = rf_in_array[LC_RF_DEPTH-LC_MEM_STREAM_SYSREG_OFFSET-1-(4*unpk_idx)-3];	//8, 14, 2
+		assign stream_reg1[unpk_idx] = rf_in_array[LC_RF_DEPTH-LC_MEM_STREAM_SYSREG_OFFSET-1-(4*unpk_idx)-2];	//8, 16
+		assign stream_reg2[unpk_idx] = rf_in_array[LC_RF_DEPTH-LC_MEM_STREAM_SYSREG_OFFSET-1-(4*unpk_idx)-1];	//4, 20 (Length)
+		assign stream_reg3[unpk_idx] = rf_in_array[LC_RF_DEPTH-LC_MEM_STREAM_SYSREG_OFFSET-1-(4*unpk_idx)];		//4, 20 (Count)
+		assign channel_enable_set[unpk_idx] = (rx_dat_buffer[`DATA_WIDTH-1:`DATA_WIDTH-LC_RF_ADDR_WIDTH]==(LC_RF_DEPTH-LC_MEM_STREAM_SYSREG_OFFSET-1-(4*unpk_idx)-1))? stream_enable_temp : 1'b0;
 	end
 endgenerate
+
+// System registers
+wire	[LC_RF_DATA_WIDTH-1:0] sys_reg_action	= rf_in_array[LC_RF_DEPTH-1];
+wire	[LC_RF_DATA_WIDTH-1:0] sys_reg_alert	= rf_in_array[LC_RF_DEPTH-2];
+wire	[LC_RF_DATA_WIDTH-1:0] sys_reg_bulk_mem = rf_in_array[LC_RF_DEPTH-LC_MEM_STREAM_SYSREG_OFFSET+2];
+wire	bulk_enable = sys_reg_bulk_mem[LC_RF_DATA_WIDTH-1];
+wire	bulk_ctrl_active = sys_reg_bulk_mem[LC_RF_DATA_WIDTH-2];
+wire	[19:0] bulk_max_length = sys_reg_bulk_mem[19:0];
 
 always @ (posedge CLK or negedge RESETn_local)
 begin
@@ -322,6 +352,8 @@ begin
 		int_cmd_cnt <= 0;
 		// Stream registers
 		stream_channel <= 0;
+		stream_double_bf_alert <= 1'b0;
+		stream_overflow_alert <= 1'b0;
 	end
 	else
 	begin
@@ -359,6 +391,8 @@ begin
 		int_cmd_cnt <= next_int_cmd_cnt;
 		// Stream registers
 		stream_channel <= next_stream_channel;
+		stream_double_bf_alert <= next_stream_double_bf_alert;
+		stream_overflow_alert <= next_stream_overflow_alert;
 	end
 end
 
@@ -431,11 +465,11 @@ begin
 			next_layer_interrupted = 0;
 			next_mem_pend = 0;
 			next_tx_pend = 0;
-			if (stream_overflow_alert | stream_double_bf_alert)
+			if (stream_overflow_alert | stream_double_bf_alert)		// Check Alert first
 			begin
-
+				next_lc_state = LC_STATE_STREAM_ALERT;
 			end
-			else if ((INT_VECTOR_clocked>0) && (CLR_INT==0))
+			else if ((INT_VECTOR_clocked>0) && (CLR_INT==0))		// Then interrupt
 			begin
 				next_int_vector_copied = INT_VECTOR_clocked;
 				next_lc_state = LC_STATE_INT_ARBI;
@@ -443,7 +477,7 @@ begin
 			end
 			else
 			begin
-				if (RX_REQ_DL2 | RX_FAIL)
+				if (RX_REQ_DL2 | RX_FAIL)							// Receive last
 					next_rx_ack = 1;
 
 				if (RX_REQ_DL2 & (~RX_ACK))	 // prevent double trigger
@@ -602,7 +636,7 @@ begin
 
 		end
 
-		// length should be 3 words, ignore checking length
+		// length could be 2 word or 3 word long
 		LC_STATE_MEM_READ:
 		begin
 			case (mem_sub_state)
@@ -611,21 +645,21 @@ begin
 					next_dma_counter = rx_dat_buffer[MAX_DMA_LENGTH-1:0];	
 					next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, rx_dat_buffer[`DATA_WIDTH-1:`DATA_WIDTH-`SHORT_ADDR_WIDTH]};
 					if (rx_pend_reg)
-						next_mem_sub_state = MEM_WAIT_START_ADDRESS;
+						next_mem_sub_state = MEM_READ_WAIT_START_ADDRESS;
 					else // Error command, can only come from MBus
 						next_lc_state = LC_STATE_IDLE;
 				end
 
-				MEM_WAIT_START_ADDRESS:
+				MEM_READ_WAIT_START_ADDRESS:
 				begin
 					if (layer_interrupted)
 					begin
 						next_tx_pend = 1;
 						next_mem_aout = interrupt_payload[int_idx][(`DATA_WIDTH<<1)-1:`DATA_WIDTH+2]; // bit 63 ~ 34
 						if (interrupt_command_length[int_idx]==2'b11)
-							next_mem_sub_state = MEM_WAIT_DEST_LOCATION;
+							next_mem_sub_state = MEM_READ_WAIT_DEST_LOCATION;
 						else
-							next_mem_sub_state = MEM_ACCESS_READ;
+							next_mem_sub_state = MEM_READ_ACCESS_READ;
 					end
 					else
 					begin
@@ -635,9 +669,9 @@ begin
 							next_rx_ack = 1;
 							next_mem_aout = RX_DATA[`DATA_WIDTH-1:2]; // bit 63 ~ 34
 							if (RX_PEND)
-								next_mem_sub_state = MEM_WAIT_DEST_LOCATION;
+								next_mem_sub_state = MEM_READ_WAIT_DEST_LOCATION;
 							else 
-								next_mem_sub_state = MEM_ACCESS_READ;
+								next_mem_sub_state = MEM_READ_ACCESS_READ;
 						end
 						else if (RX_FAIL & (~RX_ACK))
 						begin
@@ -647,12 +681,12 @@ begin
 					end
 				end
 
-				MEM_WAIT_DEST_LOCATION:
+				MEM_READ_WAIT_DEST_LOCATION:
 				begin
 					if (layer_interrupted)
 					begin
 						next_tx_data = (interrupt_payload[int_idx][`DATA_WIDTH-1:0] & 32'hfffffffc); // clear last two bits, address is 30 bits only
-						next_mem_sub_state = MEM_TX_DEST_LOC;
+						next_mem_sub_state = MEM_READ_TX_DEST_LOC;
 					end
 					else
 					begin
@@ -667,7 +701,7 @@ begin
 								next_lc_state = LC_STATE_ERROR;
 							end
 							else 
-								next_mem_sub_state = MEM_TX_DEST_LOC;
+								next_mem_sub_state = MEM_READ_TX_DEST_LOC;
 						end
 						else if (RX_FAIL & (~RX_ACK))
 						begin
@@ -677,23 +711,23 @@ begin
 					end
 				end
 
-				MEM_TX_DEST_LOC:
+				MEM_READ_TX_DEST_LOC:
 				begin
 					if (~TX_REQ)
 					begin
 						next_tx_req = 1;
-						next_mem_sub_state = MEM_ACCESS_READ;
+						next_mem_sub_state = MEM_READ_ACCESS_READ;
 						next_lc_state = LC_STATE_BUS_TX;
 						next_lc_return_state = LC_STATE_MEM_READ;
 					end
 				end
 
-				MEM_ACCESS_READ:
+				MEM_READ_ACCESS_READ:
 				begin
 					if (~MEM_REQ_OUT)
 					begin
 						next_mem_read = 1;
-						next_mem_sub_state = MEM_ACCESS_WAIT;
+						next_mem_sub_state = MEM_READ_ACCESS_WAIT;
 						if (dma_counter)
 							next_mem_pend = 1'b1;
 						else
@@ -701,7 +735,7 @@ begin
 					end
 				end
 
-				MEM_ACCESS_WAIT:
+				MEM_READ_ACCESS_WAIT:
 				begin
 					// Read complete
 					if (MEM_ACK_IN & (~TX_REQ))
@@ -730,9 +764,16 @@ begin
 				0:
 				begin
 					next_mem_aout = rx_dat_buffer[LC_MEM_ADDR_WIDTH-1:2];
-					next_mem_sub_state = 1;
+					next_dma_counter = bulk_max_length;
 					if (~rx_pend_reg) // Invalid message
 						next_lc_state = LC_STATE_IDLE;
+					else if (~bulk_enable)	// Bulk enable is not set
+					begin
+						next_mem_sub_state = 0;
+						next_lc_state = LC_STATE_ERROR;
+					end
+					else
+						next_mem_sub_state = 1;
 				end
 
 				1:
@@ -757,10 +798,10 @@ begin
 					begin
 						next_mem_write = 1;
 						next_mem_sub_state = 3;
-						if (rx_pend_reg)
-							next_mem_pend = 1'b1;
+						if (dma_counter)
+							next_mem_pend = rx_pend_reg;
 						else
-							next_mem_pend = 1'b0;
+							next_mem_pend = 0;
 					end
 				end
 
@@ -771,10 +812,19 @@ begin
 					begin
 						if (rx_pend_reg)
 						begin
-							next_mem_aout = MEM_ADDR + 1'b1;
-							next_mem_sub_state = 1;
+							if (dma_counter)
+							begin
+								next_dma_counter = dma_counter - 1'b1;
+								next_mem_aout = MEM_ADDR + 1'b1;
+								next_mem_sub_state = 1;
+							end
+							else
+							begin
+								next_mem_sub_state = 0;
+								next_lc_state = LC_STATE_ERROR;
+							end
 						end
-						else
+						else// no more data coming, no need to substract dma counter
 							next_lc_state = LC_STATE_IDLE;
 					end
 				end
@@ -788,7 +838,7 @@ begin
 				begin
 					if (stream_enable)
 					begin
-						next_mem_aout = ((stream_reg1[stream_channel][15:0]<<16) | stream_reg0[stream_channel][15:2]);
+						next_mem_aout = stream_write_buffer;
 						next_mem_dout = rx_dat_buffer;
 						next_mem_pend = ((stream_wrapping & rx_pend_reg) | (rx_pend_reg & stream_remaining));
 						next_mem_sub_state = STREAM_MEM_WRITE;
@@ -796,7 +846,10 @@ begin
 					else
 					begin
 						if (rx_pend_reg)
+						begin
+							next_mem_sub_state = 0;
 							next_lc_state = LC_STATE_ERROR;
+						end
 						else
 							next_lc_state = LC_STATE_IDLE;
 					end
@@ -873,6 +926,11 @@ begin
 				end
 			endcase
 		end
+
+		LC_STATE_STREAM_ALERT:
+		begin
+		end
+
 
 		LC_STATE_BUS_TX:
 		begin // cannot modify mem_sub_state here

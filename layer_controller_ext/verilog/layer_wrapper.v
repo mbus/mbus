@@ -16,8 +16,7 @@ module layer_wrapper(
 	DOUT
 ); 
 
-parameter RF_DEPTH = 64;		// this number is intend to be less than LC_RF_DEPTH
-parameter ROM_DEPTH = 64;
+parameter RF_DEPTH = 256;		// this number is intend to be less than LC_RF_DEPTH
 parameter ADDRESS = 20'hccccc;
 
 parameter LC_RF_DATA_WIDTH =24;
@@ -101,8 +100,8 @@ wire	[LC_MEM_DATA_WIDTH-1:0] mem_data_f_mem;
 
 // RF
 wire	[LC_RF_DATA_WIDTH*RF_DEPTH-1:0] rf_dout_f_rf;
-// ROM
-wire	[LC_RF_DATA_WIDTH*ROM_DEPTH-1:0] sensor_dat_f_rom;
+
+// Rom
 wire	[`FUNC_WIDTH*LC_INT_DEPTH-1:0] int_func_id_f_rom;
 wire	[(`DATA_WIDTH*3)*LC_INT_DEPTH-1:0] int_payload_f_rom;
 wire	[2*LC_INT_DEPTH-1:0] int_length_f_rom; 
@@ -172,7 +171,7 @@ layer_ctrl
 	.TX_RESP_ACK(tx_resp_ack),
 	.RELEASE_RST_FROM_MBUS(lc_release_rst),
 	// Interface with Registers
-	.REG_RD_DATA({sensor_dat_f_rom, rf_dout_f_rf}),
+	.REG_RD_DATA(rf_dout_f_rf),
 	.REG_WR_DATA(rf_dout),
 	.REG_WR_EN(rf_load),
 	// Interface with MEM
@@ -284,11 +283,6 @@ rf_ctrl #(.RF_DEPTH(RF_DEPTH)) rf0(
 	.DIN(rf_dout_t_rf),
 	.LOAD(rf_load_t_rf[RF_DEPTH-1:0]),
 	.DOUT(rf_dout_f_rf)
-);
-
-// always on sensor roms
-sensor_rom #(.ROM_DEPTH(ROM_DEPTH)) r0(
-	.DOUT(sensor_dat_f_rom)
 );
 
 // always on interrupt command roms

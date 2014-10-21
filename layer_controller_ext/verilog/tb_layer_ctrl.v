@@ -75,7 +75,9 @@ module tb_layer_ctrl();
 	reg [LC_INT_DEPTH-1:0] int_vec;
 	reg [31:0]	mem_w_data;
 	reg [3:0]	functional_id;
+	reg	[23:0]	rf_w_data;
    	integer 	handle;
+	integer		task_counter;
 
 	localparam TB_PROC_UP					= 0;
 	localparam TB_QUERY						= 1;
@@ -92,6 +94,7 @@ module tb_layer_ctrl();
 	localparam TB_MULTIPLE_INTERRUPT		= 12;
 	localparam TB_SINGLE_MEM_WRITE			= 13;
 	localparam TB_ARBITRARY_CMD				= 14;
+	localparam TB_SINGLE_RF_WRITE			= 15;
 	localparam TX_WAIT						= 31;
 
    reg	c0_auto_rx_ack;
@@ -136,6 +139,7 @@ mbus_ctrl_layer_wrapper #(.ADDRESS(20'haaaa0)) c0
 `include "tasks.v"
 initial 
 begin
+	task_counter = 0;
     clk = 0;
     resetn = 1;
 	mem_addr = 0;

@@ -59,7 +59,7 @@ begin
 		case (fsm)
 			IDLE:
 			begin
-				if ((MEM_REQ) && (ADDR<MEM_DEPTH))
+				if (MEM_REQ)
 				begin
 					if (MEM_WRITE)
 						fsm <= WRITE;

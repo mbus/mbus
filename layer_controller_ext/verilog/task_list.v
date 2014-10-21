@@ -74,6 +74,24 @@ always @ (posedge clk or negedge resetn) begin
 				end
 			end
 
+			// RF Write single
+			// Parameters:	dest_short_addr (4 bits)
+			//				rf_addr (8 bits)
+			//				rf_w_data (24 bits)
+			TB_SINGLE_RF_WRITE:
+			begin
+				if ((~c0_tx_ack) & (~c0_tx_req))
+				begin
+					c0_priority <= 0;
+					c0_tx_addr <= {24'h0, dest_short_addr, `LC_CMD_RF_WRITE};
+					c0_tx_req <= 1;
+					c0_tx_data <= ((rf_addr<<24) | rf_w_data);
+					c0_tx_pend <= 0;
+   	      			$fdisplay(handle, "Write RF addr: 8'h%h,\tData: 24'h%h", rf_addr, rf_w_data);
+					state <= TX_WAIT;
+				end
+			end
+
 			// RF read
 			// Parameters:	dest_short_addr (4 bits)
 			//				rf_addr (8 bits)

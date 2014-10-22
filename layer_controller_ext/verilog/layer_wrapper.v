@@ -112,6 +112,7 @@ wire	[`ADDR_WIDTH-1:0]	rx_addr;
 wire	[`DATA_WIDTH-1:0]	rx_data;
 wire						rx_req, rx_fail, rx_pend, rx_broadcast;
 wire						rx_ack;
+wire	[`DYNA_WIDTH-1:0]	prefix_addr;
 
 // Power signals
 wire						lc_pwr_on, lc_release_clk, lc_release_rst, lc_release_iso;
@@ -188,7 +189,9 @@ layer_ctrl
 	.CLR_INT(clr_int),
 	.INT_FU_ID(int_func_id_f_rom),
 	.INT_CMD(int_payload_f_rom),
-	.INT_CMD_LEN(int_length_f_rom)
+	.INT_CMD_LEN(int_length_f_rom),
+	// PREFIX
+	.PREFIX_ADDR_IN(prefix_addr)
 );
 
 mbus_layer_wrapper #(.ADDRESS(ADDRESS)) mbus_node0
@@ -197,7 +200,7 @@ mbus_layer_wrapper #(.ADDRESS(ADDRESS)) mbus_node0
       .RX_ADDR(rx_addr), .RX_DATA(rx_data), .RX_REQ(rx_req), .RX_ACK(rx_ack_t_mbus), .RX_FAIL(rx_fail), .RX_PEND(rx_pend),
       .TX_SUCC(tx_succ), .TX_FAIL(tx_fail), .TX_RESP_ACK(tx_resp_ack_t_mbus), .RX_BROADCAST(rx_broadcast),
 	  .LC_POWER_ON(lc_pwr_on), .LC_RELEASE_CLK(lc_release_clk), .LC_RELEASE_RST(lc_release_rst), .LC_RELEASE_ISO(lc_release_iso),
-	  .REQ_INT(req_int));
+	  .REQ_INT(req_int), .PREFIX_ADDR_OUT(prefix_addr));
 
 always @ *
 begin

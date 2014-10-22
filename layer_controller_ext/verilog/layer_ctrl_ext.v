@@ -140,7 +140,11 @@ module layer_ctrl #(
 	output reg	[LC_INT_DEPTH-1:0] CLR_INT,
 	input		[`FUNC_WIDTH*LC_INT_DEPTH-1:0] INT_FU_ID,
 	input		[(`DATA_WIDTH*3)*LC_INT_DEPTH-1:0] INT_CMD,
-	input		[2*LC_INT_DEPTH-1:0] INT_CMD_LEN
+	input		[2*LC_INT_DEPTH-1:0] INT_CMD_LEN,
+	// End of interface
+
+	// PREFIX Addr
+	input		[`DYNA_WIDTH-1:0] PREFIX_ADDR_IN
 );
 
 
@@ -280,19 +284,21 @@ wire	[LC_RF_DATA_WIDTH-1:0] stream_reg2 [0:LC_MEM_STREAM_CHANNELS-1];
 wire	[LC_RF_DATA_WIDTH-1:0] stream_reg3 [0:LC_MEM_STREAM_CHANNELS-1];
 wire	[`FUNC_WIDTH-3:0] STREAM_CH = RX_ADDR[`FUNC_WIDTH-3:0];
 reg		[`FUNC_WIDTH-3:0] stream_channel, next_stream_channel;
-reg		stream_double_bf_alert, next_stream_double_bf_alert;
-reg		stream_overflow_alert, next_stream_overflow_alert;
+reg		stream_alert_double_bf, next_stream_alert_double_bf;
+reg		stream_alert_overflow, next_stream_alert_overflow;
+reg		stream_alert_buf_full, next_stream_alert_buf_full;
 reg		[3:0] stream_reg_update_state, next_stream_reg_update_state;
 reg		[1:0] stream_reg_update_status, next_stream_reg_update_status;
 wire	stream_remaining	= (stream_reg3[stream_channel][19:0] > 0)? 1'b1 : 1'b0;
 wire	stream_enable		= stream_reg2[stream_channel][LC_RF_DATA_WIDTH-1];
 wire	stream_wrapping		= stream_reg2[stream_channel][LC_RF_DATA_WIDTH-2];
 wire	stream_double_bf	= stream_reg2[stream_channel][LC_RF_DATA_WIDTH-3];
-wire	[7:0] stream_alert_address = stream_reg0[stream_channel][LC_RF_DATA_WIDTH-1:LC_RF_DATA_WIDTH-8];
+wire	[7:0] stream_alert_dest_address = stream_reg0[stream_channel][LC_RF_DATA_WIDTH-1:LC_RF_DATA_WIDTH-8];
 wire	[LC_MEM_ADDR_WIDTH-3:0] stream_write_buffer = {stream_reg1[stream_channel][15:0], stream_reg0[stream_channel][15:2]};
 wire	[LC_MEM_ADDR_WIDTH-3:0] stream_write_buffer_adv = stream_write_buffer + 1'b1;
 wire	stream_enable_temp = ((rx_dat_buffer[LC_RF_DATA_WIDTH-1])==1'b1)? 1'b1: 1'b0;
 wire	[LC_MEM_STREAM_CHANNELS-1:0] channel_enable_set;
+localparam ALERT_PATTERN = 8'hfe;
 
 generate
 	for (unpk_idx=0; unpk_idx<(LC_MEM_STREAM_CHANNELS); unpk_idx=unpk_idx+1)
@@ -369,10 +375,11 @@ begin
 		int_cmd_cnt <= 0;
 		// Stream registers
 		stream_channel <= 0;
-		stream_double_bf_alert <= 1'b0;
-		stream_overflow_alert <= 1'b0;
 		stream_reg_update_state <= 0;
 		stream_reg_update_status <= 0;
+		stream_alert_double_bf <= 1'b0;
+		stream_alert_overflow <= 1'b0;
+		stream_alert_buf_full <= 1'b0;
 	end
 	else
 	begin
@@ -410,10 +417,11 @@ begin
 		int_cmd_cnt <= next_int_cmd_cnt;
 		// Stream registers
 		stream_channel <= next_stream_channel;
-		stream_double_bf_alert <= next_stream_double_bf_alert;
-		stream_overflow_alert <= next_stream_overflow_alert;
 		stream_reg_update_state <= next_stream_reg_update_state;
 		stream_reg_update_status <= next_stream_reg_update_status;
+		stream_alert_double_bf <= next_stream_alert_double_bf;
+		stream_alert_overflow <= next_stream_alert_overflow;
+		stream_alert_buf_full <= next_stream_alert_buf_full;
 	end
 end
 
@@ -453,10 +461,12 @@ begin
 	next_int_cmd_cnt = int_cmd_cnt;
 	// Stream registers
 	next_stream_channel = stream_channel;
-	next_stream_double_bf_alert = stream_double_bf_alert;
-	next_stream_overflow_alert = stream_overflow_alert;
 	next_stream_reg_update_state = stream_reg_update_state;
 	next_stream_reg_update_status = stream_reg_update_status;
+	next_stream_alert_double_bf = stream_alert_double_bf;
+	next_stream_alert_overflow = stream_alert_overflow;
+	next_stream_alert_buf_full = stream_alert_buf_full;
+
 
 	// Asynchronized interface
 	if ((~(RX_REQ_DL2 | RX_FAIL)) & RX_ACK)
@@ -491,10 +501,8 @@ begin
 			next_layer_interrupted = 0;
 			next_mem_pend = 0;
 			next_tx_pend = 0;
-			if (stream_overflow_alert | stream_double_bf_alert)		// Check Alert first
-			begin
+			if (stream_alert_overflow | stream_alert_double_bf | stream_alert_buf_full)		// Check Alert first
 				next_lc_state = LC_STATE_STREAM_ALERT;
-			end
 			else if ((INT_VECTOR_clocked>0) && (CLR_INT==0))		// Then interrupt
 			begin
 				next_int_vector_copied = INT_VECTOR_clocked;
@@ -942,18 +950,21 @@ begin
 							next_stream_reg_update_state = STREAM_REG3_UPDATE;
 							if (~stream_remaining)
 							begin
-								next_stream_overflow_alert = 1'b1;
 								if (~stream_wrapping)
 								begin
 									next_rf_dout = (1'b0<<(LC_RF_DATA_WIDTH-1)) | stream_reg2[stream_channel][LC_RF_DATA_WIDTH-2:0]; // clear enable
 									next_stream_reg_update_state = STREAM_REG2_LOAD;
 								end
+								if (stream_alert_buf_full)
+									next_stream_alert_overflow = 1'b1;
+								else
+									next_stream_alert_buf_full = 1'b1;
 							end
 						end
 
-						STREAM_REG1_LOAD:
+						STREAM_REG2_LOAD:
 						begin
-							next_rf_load = (1'b1<<(LC_RF_DEPTH - LC_MEM_STREAM_SYSREG_OFFSET - 1'b1 - (stream_channel<<2)) - 1'b1);	// clear enable
+							next_rf_load = (1'b1<<(LC_RF_DEPTH - LC_MEM_STREAM_SYSREG_OFFSET - 1'b1 - (stream_channel<<2)) - 1'b1);
 							next_stream_reg_update_state = STREAM_REG_WAIT;
 							next_stream_reg_update_status = stream_reg_update_status + 1'b1;
 						end
@@ -965,8 +976,8 @@ begin
 							begin
 								next_rf_dout = (stream_reg3[stream_channel][LC_RF_DATA_WIDTH-1:20]<<20) | (stream_reg3[stream_channel][19:0] - 1'b1);
 								next_stream_reg_update_state = STREAM_REG3_LOAD;
-								if ((stream_reg3[stream_channel][18:0]==stream_reg2[stream_channel][19:1]) && (~stream_double_bf_alert))
-									next_stream_double_bf_alert = 1'b1;
+								if ((stream_reg3[stream_channel][18:0]==stream_reg2[stream_channel][19:1]) && (~stream_alert_double_bf))
+									next_stream_alert_double_bf = 1'b1;
 							end
 							else
 							begin
@@ -1037,8 +1048,19 @@ begin
 
 		LC_STATE_STREAM_ALERT:
 		begin
+			if (~TX_REQ)
+			begin
+				next_tx_req = 1;
+				next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, stream_alert_dest_address};
+				next_tx_data = {ALERT_PATTERN, PREFIX_ADDR_IN, 2'b01, stream_channel, 
+								stream_enable, stream_wrapping, stream_alert_double_bf, stream_alert_overflow, 12'b0};
+				next_tx_pend = 0;
+				next_lc_state = LC_STATE_BUS_TX;
+				next_stream_alert_double_bf = 1'b0;
+				next_stream_alert_overflow = 1'b0;
+				next_stream_alert_buf_full = 1'b0;
+			end
 		end
-
 
 		LC_STATE_BUS_TX:
 		begin // cannot modify mem_sub_state here

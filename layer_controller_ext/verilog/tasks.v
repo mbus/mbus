@@ -365,12 +365,13 @@ begin
 	task_counter = task_counter + 1;
 	$fdisplay(handle, "\n-------------------------------------------------------------------------");
 	$fdisplay(handle, "TASK%d, RF Write", task_counter);
-	$fdisplay(handle, "CPU sends 10 word streaming data to Layer 1's stream channel 0");
+	$fdisplay(handle, "CPU sends 10 word streaming data to Layer 1's stream channel 0, CPU should receive a double buffer alert");
 	$fdisplay(handle, "-------------------------------------------------------------------------");
 	dest_short_addr = 4'h3;
 	stream_channel = 0;
 	word_counter = 9;
 	state = TB_STREAMING;
+	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
 /*

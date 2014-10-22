@@ -76,6 +76,7 @@ module tb_layer_ctrl();
 	reg [31:0]	mem_w_data;
 	reg [3:0]	functional_id;
 	reg	[23:0]	rf_w_data;
+	reg [1:0]	stream_channel;
    	integer 	handle;
 	integer		task_counter;
 
@@ -96,6 +97,7 @@ module tb_layer_ctrl();
 	localparam TB_ARBITRARY_CMD				= 14;
 	localparam TB_SINGLE_RF_WRITE			= 15;
 	localparam TB_SHORT_MEM_READ			= 16;
+	localparam TB_STREAMING					= 17;
 	localparam TX_WAIT						= 31;
 
    reg	c0_auto_rx_ack;
@@ -161,6 +163,7 @@ begin
 	int_vec = 0;
 	mem_w_data = 0;
 	functional_id = 0;
+	stream_channel = 0;
 
 	@ (posedge clk);
     @ (posedge clk);

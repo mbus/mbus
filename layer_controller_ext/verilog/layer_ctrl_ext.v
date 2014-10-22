@@ -89,7 +89,7 @@ module layer_ctrl #(
 	parameter LC_MEM_DATA_WIDTH = 32,	// should ALWAYS less than DATA_WIDTH
 
 	parameter LC_INT_DEPTH = 8,
-	parameter LC_MEM_STREAM_CHANNELS = 4,
+	parameter LC_MEM_STREAM_CHANNELS = 2,
 	parameter LC_MEM_STREAM_SYSREG_OFFSET = 16
 )
 (
@@ -180,6 +180,7 @@ localparam MEM_READ_WAIT_DEST_LOCATION	= 3'd2;
 localparam MEM_READ_TX_DEST_LOC			= 3'd3;
 localparam MEM_READ_ACCESS_READ			= 3'd4;
 localparam MEM_READ_ACCESS_WAIT			= 3'd5;
+localparam MEM_READ_TX_WAIT				= 3'd6;
 
 // RF Write MEM sub state definition
 localparam RF_WRITE_LOAD			= 3'd1;
@@ -192,9 +193,21 @@ localparam RF_WRITE_INT_COPY		= 3'd6;
 // Stream MEM Write sub state definition
 localparam STREAM_MEM_WRITE			= 3'd1;
 localparam STREAM_MEM_WAIT			= 3'd2;
-localparam STREAM_COUNTER_DEC		= 3'd3;
+localparam STREAM_MEM_REG_UPDATE	= 3'd3;
 localparam STREAM_RF_WRITE			= 3'd4;
 localparam STREAM_RECEIVE			= 3'd5;
+
+// Stream Register update states
+localparam STREAM_REG0_UPDATE	= 4'd0;
+localparam STREAM_REG0_LOAD		= 4'd1;
+localparam STREAM_REG1_UPDATE	= 4'd2;
+localparam STREAM_REG1_LOAD		= 4'd3;
+localparam STREAM_REG2_UPDATE	= 4'd4;
+localparam STREAM_REG2_LOAD		= 4'd5;
+localparam STREAM_REG3_UPDATE	= 4'd6;
+localparam STREAM_REG3_LOAD		= 4'd7;
+localparam STREAM_ERROR_CHECK	= 4'd8;
+localparam STREAM_REG_WAIT		= 4'd9;
 
 // Double latching registers
 reg		TX_ACK_DL1, TX_ACK_DL2;
@@ -269,12 +282,15 @@ wire	[`FUNC_WIDTH-3:0] STREAM_CH = RX_ADDR[`FUNC_WIDTH-3:0];
 reg		[`FUNC_WIDTH-3:0] stream_channel, next_stream_channel;
 reg		stream_double_bf_alert, next_stream_double_bf_alert;
 reg		stream_overflow_alert, next_stream_overflow_alert;
+reg		[3:0] stream_reg_update_state, next_stream_reg_update_state;
+reg		[1:0] stream_reg_update_status, next_stream_reg_update_status;
 wire	stream_remaining	= (stream_reg3[stream_channel][19:0] > 0)? 1'b1 : 1'b0;
 wire	stream_enable		= stream_reg2[stream_channel][LC_RF_DATA_WIDTH-1];
 wire	stream_wrapping		= stream_reg2[stream_channel][LC_RF_DATA_WIDTH-2];
 wire	stream_double_bf	= stream_reg2[stream_channel][LC_RF_DATA_WIDTH-3];
 wire	[7:0] stream_alert_address = stream_reg0[stream_channel][LC_RF_DATA_WIDTH-1:LC_RF_DATA_WIDTH-8];
 wire	[LC_MEM_ADDR_WIDTH-3:0] stream_write_buffer = {stream_reg1[stream_channel][15:0], stream_reg0[stream_channel][15:2]};
+wire	[LC_MEM_ADDR_WIDTH-3:0] stream_write_buffer_adv = stream_write_buffer + 1'b1;
 wire	stream_enable_temp = ((rx_dat_buffer[LC_RF_DATA_WIDTH-1])==1'b1)? 1'b1: 1'b0;
 wire	[LC_MEM_STREAM_CHANNELS-1:0] channel_enable_set;
 
@@ -355,6 +371,8 @@ begin
 		stream_channel <= 0;
 		stream_double_bf_alert <= 1'b0;
 		stream_overflow_alert <= 1'b0;
+		stream_reg_update_state <= 0;
+		stream_reg_update_status <= 0;
 	end
 	else
 	begin
@@ -394,6 +412,8 @@ begin
 		stream_channel <= next_stream_channel;
 		stream_double_bf_alert <= next_stream_double_bf_alert;
 		stream_overflow_alert <= next_stream_overflow_alert;
+		stream_reg_update_state <= next_stream_reg_update_state;
+		stream_reg_update_status <= next_stream_reg_update_status;
 	end
 end
 
@@ -435,6 +455,8 @@ begin
 	next_stream_channel = stream_channel;
 	next_stream_double_bf_alert = stream_double_bf_alert;
 	next_stream_overflow_alert = stream_overflow_alert;
+	next_stream_reg_update_state = stream_reg_update_state;
+	next_stream_reg_update_status = stream_reg_update_status;
 
 	// Asynchronized interface
 	if ((~(RX_REQ_DL2 | RX_FAIL)) & RX_ACK)
@@ -743,13 +765,19 @@ begin
 
 				MEM_READ_ACCESS_WAIT:
 				begin
-					// Read complete
-					if (MEM_ACK_IN & (~TX_REQ))
+					if (MEM_ACK_IN) // Read complete
+						next_mem_sub_state = MEM_READ_TX_WAIT;
+				end
+
+				MEM_READ_TX_WAIT:
+				begin
+					if (~TX_REQ)
 					begin
 						next_tx_req = 1;
 						next_tx_data = MEM_RD_DATA;
 						next_lc_state = LC_STATE_BUS_TX;
 						next_lc_return_state = LC_STATE_MEM_READ;
+						next_mem_sub_state = MEM_READ_ACCESS_READ;
 						next_mem_aout = MEM_ADDR + 1'b1;
 						if (dma_counter)
 						begin
@@ -872,47 +900,121 @@ begin
 
 				STREAM_MEM_WAIT:
 				begin
+					next_dma_counter = 2;
+					next_stream_reg_update_state = STREAM_REG0_UPDATE;
 					if (MEM_ACK_IN)
-						next_mem_sub_state = STREAM_COUNTER_DEC;
+						next_mem_sub_state = STREAM_MEM_REG_UPDATE;
 				end
 
-				STREAM_COUNTER_DEC:
+				STREAM_MEM_REG_UPDATE:
 				begin
-					next_mem_sub_state = STREAM_RF_WRITE;
-					if (stream_remaining)
-					begin
-						next_rf_dout = (stream_reg3[stream_channel][LC_RF_DATA_WIDTH-1:20]<<20) | (stream_reg3[stream_channel][19:0] - 1'b1);
-						if ((stream_reg3[stream_channel][18:0]==stream_reg2[stream_channel][19:1]) && (~stream_double_bf_alert))
-							next_stream_double_bf_alert = 1'b1;
-					end
-					else
-					begin
-						next_stream_overflow_alert = 1'b1;
-						if (stream_wrapping)
-							next_rf_dout = (stream_reg3[stream_channel][LC_RF_DATA_WIDTH-1:20]<<20) | stream_reg2[stream_channel][19:0];
-						else
-							next_rf_dout = (1'b1<<(LC_RF_DATA_WIDTH-1)) | stream_reg2[stream_channel][LC_RF_DATA_WIDTH-2:0]; // clear enable
-					end
-				end
-
-				STREAM_RF_WRITE:
-				begin
-					if ((~stream_remaining) & (~stream_wrapping))
-					begin
-						next_rf_load = (1'b1<<(LC_RF_DEPTH - 1'b1 - (stream_channel<<2)) - 1'b1);	// clear enable
-						if (rx_pend_reg)
+					case (stream_reg_update_state)
+						STREAM_REG0_UPDATE:
 						begin
-							next_mem_sub_state = 0;
-							next_lc_state = LC_STATE_ERROR;
+							next_rf_dout = (((stream_reg0[stream_channel][LC_RF_DATA_WIDTH-1:LC_RF_DATA_WIDTH-8])<<16) | (stream_write_buffer_adv[13:0]<<2) | 2'b0);
+							next_stream_reg_update_state = STREAM_REG0_LOAD;
 						end
-					end
-					else
-						next_rf_load = (1'b1<<(LC_RF_DEPTH - 1'b1 - (stream_channel<<2)));			// reload counter
 
-					if (MEM_PEND)
-						next_mem_sub_state = STREAM_RECEIVE;
-					else
-						next_lc_state = LC_STATE_IDLE;
+						STREAM_REG0_LOAD:
+						begin
+							// update write buffer lower bits
+							next_rf_load = (1'b1<<(LC_RF_DEPTH - LC_MEM_STREAM_SYSREG_OFFSET - 1'b1 - (stream_channel<<2)) - 2'b11);	
+							next_stream_reg_update_state = STREAM_REG_WAIT;
+							next_stream_reg_update_status = 0;
+						end
+
+						STREAM_REG1_UPDATE:
+						begin
+							next_rf_dout = ((8'b0<<16) | stream_write_buffer_adv[29:14]);
+							next_stream_reg_update_state = STREAM_REG1_LOAD;
+						end
+
+						STREAM_REG1_LOAD:
+						begin
+							// update write buffer higher bits
+							next_rf_load = (1'b1<<(LC_RF_DEPTH - LC_MEM_STREAM_SYSREG_OFFSET - 1'b1 - (stream_channel<<2)) - 2'b10);	
+							next_stream_reg_update_state = STREAM_REG_WAIT;
+							next_stream_reg_update_status = stream_reg_update_status + 1'b1;
+						end
+
+						STREAM_REG2_UPDATE:
+						begin
+							next_stream_reg_update_state = STREAM_REG3_UPDATE;
+							if (~stream_remaining)
+							begin
+								next_stream_overflow_alert = 1'b1;
+								if (~stream_wrapping)
+								begin
+									next_rf_dout = (1'b0<<(LC_RF_DATA_WIDTH-1)) | stream_reg2[stream_channel][LC_RF_DATA_WIDTH-2:0]; // clear enable
+									next_stream_reg_update_state = STREAM_REG2_LOAD;
+								end
+							end
+						end
+
+						STREAM_REG1_LOAD:
+						begin
+							next_rf_load = (1'b1<<(LC_RF_DEPTH - LC_MEM_STREAM_SYSREG_OFFSET - 1'b1 - (stream_channel<<2)) - 1'b1);	// clear enable
+							next_stream_reg_update_state = STREAM_REG_WAIT;
+							next_stream_reg_update_status = stream_reg_update_status + 1'b1;
+						end
+
+						STREAM_REG3_UPDATE:
+						begin
+							next_stream_reg_update_state = STREAM_ERROR_CHECK;
+							if (stream_remaining)
+							begin
+								next_rf_dout = (stream_reg3[stream_channel][LC_RF_DATA_WIDTH-1:20]<<20) | (stream_reg3[stream_channel][19:0] - 1'b1);
+								next_stream_reg_update_state = STREAM_REG3_LOAD;
+								if ((stream_reg3[stream_channel][18:0]==stream_reg2[stream_channel][19:1]) && (~stream_double_bf_alert))
+									next_stream_double_bf_alert = 1'b1;
+							end
+							else
+							begin
+								if (stream_wrapping)
+								begin
+									next_stream_reg_update_state = STREAM_REG3_LOAD;
+									next_rf_dout = (stream_reg3[stream_channel][LC_RF_DATA_WIDTH-1:20]<<20) | stream_reg2[stream_channel][19:0];
+								end
+							end
+						end
+
+						STREAM_REG3_LOAD:
+						begin
+							next_rf_load = (1'b1<<(LC_RF_DEPTH - LC_MEM_STREAM_SYSREG_OFFSET - 1'b1 - (stream_channel<<2)));			// reload counter
+							next_stream_reg_update_state = STREAM_REG_WAIT;
+							next_stream_reg_update_status = 3;
+						end
+
+						STREAM_ERROR_CHECK:
+						begin
+							if ((~stream_remaining) & (~stream_wrapping) & (rx_pend_reg))
+							begin
+								next_mem_sub_state = 0;
+								next_lc_state = LC_STATE_ERROR;
+							end
+							else if (MEM_PEND)
+								next_mem_sub_state = STREAM_RECEIVE;
+							else
+								next_lc_state = LC_STATE_IDLE;
+						end
+
+						STREAM_REG_WAIT:
+						begin
+							if (dma_counter)
+								next_dma_counter = dma_counter - 1'b1;
+							else
+							begin
+								next_dma_counter = 2;
+								case (stream_reg_update_status)
+									0: begin next_stream_reg_update_state = STREAM_REG1_UPDATE; end
+									1: begin next_stream_reg_update_state = STREAM_REG2_UPDATE; end
+									2: begin next_stream_reg_update_state = STREAM_REG3_UPDATE; end
+									3: begin next_stream_reg_update_state = STREAM_ERROR_CHECK; end
+								endcase
+							end
+						end
+
+					endcase
 				end
 
 				STREAM_RECEIVE:

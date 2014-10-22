@@ -100,12 +100,15 @@ always @ (posedge clk or negedge resetn) begin
 			//				rf_relay_loc (8 bits)
 			TB_RF_READ:
 			begin
-				c0_tx_addr <= {24'h0, dest_short_addr, `LC_CMD_RF_READ};
-				c0_tx_data <= (rf_addr<<24 | rf_read_length<<16 | relay_addr<<8 | rf_relay_loc);
-				c0_tx_pend <= 0;
-				c0_tx_req <= 1;
-				c0_priority <= 0;
-				state <= TX_WAIT;
+				if ((~c0_tx_ack) & (~c0_tx_req))
+				begin
+					c0_tx_addr <= {24'h0, dest_short_addr, `LC_CMD_RF_READ};
+					c0_tx_data <= (rf_addr<<24 | rf_read_length<<16 | relay_addr<<8 | rf_relay_loc);
+					c0_tx_pend <= 0;
+					c0_tx_req <= 1;
+					c0_priority <= 0;
+					state <= TX_WAIT;
+				end
 			end
 
 			// MEM Write (Random Data)
@@ -251,6 +254,31 @@ always @ (posedge clk or negedge resetn) begin
 							state <= TX_WAIT;
 						end
 					endcase
+				end
+			end
+
+			// Stream Write 
+			// Parameters:	dest_short_addr (4 bits)
+			//				stream_channel (2 bits)
+			//				word_counter
+			TB_STREAMING:
+			begin
+				if ((~c0_tx_ack) & (~c0_tx_req))
+				begin
+					c0_tx_addr <= {24'h0, dest_short_addr, `LC_CMD_MEM_STREAM, stream_channel};
+					c0_tx_data <= rand_dat;
+					c0_priority <= 0;
+					c0_tx_req <= 1;
+					if (word_counter)
+					begin
+						c0_tx_pend <= 1;
+						word_counter <= word_counter - 1;
+					end
+					else
+					begin
+						c0_tx_pend <= 0;
+						state <= TX_WAIT;
+					end
 				end
 			end
 

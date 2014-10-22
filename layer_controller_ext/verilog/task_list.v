@@ -127,7 +127,6 @@ always @ (posedge clk or negedge resetn) begin
 						begin
 							c0_tx_data <= ((mem_addr<<2) | 2'b0);
 							c0_tx_pend <= 1;
-							addr_increment <= 0;
 							if (word_counter)
 								mem_access_state <= 1;
 							else
@@ -136,13 +135,19 @@ always @ (posedge clk or negedge resetn) begin
 
 						1:
 						begin
-							c0_tx_data <= rand_dat;
-							c0_tx_pend <= 1;
-							addr_increment <= addr_increment + 1;
 							if (word_counter)
+							begin
 								word_counter <= word_counter - 1;
+								c0_tx_data <= rand_dat;
+								c0_tx_pend <= 1;
+							end
 							else
-								mem_access_state <= 2;
+							begin
+								c0_tx_data <= rand_dat;
+								c0_tx_pend <= 0;
+								mem_access_state <= 0;
+								state <= TX_WAIT;
+							end
 						end
 
 						2:
@@ -172,7 +177,6 @@ always @ (posedge clk or negedge resetn) begin
 						begin
 							c0_tx_data <= ((mem_addr<<2) | 2'b0);
 							c0_tx_pend <= 1;
-							addr_increment <= 0;
 							mem_access_state <= 1;
 						end
 						

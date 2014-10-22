@@ -839,10 +839,10 @@ begin
 					begin
 						next_mem_write = 1;
 						next_mem_sub_state = 3;
-						if (dma_counter)
-							next_mem_pend = rx_pend_reg;
-						else
+						if ((bulk_ctrl_active) && (dma_counter==0))
 							next_mem_pend = 0;
+						else
+							next_mem_pend = rx_pend_reg;
 					end
 				end
 
@@ -853,9 +853,10 @@ begin
 					begin
 						if (rx_pend_reg)
 						begin
-							if (dma_counter)
+							if ((dma_counter>0) || (~bulk_ctrl_active))
 							begin
-								next_dma_counter = dma_counter - 1'b1;
+								if (bulk_ctrl_active)
+									next_dma_counter = dma_counter - 1'b1;
 								next_mem_aout = MEM_ADDR + 1'b1;
 								next_mem_sub_state = 1;
 							end

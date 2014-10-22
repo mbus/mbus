@@ -93,7 +93,7 @@ begin
     $fdisplay(handle, "TASK%d, RF Write", task_counter);
     $fdisplay(handle, "CPU configures Layer 0 default sys register bulk mem message control");
     $fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 242;
+	rf_addr = BULK_MEM_CTRL_REG_IDX;
 	dest_short_addr = 4'h2;
 	rf_w_data = 24'h80_0000;
     state = TB_SINGLE_RF_WRITE;
@@ -105,7 +105,7 @@ begin
     $fdisplay(handle, "TASK%d, RF Write", task_counter);
     $fdisplay(handle, "CPU configures Layer 1 default sys register bulk mem message control");
     $fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 242;
+	rf_addr = BULK_MEM_CTRL_REG_IDX;
 	dest_short_addr = 4'h3;
 	rf_w_data = 24'h80_0000;
     state = TB_SINGLE_RF_WRITE;
@@ -117,7 +117,7 @@ begin
     $fdisplay(handle, "TASK%d, RF Write", task_counter);
     $fdisplay(handle, "CPU configures Layer 2 default sys register bulk mem message control");
     $fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 242;
+	rf_addr = BULK_MEM_CTRL_REG_IDX;
 	dest_short_addr = 4'h4;
 	rf_w_data = 24'h80_0000;
     state = TB_SINGLE_RF_WRITE;
@@ -129,7 +129,7 @@ begin
     $fdisplay(handle, "TASK%d, RF Write", task_counter);
     $fdisplay(handle, "CPU configures Layer 3 default sys register bulk mem message control");
     $fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 242;
+	rf_addr = BULK_MEM_CTRL_REG_IDX;
 	dest_short_addr = 4'h5;
 	rf_w_data = 24'h80_0000;
     state = TB_SINGLE_RF_WRITE;
@@ -219,11 +219,11 @@ begin
 	task_counter = task_counter + 1;
     $fdisplay(handle, "\n-------------------------------------------------------------------------");
     $fdisplay(handle, "TASK%d, MEM Write", task_counter);
-    $fdisplay(handle, "CPU bulk writes random data to Layer 1's MEM address 1-10, with 0 length, it should write only 1 word");
+    $fdisplay(handle, "CPU bulk writes random data to Layer 1's MEM address 1-10, bulk active is not set");
     $fdisplay(handle, "-------------------------------------------------------------------------");
 	dest_short_addr = 4'h3;
 	mem_addr = 1;
-	word_counter = 3;
+	word_counter = 9;
     state = TB_MEM_WRITE;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
@@ -231,11 +231,47 @@ begin
 	task_counter = task_counter + 1;
     $fdisplay(handle, "\n-------------------------------------------------------------------------");
     $fdisplay(handle, "TASK%d, RF Write", task_counter);
-    $fdisplay(handle, "CPU configures Layer 1 default sys register bulk mem message control, set to maximum length 16");
+    $fdisplay(handle, "CPU configures Layer 1 default sys register bulk mem message control, set active, length 0");
     $fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 242;
+	rf_addr = BULK_MEM_CTRL_REG_IDX;
 	dest_short_addr = 4'h3;
-	rf_w_data = 24'h80_000f;
+	rf_w_data = 24'hc0_0000;
+    state = TB_SINGLE_RF_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, MEM Write", task_counter);
+    $fdisplay(handle, "CPU bulk writes random data to Layer 1's MEM address 1-2, bulk active is set, length is 0, only write 1 word");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	mem_addr = 1;
+	word_counter = 1;
+    state = TB_MEM_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, MEM Write", task_counter);
+    $fdisplay(handle, "CPU bulk writes random data to Layer 1's MEM address 1-3, bulk active is set, length is 0, only write 1 word, should fail");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	mem_addr = 1;
+	word_counter = 2;
+    state = TB_MEM_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, RF Write", task_counter);
+    $fdisplay(handle, "CPU configures Layer 1 default sys register bulk mem message control, set active, length 16");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	rf_addr = BULK_MEM_CTRL_REG_IDX;
+	dest_short_addr = 4'h3;
+	rf_w_data = 24'hc0_000f;
     state = TB_SINGLE_RF_WRITE;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
@@ -257,9 +293,9 @@ begin
 	$fdisplay(handle, "TASK%d, RF Write", task_counter);
 	$fdisplay(handle, "CPU configures Layer 3 default sys register bulk mem message control, set to maximum length 16");
 	$fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 242;
+	rf_addr = BULK_MEM_CTRL_REG_IDX;
 	dest_short_addr = 4'h5;
-	rf_w_data = 24'h80_000f;
+	rf_w_data = 24'hc0_000f;
 	state = TB_SINGLE_RF_WRITE;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
@@ -284,7 +320,7 @@ begin
 	$fdisplay(handle, "TASK%d, RF Write", task_counter);
 	$fdisplay(handle, "CPU configures Layer 1's stream channel 0, register 0 ");
 	$fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 236;				// only 2 channels available
+	rf_addr = STREAM_CH0_REG0_IDX;				// only 2 channels available
 	dest_short_addr = 4'h3;
 	rf_w_data = 24'h00_0004;
 	state = TB_SINGLE_RF_WRITE;
@@ -296,7 +332,7 @@ begin
 	$fdisplay(handle, "TASK%d, RF Write", task_counter);
 	$fdisplay(handle, "CPU configures Layer 1's stream channel 0, register 1");
 	$fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 237;				// only 2 channels available
+	rf_addr = STREAM_CH0_REG1_IDX;				// only 2 channels available
 	dest_short_addr = 4'h3;
 	rf_w_data = {8'hf9, 16'b0};	// stream location 30'd1
 	state = TB_SINGLE_RF_WRITE;
@@ -308,7 +344,7 @@ begin
 	$fdisplay(handle, "TASK%d, RF Write", task_counter);
 	$fdisplay(handle, "CPU configures Layer 1's stream channel 0, register 2, register 3 should be written by layer controller itself");
 	$fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 238;				// only 2 channels available
+	rf_addr = STREAM_CH0_REG2_IDX;				// only 2 channels available
 	dest_short_addr = 4'h3;
 	rf_w_data = {4'b1010, 20'd15};
 	state = TB_SINGLE_RF_WRITE;
@@ -320,7 +356,7 @@ begin
 	$fdisplay(handle, "TASK%d, RF Write", task_counter);
 	$fdisplay(handle, "CPU configures Layer 1's stream channel 1, register 0 ");
 	$fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 232;				// only 2 channels available
+	rf_addr = STREAM_CH1_REG0_IDX;				// only 2 channels available
 	dest_short_addr = 4'h3;
 	rf_w_data = 24'h190;		// 100 << 2
 	state = TB_SINGLE_RF_WRITE;
@@ -332,7 +368,7 @@ begin
 	$fdisplay(handle, "TASK%d, RF Write", task_counter);
 	$fdisplay(handle, "CPU configures Layer 1's stream channel 1, register 1");
 	$fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 233;				// only 2 channels available
+	rf_addr = STREAM_CH1_REG1_IDX;				// only 2 channels available
 	dest_short_addr = 4'h3;
 	rf_w_data = {8'hf9, 16'b0};	// stream location 30'd100
 	state = TB_SINGLE_RF_WRITE;
@@ -344,10 +380,22 @@ begin
 	$fdisplay(handle, "TASK%d, RF Write", task_counter);
 	$fdisplay(handle, "CPU configures Layer 1's stream channel 1, register 2, register 3 should be written by layer controller itself");
 	$fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 234;				// only 2 channels available
+	rf_addr = STREAM_CH1_REG2_IDX;				// only 2 channels available
 	dest_short_addr = 4'h3;
 	rf_w_data = {4'b1100, 20'd7};
 	state = TB_SINGLE_RF_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+	#100000;
+	task_counter = task_counter + 1;
+	$fdisplay(handle, "\n-------------------------------------------------------------------------");
+	$fdisplay(handle, "TASK%d, Stream MEM Write", task_counter);
+	$fdisplay(handle, "CPU sends 1 word streaming data to Layer 3's stream channel 0, enable is not set, should fail");
+	$fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h5;
+	stream_channel = 0;
+	word_counter = 2;
+	state = TB_STREAMING;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
 	#100000;
@@ -490,7 +538,7 @@ begin
 	$fdisplay(handle, "TASK%d, RF Write", task_counter);
 	$fdisplay(handle, "CPU configures Layer 2's stream channel 0, register 0");
 	$fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 236;				// only 2 channels available
+	rf_addr = STREAM_CH0_REG0_IDX;				// only 2 channels available
 	dest_short_addr = 4'h4;
 	rf_w_data = 24'h190;		// 100 << 2
 	state = TB_SINGLE_RF_WRITE;
@@ -502,7 +550,7 @@ begin
 	$fdisplay(handle, "TASK%d, RF Write", task_counter);
 	$fdisplay(handle, "CPU configures Layer 2's stream channel 0, register 1");
 	$fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 237;				// only 2 channels available
+	rf_addr = STREAM_CH0_REG1_IDX;				// only 2 channels available
 	dest_short_addr = 4'h4;
 	rf_w_data = {8'hf9, 16'b0};	// stream location 30'd100
 	state = TB_SINGLE_RF_WRITE;
@@ -514,7 +562,7 @@ begin
 	$fdisplay(handle, "TASK%d, RF Write", task_counter);
 	$fdisplay(handle, "CPU configures Layer 2's stream channel 0, register 2, register 3 should be written by layer controller itself");
 	$fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 238;				// only 2 channels available
+	rf_addr = STREAM_CH0_REG2_IDX;				// only 2 channels available
 	dest_short_addr = 4'h4;
 	rf_w_data = {4'b1100, 20'd15};	// maximum length = 16
 	state = TB_SINGLE_RF_WRITE;
@@ -526,7 +574,7 @@ begin
 	$fdisplay(handle, "TASK%d, RF Write", task_counter);
 	$fdisplay(handle, "CPU configures Layer 2's stream channel 1, register 0");
 	$fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 232;
+	rf_addr = STREAM_CH1_REG0_IDX;
 	dest_short_addr = 4'h4;
 	rf_w_data = 24'hc8;			// 50 << 2
 	state = TB_SINGLE_RF_WRITE;
@@ -538,7 +586,7 @@ begin
 	$fdisplay(handle, "TASK%d, RF Write", task_counter);
 	$fdisplay(handle, "CPU configures Layer 2's stream channel 1, register 1");
 	$fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 233;
+	rf_addr = STREAM_CH1_REG1_IDX;
 	dest_short_addr = 4'h4;
 	rf_w_data = {8'hf9, 16'b0};	// stream location 30'd50
 	state = TB_SINGLE_RF_WRITE;
@@ -550,22 +598,11 @@ begin
 	$fdisplay(handle, "TASK%d, RF Write", task_counter);
 	$fdisplay(handle, "CPU configures Layer 2's stream channel 1, register 2, register 3 should be written by layer controller itself");
 	$fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 234;
+	rf_addr = STREAM_CH1_REG2_IDX;
 	dest_short_addr = 4'h4;
 	rf_w_data = {4'b1110, 20'd4};	// maximum length = 5
 	state = TB_SINGLE_RF_WRITE;
 	@ (posedge c0_tx_succ|c0_tx_fail);
-
-    #100000;
-	task_counter = task_counter + 1;
-    $fdisplay(handle, "\n-------------------------------------------------------------------------");
-    $fdisplay(handle, "TASK%d, Interrupt", task_counter);
-    $fdisplay(handle, "Layer 1, Interrupt vector 2, Bulk read layer 1's RF address 0-9, and stream to layer 2's MEM address 100");
-    $fdisplay(handle, "-------------------------------------------------------------------------");
-	layer_number = 1;
-	int_vec = 2;	
-    state = TB_SINGLE_INTERRUPT;
-	@ (posedge n1_clr_int[int_vec]);
 
     #100000;
 	task_counter = task_counter + 1;
@@ -628,9 +665,9 @@ begin
     $fdisplay(handle, "TASK%d, RF Write", task_counter);
     $fdisplay(handle, "CPU configures Layer 2 default sys register bulk mem message control, set to maximum length 16");
     $fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 242;
+	rf_addr = BULK_MEM_CTRL_REG_IDX;
 	dest_short_addr = 4'h4;
-	rf_w_data = 24'h80_000f;
+	rf_w_data = 24'hc0_000f;
     state = TB_SINGLE_RF_WRITE;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
@@ -842,9 +879,9 @@ begin
     $fdisplay(handle, "TASK%d, RF Write", task_counter);
     $fdisplay(handle, "CPU configures Layer 1 default sys register bulk mem message control, set to maximum length 64");
     $fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 242;
+	rf_addr = BULK_MEM_CTRL_REG_IDX;
 	dest_short_addr = 4'h3;
-	rf_w_data = 24'h80_003f;
+	rf_w_data = 24'hc0_003f;
     state = TB_SINGLE_RF_WRITE;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
@@ -854,9 +891,9 @@ begin
     $fdisplay(handle, "TASK%d, RF Write", task_counter);
     $fdisplay(handle, "CPU configures Layer 2 default sys register bulk mem message control, set to maximum length 64");
     $fdisplay(handle, "-------------------------------------------------------------------------");
-	rf_addr = 242;
+	rf_addr = BULK_MEM_CTRL_REG_IDX;
 	dest_short_addr = 4'h4;
-	rf_w_data = 24'h80_003f;
+	rf_w_data = 24'hc0_003f;
     state = TB_SINGLE_RF_WRITE;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
@@ -886,7 +923,6 @@ begin
     state = TB_MEM_READ;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge layer1.tx_succ | layer1.tx_fail);
-
     #500000;
     $display("*************************************");
     $display("************TASK0 Complete***********");

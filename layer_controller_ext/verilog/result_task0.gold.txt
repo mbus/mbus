@@ -1,0 +1,1417 @@
+
+-------------------------------------------------------------------------
+TASK0          0, Master node and Processor wake up
+-------------------------------------------------------------------------
+Processor Wakeup
+N0 RX Fail
+N1 RX Fail
+N2 RX Fail
+N3 RX Fail
+
+-------------------------------------------------------------------------
+TASK          1, Query
+Master node sends out query
+-------------------------------------------------------------------------
+C0 TX Success
+C0 RX Success
+C0 Data out =	32'h10bbbb0f
+N0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb1f
+N1 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb2f
+N2 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb2f
+N3 TX Success
+
+
+-------------------------------------------------------------------------
+TASK          2, Enumerate
+Master node enumerate with address 4'h2
+-------------------------------------------------------------------------
+C0 TX Success
+C0 RX Success
+C0 Data out =	32'h10bbbb02
+
+-------------------------------------------------------------------------
+TASK          3, Enumerate
+Master node enumerate with address 4'h3
+-------------------------------------------------------------------------
+C0 TX Success
+C0 RX Success
+C0 Data out =	32'h10bbbb13
+
+-------------------------------------------------------------------------
+TASK          4, Enumerate
+Master node enumerate with address 4'h4
+-------------------------------------------------------------------------
+C0 TX Success
+C0 RX Success
+C0 Data out =	32'h10bbbb24
+
+-------------------------------------------------------------------------
+TASK          5, Enumerate
+Master node enumerate with address 4'h5
+-------------------------------------------------------------------------
+C0 TX Success
+C0 RX Success
+C0 Data out =	32'h10bbbb25
+
+-------------------------------------------------------------------------
+TASK          6, All Wake
+-------------------------------------------------------------------------
+N0 LC Wakeup
+N1 LC Wakeup
+N2 LC Wakeup
+N3 LC Wakeup
+C0 TX Success
+
+-------------------------------------------------------------------------
+TASK          7, MEM Write
+CPU writes random data to Layer 1's MEM address 0, bulk write enable is not set, it won't fail but no memory operation
+-------------------------------------------------------------------------
+N1 RX Success
+N1 RX Success
+C0 TX Success
+
+-------------------------------------------------------------------------
+TASK          8, RF Write
+CPU configures Layer 0 default sys register bulk mem message control
+-------------------------------------------------------------------------
+Write RF addr: 8'hf2,	Data: 24'h800000
+N0 RX Success
+C0 TX Success
+Layer 0, RF Write, Addr: 8'hf2,	Data: 24'h800000
+
+-------------------------------------------------------------------------
+TASK          9, RF Write
+CPU configures Layer 1 default sys register bulk mem message control
+-------------------------------------------------------------------------
+Write RF addr: 8'hf2,	Data: 24'h800000
+N1 RX Success
+C0 TX Success
+Layer 1, RF Write, Addr: 8'hf2,	Data: 24'h800000
+
+-------------------------------------------------------------------------
+TASK         10, RF Write
+CPU configures Layer 2 default sys register bulk mem message control
+-------------------------------------------------------------------------
+Write RF addr: 8'hf2,	Data: 24'h800000
+N2 RX Success
+C0 TX Success
+Layer 2, RF Write, Addr: 8'hf2,	Data: 24'h800000
+
+-------------------------------------------------------------------------
+TASK         11, RF Write
+CPU configures Layer 3 default sys register bulk mem message control
+-------------------------------------------------------------------------
+Write RF addr: 8'hf2,	Data: 24'h800000
+N3 RX Success
+C0 TX Success
+Layer 3, RF Write, Addr: 8'hf2,	Data: 24'h800000
+
+-------------------------------------------------------------------------
+TASK         12, RF Write
+CPU writes random data to Layer 1 RF address 0
+-------------------------------------------------------------------------
+Write RF addr: 8'h00,	Data: 24'h60b1da
+N1 RX Success
+C0 TX Success
+Layer 1, RF Write, Addr: 8'h00,	Data: 24'h60b1da
+
+-------------------------------------------------------------------------
+TASK         13, RF Write
+CPU bulk writes random data to Layer 1 RF address 1-4
+-------------------------------------------------------------------------
+Write RF addr: 8'h01,	Data: 24'h36fe38
+Write RF addr: 8'h02,	Data: 24'h7e075a
+Write RF addr: 8'h03,	Data: 24'hde0e53
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h01,	Data: 24'h36fe38
+Write RF addr: 8'h04,	Data: 24'hb7633f
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h02,	Data: 24'h7e075a
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h03,	Data: 24'hde0e53
+N1 RX Success
+C0 TX Success
+Layer 1, RF Write, Addr: 8'h04,	Data: 24'hb7633f
+
+-------------------------------------------------------------------------
+TASK         14, RF Read
+Read Layer 1's RF address 0, and write to Layer 2's RF address 0xa
+-------------------------------------------------------------------------
+N1 RX Success
+C0 TX Success
+N2 RX Success
+N1 TX Success
+
+Layer 2, RF Write, Addr: 8'h0a,	Data: 24'h60b1da
+
+-------------------------------------------------------------------------
+TASK         15, RF Read
+Bulk read Layer 1's RF address 1-4, and write to Layer 2's RF address 0x1
+-------------------------------------------------------------------------
+N1 RX Success
+C0 TX Success
+N2 RX Success
+Layer 2, RF Write, Addr: 8'h01,	Data: 24'h36fe38
+N2 RX Success
+Layer 2, RF Write, Addr: 8'h02,	Data: 24'h7e075a
+N2 RX Success
+Layer 2, RF Write, Addr: 8'h03,	Data: 24'hde0e53
+N2 RX Success
+N1 TX Success
+
+Layer 2, RF Write, Addr: 8'h04,	Data: 24'hb7633f
+
+-------------------------------------------------------------------------
+TASK         16, MEM Write
+CPU writes random data to Layer 1's MEM address 0
+-------------------------------------------------------------------------
+N1 RX Success
+N1 RX Success
+C0 TX Success
+Layer 1, MEM Write, Addr: 30'h00000000,	Data: 32'h6ffed5df
+
+-------------------------------------------------------------------------
+TASK         17, MEM Read
+Read Layer 1's MEM address 0, and write to layer 2's MEM, address 0x1
+-------------------------------------------------------------------------
+N1 RX Success
+N1 RX Success
+N1 RX Success
+C0 TX Success
+Layer 1, MEM Read, Addr: 30'h00000000,	Data: 32'h6ffed5df
+N2 RX Success
+N2 RX Success
+N1 TX Success
+
+Layer 2, MEM Write, Addr: 30'h00000001,	Data: 32'h6ffed5df
+
+-------------------------------------------------------------------------
+TASK         18, MEM Write
+CPU bulk writes random data to Layer 1's MEM address 1-10, bulk active is not set
+-------------------------------------------------------------------------
+N1 RX Success
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000001,	Data: 32'h2887c751
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000002,	Data: 32'h48bce391
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000003,	Data: 32'h246c4748
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000004,	Data: 32'hc1d66883
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000005,	Data: 32'h33bb4b67
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000006,	Data: 32'h4cdaef99
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000007,	Data: 32'h9ff5503f
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000008,	Data: 32'h7fca75ff
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000009,	Data: 32'hff1a56fe
+N1 RX Success
+C0 TX Success
+Layer 1, MEM Write, Addr: 30'h0000000a,	Data: 32'hf0a4f8e1
+
+-------------------------------------------------------------------------
+TASK         19, RF Write
+CPU configures Layer 1 default sys register bulk mem message control, set active, length 0
+-------------------------------------------------------------------------
+Write RF addr: 8'hf2,	Data: 24'hc00000
+N1 RX Success
+C0 TX Success
+Layer 1, RF Write, Addr: 8'hf2,	Data: 24'hc00000
+
+-------------------------------------------------------------------------
+TASK         20, MEM Write
+CPU bulk writes random data to Layer 1's MEM address 1-2, bulk active is set, length is 0, only write 1 word
+-------------------------------------------------------------------------
+N1 RX Success
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000001,	Data: 32'h5b6783b6
+N1 RX Success
+C0 TX Success
+
+-------------------------------------------------------------------------
+TASK         21, MEM Write
+CPU bulk writes random data to Layer 1's MEM address 1-3, bulk active is set, length is 0, only write 1 word, should fail
+-------------------------------------------------------------------------
+N1 RX Success
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000001,	Data: 32'hc152ac82
+N1 RX Success
+N1 RX Fail
+C0 TX Fail
+
+-------------------------------------------------------------------------
+TASK         22, RF Write
+CPU configures Layer 1 default sys register bulk mem message control, set active, length 16
+-------------------------------------------------------------------------
+Write RF addr: 8'hf2,	Data: 24'hc0000f
+N1 RX Success
+C0 TX Success
+Layer 1, RF Write, Addr: 8'hf2,	Data: 24'hc0000f
+
+-------------------------------------------------------------------------
+TASK         23, MEM Write
+CPU bulk writes random data to Layer 1's MEM address 1-10
+-------------------------------------------------------------------------
+N1 RX Success
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000001,	Data: 32'hab695e56
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000002,	Data: 32'h4be38197
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000003,	Data: 32'hd406d8a8
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000004,	Data: 32'h409af381
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000005,	Data: 32'h1a5fcb34
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000006,	Data: 32'haa156254
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000007,	Data: 32'hf87bbcf0
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000008,	Data: 32'hce52d49c
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000009,	Data: 32'hb45aae68
+N1 RX Success
+C0 TX Success
+Layer 1, MEM Write, Addr: 30'h0000000a,	Data: 32'hf35346e6
+
+-------------------------------------------------------------------------
+TASK         24, RF Write
+CPU configures Layer 3 default sys register bulk mem message control, set to maximum length 16
+-------------------------------------------------------------------------
+Write RF addr: 8'hf2,	Data: 24'hc0000f
+N3 RX Success
+C0 TX Success
+Layer 3, RF Write, Addr: 8'hf2,	Data: 24'hc0000f
+
+-------------------------------------------------------------------------
+TASK         25, MEM Read
+Bulk read Layer 1's MEM address 1-10, and write to layer 3's MEM, address 0x0
+-------------------------------------------------------------------------
+N1 RX Success
+N1 RX Success
+N1 RX Success
+C0 TX Success
+Layer 1, MEM Read, Addr: 30'h00000001,	Data: 32'hab695e56
+N3 RX Success
+Layer 1, MEM Read, Addr: 30'h00000002,	Data: 32'h4be38197
+N3 RX Success
+Layer 1, MEM Read, Addr: 30'h00000003,	Data: 32'hd406d8a8
+Layer 3, MEM Write, Addr: 30'h00000000,	Data: 32'hab695e56
+N3 RX Success
+Layer 1, MEM Read, Addr: 30'h00000004,	Data: 32'h409af381
+Layer 3, MEM Write, Addr: 30'h00000001,	Data: 32'h4be38197
+N3 RX Success
+Layer 1, MEM Read, Addr: 30'h00000005,	Data: 32'h1a5fcb34
+Layer 3, MEM Write, Addr: 30'h00000002,	Data: 32'hd406d8a8
+N3 RX Success
+Layer 1, MEM Read, Addr: 30'h00000006,	Data: 32'haa156254
+Layer 3, MEM Write, Addr: 30'h00000003,	Data: 32'h409af381
+N3 RX Success
+Layer 1, MEM Read, Addr: 30'h00000007,	Data: 32'hf87bbcf0
+Layer 3, MEM Write, Addr: 30'h00000004,	Data: 32'h1a5fcb34
+N3 RX Success
+Layer 1, MEM Read, Addr: 30'h00000008,	Data: 32'hce52d49c
+Layer 3, MEM Write, Addr: 30'h00000005,	Data: 32'haa156254
+N3 RX Success
+Layer 1, MEM Read, Addr: 30'h00000009,	Data: 32'hb45aae68
+Layer 3, MEM Write, Addr: 30'h00000006,	Data: 32'hf87bbcf0
+N3 RX Success
+Layer 1, MEM Read, Addr: 30'h0000000a,	Data: 32'hf35346e6
+Layer 3, MEM Write, Addr: 30'h00000007,	Data: 32'hce52d49c
+N3 RX Success
+Layer 3, MEM Write, Addr: 30'h00000008,	Data: 32'hb45aae68
+N3 RX Success
+N1 TX Success
+
+Layer 3, MEM Write, Addr: 30'h00000009,	Data: 32'hf35346e6
+
+-------------------------------------------------------------------------
+TASK         26, RF Write
+CPU configures Layer 1's stream channel 0, register 0 
+-------------------------------------------------------------------------
+Write RF addr: 8'hec,	Data: 24'h000004
+N1 RX Success
+C0 TX Success
+Layer 1, RF Write, Addr: 8'hec,	Data: 24'h000004
+
+-------------------------------------------------------------------------
+TASK         27, RF Write
+CPU configures Layer 1's stream channel 0, register 1
+-------------------------------------------------------------------------
+Write RF addr: 8'hed,	Data: 24'hf90000
+N1 RX Success
+C0 TX Success
+Layer 1, RF Write, Addr: 8'hed,	Data: 24'hf90000
+
+-------------------------------------------------------------------------
+TASK         28, RF Write
+CPU configures Layer 1's stream channel 0, register 2, register 3 should be written by layer controller itself
+-------------------------------------------------------------------------
+Write RF addr: 8'hee,	Data: 24'ha0000f
+N1 RX Success
+C0 TX Success
+Layer 1, RF Write, Addr: 8'hee,	Data: 24'ha0000f
+Layer 1, RF Write, Addr: 8'hef,	Data: 24'h000000
+
+-------------------------------------------------------------------------
+TASK         29, RF Write
+CPU configures Layer 1's stream channel 1, register 0 
+-------------------------------------------------------------------------
+Write RF addr: 8'he8,	Data: 24'h000190
+N1 RX Success
+C0 TX Success
+Layer 1, RF Write, Addr: 8'he8,	Data: 24'h000190
+
+-------------------------------------------------------------------------
+TASK         30, RF Write
+CPU configures Layer 1's stream channel 1, register 1
+-------------------------------------------------------------------------
+Write RF addr: 8'he9,	Data: 24'hf90000
+N1 RX Success
+C0 TX Success
+Layer 1, RF Write, Addr: 8'he9,	Data: 24'hf90000
+
+-------------------------------------------------------------------------
+TASK         31, RF Write
+CPU configures Layer 1's stream channel 1, register 2, register 3 should be written by layer controller itself
+-------------------------------------------------------------------------
+Write RF addr: 8'hea,	Data: 24'hc00007
+N1 RX Success
+C0 TX Success
+Layer 1, RF Write, Addr: 8'hea,	Data: 24'hc00007
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000000
+
+-------------------------------------------------------------------------
+TASK         32, Stream MEM Write
+CPU sends 1 word streaming data to Layer 3's stream channel 0, enable is not set, should fail
+-------------------------------------------------------------------------
+N3 RX Success
+N3 RX Success
+N3 RX Fail
+C0 TX Fail
+
+-------------------------------------------------------------------------
+TASK         33, Stream MEM Write
+CPU sends 1 word streaming data to Layer 1's stream channel 0
+-------------------------------------------------------------------------
+N1 RX Success
+C0 TX Success
+Layer 1, MEM Write, Addr: 30'h00000001,	Data: 32'hd13ccea2
+Layer 1, RF Write, Addr: 8'hef,	Data: 24'h000001
+
+-------------------------------------------------------------------------
+TASK         34, Stream MEM Write
+CPU sends 10 word streaming data to Layer 1's stream channel 0, CPU should receive a double buffer alert
+-------------------------------------------------------------------------
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000002,	Data: 32'h1320e526
+Layer 1, RF Write, Addr: 8'hef,	Data: 24'h000002
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000003,	Data: 32'h8a9e1815
+Layer 1, RF Write, Addr: 8'hef,	Data: 24'h000003
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000004,	Data: 32'hc0e15e81
+Layer 1, RF Write, Addr: 8'hef,	Data: 24'h000004
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000005,	Data: 32'h19d3bd33
+Layer 1, RF Write, Addr: 8'hef,	Data: 24'h000005
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000006,	Data: 32'h26bad94d
+Layer 1, RF Write, Addr: 8'hef,	Data: 24'h000006
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000007,	Data: 32'h7456b5e8
+Layer 1, RF Write, Addr: 8'hef,	Data: 24'h000007
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000008,	Data: 32'h4f67539e
+Layer 1, RF Write, Addr: 8'hef,	Data: 24'h000008
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000009,	Data: 32'hc4acae89
+Layer 1, RF Write, Addr: 8'hef,	Data: 24'h000009
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000000a,	Data: 32'ha0e6ca41
+Layer 1, RF Write, Addr: 8'hef,	Data: 24'h00000a
+N1 RX Success
+C0 TX Success
+Layer 1, MEM Write, Addr: 30'h0000000b,	Data: 32'h70d5a9e1
+Layer 1, RF Write, Addr: 8'hef,	Data: 24'h00000b
+C0 RX Success
+C0 Data out =	32'hf934a000
+N1 TX Success
+
+
+-------------------------------------------------------------------------
+TASK         35, Stream MEM Write
+CPU sends 10 word streaming data to Layer 1's stream channel 0, only 5 words are available, TX should fail, and generates alert
+-------------------------------------------------------------------------
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000000c,	Data: 32'h0a06c314
+Layer 1, RF Write, Addr: 8'hef,	Data: 24'h00000c
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000000d,	Data: 32'h11c80b23
+Layer 1, RF Write, Addr: 8'hef,	Data: 24'h00000d
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000000e,	Data: 32'h77bee5ef
+Layer 1, RF Write, Addr: 8'hef,	Data: 24'h00000e
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000000f,	Data: 32'h1b795336
+Layer 1, RF Write, Addr: 8'hef,	Data: 24'h00000f
+N1 RX Success
+N1 RX Fail
+C0 TX Fail
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000010,	Data: 32'h6d3013da
+Layer 1, RF Write, Addr: 8'hee,	Data: 24'h20000f
+N1 RX Success
+C0 TX Success
+C0 RX Success
+C0 Data out =	32'hf9340000
+N1 TX Success
+
+
+-------------------------------------------------------------------------
+TASK         36, Stream MEM Write
+CPU sends 8 word streaming data to Layer 1's stream channel 1, generates alert 0xC
+-------------------------------------------------------------------------
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000064,	Data: 32'hd33196a6
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000001
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000065,	Data: 32'hb579006a
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000002
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000066,	Data: 32'he38412c7
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000003
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000067,	Data: 32'h66226fcc
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000004
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000068,	Data: 32'h38738970
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000005
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000069,	Data: 32'h653763ca
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000006
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000006a,	Data: 32'hb72dfe6e
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000007
+N1 RX Success
+C0 TX Success
+Layer 1, MEM Write, Addr: 30'h0000006b,	Data: 32'hb9175872
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000000
+C0 RX Success
+C0 Data out =	32'hf935c000
+N1 TX Success
+
+
+-------------------------------------------------------------------------
+TASK         37, Stream MEM Write
+CPU sends 16 word streaming data to Layer 1's stream channel 1, generates alert 0xD
+-------------------------------------------------------------------------
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000064,	Data: 32'h6906b9d2
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000001
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000065,	Data: 32'h752d2fea
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000002
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000066,	Data: 32'h04c81709
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000003
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000067,	Data: 32'hb04b8060
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000004
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000068,	Data: 32'hb291ac65
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000005
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000069,	Data: 32'h265a974c
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000006
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000006a,	Data: 32'he66640cc
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000007
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000006b,	Data: 32'h8d74ac1a
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000000
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000064,	Data: 32'h7645d7ec
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000001
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000065,	Data: 32'hbb99c077
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000002
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000066,	Data: 32'h38306d70
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000003
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000067,	Data: 32'h86c9d60d
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000004
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000068,	Data: 32'h02260304
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000005
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000069,	Data: 32'hc504ec8a
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000006
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000006a,	Data: 32'haa269654
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000007
+N1 RX Success
+C0 TX Success
+Layer 1, MEM Write, Addr: 30'h0000006b,	Data: 32'h4c4b0398
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000000
+C0 RX Success
+C0 Data out =	32'hf935d000
+N1 TX Success
+
+
+-------------------------------------------------------------------------
+TASK         38, RF Write
+Read layer 3's MEM and stream to layer 1's MEM, channel 1
+-------------------------------------------------------------------------
+N3 RX Success
+N3 RX Success
+C0 TX Success
+Layer 3, MEM Read, Addr: 30'h00000000,	Data: 32'hab695e56
+Layer 3, MEM Read, Addr: 30'h00000001,	Data: 32'h4be38197
+N1 RX Success
+Layer 3, MEM Read, Addr: 30'h00000002,	Data: 32'hd406d8a8
+Layer 1, MEM Write, Addr: 30'h00000064,	Data: 32'hab695e56
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000001
+N1 RX Success
+Layer 3, MEM Read, Addr: 30'h00000003,	Data: 32'h409af381
+Layer 1, MEM Write, Addr: 30'h00000065,	Data: 32'h4be38197
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000002
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000066,	Data: 32'hd406d8a8
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000003
+N1 RX Success
+N3 TX Success
+
+Layer 1, MEM Write, Addr: 30'h00000067,	Data: 32'h409af381
+Layer 1, RF Write, Addr: 8'heb,	Data: 24'h000004
+
+-------------------------------------------------------------------------
+TASK         39, Select sleep
+Select sleep using long prefix, Sleep layer 1
+-------------------------------------------------------------------------
+C0 TX Success
+N1 LC Sleep
+
+-------------------------------------------------------------------------
+TASK         40, MEM Write
+CPU writes random data to Layer 1's MEM address 0xa
+-------------------------------------------------------------------------
+N1 LC Wakeup
+N1 RX Success
+N1 RX Success
+C0 TX Success
+Layer 1, MEM Write, Addr: 30'h0000000a,	Data: 32'h63e723c7
+
+-------------------------------------------------------------------------
+TASK         41, Interrupt
+Layer 1, Interrupt vector 0, Read layer 1's RF address 0, and write to layer 2's RF address 0
+-------------------------------------------------------------------------
+N2 RX Success
+N1 TX Success
+
+Layer 2, RF Write, Addr: 8'h00,	Data: 24'h60b1da
+
+-------------------------------------------------------------------------
+TASK         42, Interrupt
+Layer 1, Interrupt vector 1, Bulk read layer 1's RF address 2-6, and write to layer 2's RF address 2
+-------------------------------------------------------------------------
+C0 RX Success
+C0 Data out =	32'h027e075a
+C0 RX Success
+C0 Data out =	32'h03de0e53
+C0 RX Success
+C0 Data out =	32'h04b7633f
+C0 RX Success
+C0 Data out =	32'h05000000
+C0 RX Success
+C0 Data out =	32'h06000000
+N1 TX Success
+
+
+-------------------------------------------------------------------------
+TASK         43, RF Write
+CPU bulk writes random data to Layer 1 RF address 0-9
+-------------------------------------------------------------------------
+Write RF addr: 8'h00,	Data: 24'he90897
+Write RF addr: 8'h01,	Data: 24'he3c33b
+Write RF addr: 8'h02,	Data: 24'ha9646b
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h00,	Data: 24'he90897
+Write RF addr: 8'h03,	Data: 24'h7e2462
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h01,	Data: 24'he3c33b
+Write RF addr: 8'h04,	Data: 24'h2ba660
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h02,	Data: 24'ha9646b
+Write RF addr: 8'h05,	Data: 24'h71e644
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h03,	Data: 24'h7e2462
+Write RF addr: 8'h06,	Data: 24'h10e972
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h04,	Data: 24'h2ba660
+Write RF addr: 8'h07,	Data: 24'hc8a8c9
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h05,	Data: 24'h71e644
+Write RF addr: 8'h08,	Data: 24'h5928ac
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h06,	Data: 24'h10e972
+Write RF addr: 8'h09,	Data: 24'h826afd
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h07,	Data: 24'hc8a8c9
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h08,	Data: 24'h5928ac
+N1 RX Success
+C0 TX Success
+Layer 1, RF Write, Addr: 8'h09,	Data: 24'h826afd
+
+-------------------------------------------------------------------------
+TASK         44, RF Write
+CPU configures Layer 2's stream channel 0, register 0
+-------------------------------------------------------------------------
+Write RF addr: 8'hec,	Data: 24'h000190
+N2 RX Success
+C0 TX Success
+Layer 2, RF Write, Addr: 8'hec,	Data: 24'h000190
+
+-------------------------------------------------------------------------
+TASK         45, RF Write
+CPU configures Layer 2's stream channel 0, register 1
+-------------------------------------------------------------------------
+Write RF addr: 8'hed,	Data: 24'hf90000
+N2 RX Success
+C0 TX Success
+Layer 2, RF Write, Addr: 8'hed,	Data: 24'hf90000
+
+-------------------------------------------------------------------------
+TASK         46, RF Write
+CPU configures Layer 2's stream channel 0, register 2, register 3 should be written by layer controller itself
+-------------------------------------------------------------------------
+Write RF addr: 8'hee,	Data: 24'hc0000f
+N2 RX Success
+C0 TX Success
+Layer 2, RF Write, Addr: 8'hee,	Data: 24'hc0000f
+Layer 2, RF Write, Addr: 8'hef,	Data: 24'h000000
+
+-------------------------------------------------------------------------
+TASK         47, RF Write
+CPU configures Layer 2's stream channel 1, register 0
+-------------------------------------------------------------------------
+Write RF addr: 8'he8,	Data: 24'h0000c8
+N2 RX Success
+C0 TX Success
+Layer 2, RF Write, Addr: 8'he8,	Data: 24'h0000c8
+
+-------------------------------------------------------------------------
+TASK         48, RF Write
+CPU configures Layer 2's stream channel 1, register 1
+-------------------------------------------------------------------------
+Write RF addr: 8'he9,	Data: 24'hf90000
+N2 RX Success
+C0 TX Success
+Layer 2, RF Write, Addr: 8'he9,	Data: 24'hf90000
+
+-------------------------------------------------------------------------
+TASK         49, RF Write
+CPU configures Layer 2's stream channel 1, register 2, register 3 should be written by layer controller itself
+-------------------------------------------------------------------------
+Write RF addr: 8'hea,	Data: 24'he00004
+N2 RX Success
+C0 TX Success
+Layer 2, RF Write, Addr: 8'hea,	Data: 24'he00004
+Layer 2, RF Write, Addr: 8'heb,	Data: 24'h000000
+
+-------------------------------------------------------------------------
+TASK         50, Interrupt
+Layer 1, Interrupt vector 2, Bulk read layer 1's RF address 0-9, and stream to layer 2's MEM address 100
+-------------------------------------------------------------------------
+N2 RX Success
+Layer 2, MEM Write, Addr: 30'h00000064,	Data: 32'h64e90897
+Layer 2, RF Write, Addr: 8'hef,	Data: 24'h000001
+N2 RX Success
+Layer 2, MEM Write, Addr: 30'h00000065,	Data: 32'h65e3c33b
+Layer 2, RF Write, Addr: 8'hef,	Data: 24'h000002
+N2 RX Success
+Layer 2, MEM Write, Addr: 30'h00000066,	Data: 32'h66a9646b
+Layer 2, RF Write, Addr: 8'hef,	Data: 24'h000003
+N2 RX Success
+Layer 2, MEM Write, Addr: 30'h00000067,	Data: 32'h677e2462
+Layer 2, RF Write, Addr: 8'hef,	Data: 24'h000004
+N2 RX Success
+Layer 2, MEM Write, Addr: 30'h00000068,	Data: 32'h682ba660
+Layer 2, RF Write, Addr: 8'hef,	Data: 24'h000005
+N2 RX Success
+Layer 2, MEM Write, Addr: 30'h00000069,	Data: 32'h6971e644
+Layer 2, RF Write, Addr: 8'hef,	Data: 24'h000006
+N2 RX Success
+Layer 2, MEM Write, Addr: 30'h0000006a,	Data: 32'h6a10e972
+Layer 2, RF Write, Addr: 8'hef,	Data: 24'h000007
+N2 RX Success
+Layer 2, MEM Write, Addr: 30'h0000006b,	Data: 32'h6bc8a8c9
+Layer 2, RF Write, Addr: 8'hef,	Data: 24'h000008
+N2 RX Success
+Layer 2, MEM Write, Addr: 30'h0000006c,	Data: 32'h6c5928ac
+Layer 2, RF Write, Addr: 8'hef,	Data: 24'h000009
+N2 RX Success
+N1 TX Success
+
+Layer 2, MEM Write, Addr: 30'h0000006d,	Data: 32'h6d826afd
+Layer 2, RF Write, Addr: 8'hef,	Data: 24'h00000a
+
+-------------------------------------------------------------------------
+TASK         51, Interrupt
+Layer 1, Interrupt vector 3, Write to layer 1's RF address 0
+-------------------------------------------------------------------------
+Layer 1, RF Write, Addr: 8'h00,	Data: 24'habcdef
+
+-------------------------------------------------------------------------
+TASK         52, Interrupt
+Layer 1, Interrupt vector 4, Write to layer 1's RF address 1, and 3
+-------------------------------------------------------------------------
+Layer 1, RF Write, Addr: 8'h01,	Data: 24'h123456
+Layer 1, RF Write, Addr: 8'h03,	Data: 24'h987654
+
+-------------------------------------------------------------------------
+TASK         53, Interrupt
+Layer 1, Interrupt vector 5, Write to layer 1's RF address 2, 4, and 6
+-------------------------------------------------------------------------
+Layer 1, RF Write, Addr: 8'h02,	Data: 24'h123321
+Layer 1, RF Write, Addr: 8'h04,	Data: 24'habccba
+Layer 1, RF Write, Addr: 8'h06,	Data: 24'h090785
+
+-------------------------------------------------------------------------
+TASK         54, Interrupt
+Layer 1, Interrupt vector 6, Read from layer 1's MEM address 0, and write to layer 2's MEM, address 0x1
+-------------------------------------------------------------------------
+Layer 1, MEM Read, Addr: 30'h00000000,	Data: 32'h6ffed5df
+N2 RX Success
+N2 RX Success
+N1 TX Success
+
+Layer 2, MEM Write, Addr: 30'h00000001,	Data: 32'h6ffed5df
+
+-------------------------------------------------------------------------
+TASK         55, RF Write
+CPU configures Layer 2 default sys register bulk mem message control, set to maximum length 16
+-------------------------------------------------------------------------
+Write RF addr: 8'hf2,	Data: 24'hc0000f
+N2 RX Success
+C0 TX Success
+Layer 2, RF Write, Addr: 8'hf2,	Data: 24'hc0000f
+
+-------------------------------------------------------------------------
+TASK         56, Select sleep
+Select sleep using long prefix, Sleep layer 1
+-------------------------------------------------------------------------
+C0 TX Success
+N1 LC Sleep
+
+-------------------------------------------------------------------------
+TASK         57, Interrupt
+Layer 1, Interrupt vector 7, Bulk read from layer 1's MEM address 1-5, and write to layer 2's MEM, address 2-6
+-------------------------------------------------------------------------
+N1 LC Wakeup
+C0 RX Fail
+N0 RX Fail
+N2 RX Fail
+N3 RX Fail
+Layer 1, MEM Read, Addr: 30'h00000001,	Data: 32'hd13ccea2
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000002,	Data: 32'h1320e526
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000003,	Data: 32'h8a9e1815
+Layer 2, MEM Write, Addr: 30'h00000002,	Data: 32'hd13ccea2
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000004,	Data: 32'hc0e15e81
+Layer 2, MEM Write, Addr: 30'h00000003,	Data: 32'h1320e526
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000005,	Data: 32'h19d3bd33
+Layer 2, MEM Write, Addr: 30'h00000004,	Data: 32'h8a9e1815
+N2 RX Success
+Layer 2, MEM Write, Addr: 30'h00000005,	Data: 32'hc0e15e81
+N2 RX Success
+N1 TX Success
+
+Layer 2, MEM Write, Addr: 30'h00000006,	Data: 32'h19d3bd33
+
+-------------------------------------------------------------------------
+TASK         58, Interrupt
+Layer 2, Interrupt vector 8, Read from layer 2's MEM address 100, and write to layer 1's RF (ADDRESS is burried in MEM)
+-------------------------------------------------------------------------
+Layer 2, MEM Read, Addr: 30'h00000064,	Data: 32'h64e90897
+N1 RX Success
+N2 TX Success
+
+Layer 1, RF Write, Addr: 8'h64,	Data: 24'he90897
+
+-------------------------------------------------------------------------
+TASK         59, Interrupt
+Layer 2, Interrupt vector 9, Read from layer 2's MEM address 101-104, and write to layer 1's RF (ADDRESS is burried in MEM)
+-------------------------------------------------------------------------
+Layer 2, MEM Read, Addr: 30'h00000065,	Data: 32'h65e3c33b
+Layer 2, MEM Read, Addr: 30'h00000066,	Data: 32'h66a9646b
+N1 RX Success
+Layer 2, MEM Read, Addr: 30'h00000067,	Data: 32'h677e2462
+Layer 1, RF Write, Addr: 8'h65,	Data: 24'he3c33b
+N1 RX Success
+Layer 2, MEM Read, Addr: 30'h00000068,	Data: 32'h682ba660
+Layer 1, RF Write, Addr: 8'h66,	Data: 24'ha9646b
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h67,	Data: 24'h7e2462
+N1 RX Success
+N2 TX Success
+
+Layer 1, RF Write, Addr: 8'h68,	Data: 24'h2ba660
+
+-------------------------------------------------------------------------
+TASK         60, Interrupt
+Layer 1, Interrupt vector 10, Bulk read from layer 1's MEM address 0-9, stream to layer 2's MEM, alert should generate
+-------------------------------------------------------------------------
+Layer 1, MEM Read, Addr: 30'h00000000,	Data: 32'h6ffed5df
+Layer 1, MEM Read, Addr: 30'h00000001,	Data: 32'hd13ccea2
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000002,	Data: 32'h1320e526
+Layer 2, MEM Write, Addr: 30'h00000032,	Data: 32'h6ffed5df
+Layer 2, RF Write, Addr: 8'heb,	Data: 24'h000001
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000003,	Data: 32'h8a9e1815
+Layer 2, MEM Write, Addr: 30'h00000033,	Data: 32'hd13ccea2
+Layer 2, RF Write, Addr: 8'heb,	Data: 24'h000002
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000004,	Data: 32'hc0e15e81
+Layer 2, MEM Write, Addr: 30'h00000034,	Data: 32'h1320e526
+Layer 2, RF Write, Addr: 8'heb,	Data: 24'h000003
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000005,	Data: 32'h19d3bd33
+Layer 2, MEM Write, Addr: 30'h00000035,	Data: 32'h8a9e1815
+Layer 2, RF Write, Addr: 8'heb,	Data: 24'h000004
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000006,	Data: 32'h26bad94d
+Layer 2, MEM Write, Addr: 30'h00000036,	Data: 32'hc0e15e81
+Layer 2, RF Write, Addr: 8'heb,	Data: 24'h000000
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000007,	Data: 32'h7456b5e8
+Layer 2, MEM Write, Addr: 30'h00000032,	Data: 32'h19d3bd33
+Layer 2, RF Write, Addr: 8'heb,	Data: 24'h000001
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000008,	Data: 32'h4f67539e
+Layer 2, MEM Write, Addr: 30'h00000033,	Data: 32'h26bad94d
+Layer 2, RF Write, Addr: 8'heb,	Data: 24'h000002
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000009,	Data: 32'hc4acae89
+Layer 2, MEM Write, Addr: 30'h00000034,	Data: 32'h7456b5e8
+Layer 2, RF Write, Addr: 8'heb,	Data: 24'h000003
+N2 RX Success
+Layer 2, MEM Write, Addr: 30'h00000035,	Data: 32'h4f67539e
+Layer 2, RF Write, Addr: 8'heb,	Data: 24'h000004
+N2 RX Success
+N1 TX Success
+
+Layer 2, MEM Write, Addr: 30'h00000036,	Data: 32'hc4acae89
+Layer 2, RF Write, Addr: 8'heb,	Data: 24'h000000
+C0 RX Success
+C0 Data out =	32'hf945f000
+N2 TX Success
+
+
+-------------------------------------------------------------------------
+TASK         61, Sleep all
+-------------------------------------------------------------------------
+C0 TX Success
+N0 LC Sleep
+N1 LC Sleep
+N2 LC Sleep
+N3 LC Sleep
+Processor Sleep
+
+-------------------------------------------------------------------------
+TASK         62, Interrupt
+Layer 1, Interrupt vector 11, Wakeup only
+-------------------------------------------------------------------------
+N1 LC Wakeup
+C0 RX Fail
+N0 RX Fail
+N2 RX Fail
+N3 RX Fail
+
+-------------------------------------------------------------------------
+TASK         63, Master node and Processor wake up
+-------------------------------------------------------------------------
+Processor Wakeup
+N1 RX Fail
+
+-------------------------------------------------------------------------
+TASK         64, Error command test
+CPU sends a command with an unknown functional ID
+-------------------------------------------------------------------------
+N1 RX Success
+N1 RX Success
+C0 TX Success
+
+-------------------------------------------------------------------------
+TASK         65, Error command test
+Bulk read Layer 1's MEM address 0-1, and read layer 3's RF
+-------------------------------------------------------------------------
+N1 RX Success
+N1 RX Success
+N1 RX Success
+C0 TX Success
+Layer 1, MEM Read, Addr: 30'h00000000,	Data: 32'h6ffed5df
+N3 LC Wakeup
+N3 RX Success
+Layer 1, MEM Read, Addr: 30'h00000001,	Data: 32'hd13ccea2
+N3 RX Success
+N3 RX Fail
+N1 TX Fail
+
+
+-------------------------------------------------------------------------
+TASK         66, Error command test
+Read Layer 1's MEM address 0, and read layer 3's RF
+-------------------------------------------------------------------------
+N1 RX Success
+N1 RX Success
+N1 RX Success
+C0 TX Success
+Layer 1, MEM Read, Addr: 30'h00000000,	Data: 32'h6ffed5df
+N3 RX Success
+N3 RX Success
+N1 TX Success
+
+
+-------------------------------------------------------------------------
+TASK         67, RF Read
+Read Layer 1's RF address 250-4, and send to processor, coverage test
+-------------------------------------------------------------------------
+N1 RX Success
+C0 TX Success
+C0 RX Success
+C0 Data out =	32'h0a000000
+C0 RX Success
+C0 Data out =	32'h0b000000
+C0 RX Success
+C0 Data out =	32'h0c000000
+C0 RX Success
+C0 Data out =	32'h0d000000
+C0 RX Success
+C0 Data out =	32'h0e000000
+C0 RX Success
+C0 Data out =	32'h0f000000
+C0 RX Success
+C0 Data out =	32'h10abcdef
+C0 RX Success
+C0 Data out =	32'h11123456
+C0 RX Success
+C0 Data out =	32'h12123321
+C0 RX Success
+C0 Data out =	32'h13987654
+N1 TX Success
+
+
+-------------------------------------------------------------------------
+TASK         68, Error command test
+Invalid MEM read command
+-------------------------------------------------------------------------
+N1 RX Success
+C0 TX Success
+
+-------------------------------------------------------------------------
+TASK         69, Error command test
+Invalid MEM read command
+-------------------------------------------------------------------------
+N1 RX Success
+N1 RX Success
+N1 RX Success
+N1 RX Success
+N1 RX Fail
+C0 TX Fail
+
+-------------------------------------------------------------------------
+TASK         70, Error command test
+Invalid MEM write command
+-------------------------------------------------------------------------
+N1 RX Success
+C0 TX Success
+
+-------------------------------------------------------------------------
+TASK         71, Stream
+CPU sends 1 word streaming data to Layer 3's stream channel 0. (stream enable = 0, no MEM operation)
+-------------------------------------------------------------------------
+N3 RX Success
+C0 TX Success
+
+-------------------------------------------------------------------------
+TASK         72, Interrupt
+Layer 1, Interrupt vector 12, Invalid interrupt command
+-------------------------------------------------------------------------
+
+-------------------------------------------------------------------------
+TASK         73, RF Write
+CPU configures Layer 1 default sys register bulk mem message control, set to maximum length 64
+-------------------------------------------------------------------------
+Write RF addr: 8'hf2,	Data: 24'hc0003f
+N1 RX Success
+C0 TX Success
+Layer 1, RF Write, Addr: 8'hf2,	Data: 24'hc0003f
+
+-------------------------------------------------------------------------
+TASK         74, RF Write
+CPU configures Layer 2 default sys register bulk mem message control, set to maximum length 64
+-------------------------------------------------------------------------
+Write RF addr: 8'hf2,	Data: 24'hc0003f
+N2 LC Wakeup
+N2 RX Success
+C0 TX Success
+Layer 2, RF Write, Addr: 8'hf2,	Data: 24'hc0003f
+
+-------------------------------------------------------------------------
+TASK         75, MEM Write
+CPU bulk writes random data to Layer 1's MEM address 0-63
+-------------------------------------------------------------------------
+N1 RX Success
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000000,	Data: 32'h7bd4f7f7
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000001,	Data: 32'hc8c09891
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000002,	Data: 32'h92068024
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000003,	Data: 32'ha40b2648
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000004,	Data: 32'h958e8c2b
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000005,	Data: 32'hbd50b47a
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000006,	Data: 32'h32119b64
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000007,	Data: 32'hca914295
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000008,	Data: 32'h1d8fa93b
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000009,	Data: 32'h81ccce03
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000000a,	Data: 32'h0e08b71c
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000000b,	Data: 32'h99035c32
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000000c,	Data: 32'hb97cc272
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000000d,	Data: 32'hc634ea8c
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000000e,	Data: 32'hd5ebd0ab
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000000f,	Data: 32'hbf61787e
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000010,	Data: 32'h1955df32
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000011,	Data: 32'h3a890575
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000012,	Data: 32'h39baed73
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000013,	Data: 32'hedab92db
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000014,	Data: 32'hed1af8da
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000015,	Data: 32'h8ec9201d
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000016,	Data: 32'he97606d2
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000017,	Data: 32'hd3e1aea7
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000018,	Data: 32'he4cc14c9
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000019,	Data: 32'h72f53be5
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000001a,	Data: 32'h951d222a
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000001b,	Data: 32'h2203c944
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000001c,	Data: 32'hb0692e60
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000001d,	Data: 32'h970d562e
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000001e,	Data: 32'hecb03cd9
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000001f,	Data: 32'h8811e410
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000020,	Data: 32'hfff24aff
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000021,	Data: 32'hab117056
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000022,	Data: 32'ha02f5840
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000023,	Data: 32'hb60bfe6c
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000024,	Data: 32'h83676406
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000025,	Data: 32'h5f018dbe
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000026,	Data: 32'h5f9a73bf
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000027,	Data: 32'h5bf21bb7
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000028,	Data: 32'heac880d5
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000029,	Data: 32'h62dda7c5
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000002a,	Data: 32'hdaf18eb5
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000002b,	Data: 32'h29c43553
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000002c,	Data: 32'he6159acc
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000002d,	Data: 32'h66a5c3cd
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000002e,	Data: 32'hc234a884
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000002f,	Data: 32'hcf82509f
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000030,	Data: 32'h254eb74a
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000031,	Data: 32'h1a59dd34
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000032,	Data: 32'hc563c48a
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000033,	Data: 32'hfd2c6afa
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000034,	Data: 32'h5873d1b0
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000035,	Data: 32'h2df9f95b
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000036,	Data: 32'h947ede28
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000037,	Data: 32'h62c287c5
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000038,	Data: 32'h2f84ed5f
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h00000039,	Data: 32'h518613a3
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000003a,	Data: 32'hdf85fabf
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000003b,	Data: 32'hb044a060
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000003c,	Data: 32'h5a8207b5
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000003d,	Data: 32'h34fe2f69
+N1 RX Success
+Layer 1, MEM Write, Addr: 30'h0000003e,	Data: 32'h567915ac
+N1 RX Success
+C0 TX Success
+Layer 1, MEM Write, Addr: 30'h0000003f,	Data: 32'h95b2bc2b
+
+-------------------------------------------------------------------------
+TASK         76, MEM Read
+Read Layer 1's MEM address 0, and write to layer 2's MEM, address 0x0
+-------------------------------------------------------------------------
+N1 RX Success
+N1 RX Success
+N1 RX Success
+C0 TX Success
+Layer 1, MEM Read, Addr: 30'h00000000,	Data: 32'h7bd4f7f7
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000001,	Data: 32'hc8c09891
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000002,	Data: 32'h92068024
+Layer 2, MEM Write, Addr: 30'h00000000,	Data: 32'h7bd4f7f7
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000003,	Data: 32'ha40b2648
+Layer 2, MEM Write, Addr: 30'h00000001,	Data: 32'hc8c09891
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000004,	Data: 32'h958e8c2b
+Layer 2, MEM Write, Addr: 30'h00000002,	Data: 32'h92068024
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000005,	Data: 32'hbd50b47a
+Layer 2, MEM Write, Addr: 30'h00000003,	Data: 32'ha40b2648
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000006,	Data: 32'h32119b64
+Layer 2, MEM Write, Addr: 30'h00000004,	Data: 32'h958e8c2b
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000007,	Data: 32'hca914295
+Layer 2, MEM Write, Addr: 30'h00000005,	Data: 32'hbd50b47a
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000008,	Data: 32'h1d8fa93b
+Layer 2, MEM Write, Addr: 30'h00000006,	Data: 32'h32119b64
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000009,	Data: 32'h81ccce03
+Layer 2, MEM Write, Addr: 30'h00000007,	Data: 32'hca914295
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000000a,	Data: 32'h0e08b71c
+Layer 2, MEM Write, Addr: 30'h00000008,	Data: 32'h1d8fa93b
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000000b,	Data: 32'h99035c32
+Layer 2, MEM Write, Addr: 30'h00000009,	Data: 32'h81ccce03
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000000c,	Data: 32'hb97cc272
+Layer 2, MEM Write, Addr: 30'h0000000a,	Data: 32'h0e08b71c
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000000d,	Data: 32'hc634ea8c
+Layer 2, MEM Write, Addr: 30'h0000000b,	Data: 32'h99035c32
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000000e,	Data: 32'hd5ebd0ab
+Layer 2, MEM Write, Addr: 30'h0000000c,	Data: 32'hb97cc272
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000000f,	Data: 32'hbf61787e
+Layer 2, MEM Write, Addr: 30'h0000000d,	Data: 32'hc634ea8c
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000010,	Data: 32'h1955df32
+Layer 2, MEM Write, Addr: 30'h0000000e,	Data: 32'hd5ebd0ab
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000011,	Data: 32'h3a890575
+Layer 2, MEM Write, Addr: 30'h0000000f,	Data: 32'hbf61787e
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000012,	Data: 32'h39baed73
+Layer 2, MEM Write, Addr: 30'h00000010,	Data: 32'h1955df32
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000013,	Data: 32'hedab92db
+Layer 2, MEM Write, Addr: 30'h00000011,	Data: 32'h3a890575
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000014,	Data: 32'hed1af8da
+Layer 2, MEM Write, Addr: 30'h00000012,	Data: 32'h39baed73
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000015,	Data: 32'h8ec9201d
+Layer 2, MEM Write, Addr: 30'h00000013,	Data: 32'hedab92db
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000016,	Data: 32'he97606d2
+Layer 2, MEM Write, Addr: 30'h00000014,	Data: 32'hed1af8da
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000017,	Data: 32'hd3e1aea7
+Layer 2, MEM Write, Addr: 30'h00000015,	Data: 32'h8ec9201d
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000018,	Data: 32'he4cc14c9
+Layer 2, MEM Write, Addr: 30'h00000016,	Data: 32'he97606d2
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000019,	Data: 32'h72f53be5
+Layer 2, MEM Write, Addr: 30'h00000017,	Data: 32'hd3e1aea7
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000001a,	Data: 32'h951d222a
+Layer 2, MEM Write, Addr: 30'h00000018,	Data: 32'he4cc14c9
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000001b,	Data: 32'h2203c944
+Layer 2, MEM Write, Addr: 30'h00000019,	Data: 32'h72f53be5
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000001c,	Data: 32'hb0692e60
+Layer 2, MEM Write, Addr: 30'h0000001a,	Data: 32'h951d222a
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000001d,	Data: 32'h970d562e
+Layer 2, MEM Write, Addr: 30'h0000001b,	Data: 32'h2203c944
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000001e,	Data: 32'hecb03cd9
+Layer 2, MEM Write, Addr: 30'h0000001c,	Data: 32'hb0692e60
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000001f,	Data: 32'h8811e410
+Layer 2, MEM Write, Addr: 30'h0000001d,	Data: 32'h970d562e
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000020,	Data: 32'hfff24aff
+Layer 2, MEM Write, Addr: 30'h0000001e,	Data: 32'hecb03cd9
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000021,	Data: 32'hab117056
+Layer 2, MEM Write, Addr: 30'h0000001f,	Data: 32'h8811e410
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000022,	Data: 32'ha02f5840
+Layer 2, MEM Write, Addr: 30'h00000020,	Data: 32'hfff24aff
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000023,	Data: 32'hb60bfe6c
+Layer 2, MEM Write, Addr: 30'h00000021,	Data: 32'hab117056
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000024,	Data: 32'h83676406
+Layer 2, MEM Write, Addr: 30'h00000022,	Data: 32'ha02f5840
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000025,	Data: 32'h5f018dbe
+Layer 2, MEM Write, Addr: 30'h00000023,	Data: 32'hb60bfe6c
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000026,	Data: 32'h5f9a73bf
+Layer 2, MEM Write, Addr: 30'h00000024,	Data: 32'h83676406
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000027,	Data: 32'h5bf21bb7
+Layer 2, MEM Write, Addr: 30'h00000025,	Data: 32'h5f018dbe
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000028,	Data: 32'heac880d5
+Layer 2, MEM Write, Addr: 30'h00000026,	Data: 32'h5f9a73bf
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000029,	Data: 32'h62dda7c5
+Layer 2, MEM Write, Addr: 30'h00000027,	Data: 32'h5bf21bb7
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000002a,	Data: 32'hdaf18eb5
+Layer 2, MEM Write, Addr: 30'h00000028,	Data: 32'heac880d5
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000002b,	Data: 32'h29c43553
+Layer 2, MEM Write, Addr: 30'h00000029,	Data: 32'h62dda7c5
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000002c,	Data: 32'he6159acc
+Layer 2, MEM Write, Addr: 30'h0000002a,	Data: 32'hdaf18eb5
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000002d,	Data: 32'h66a5c3cd
+Layer 2, MEM Write, Addr: 30'h0000002b,	Data: 32'h29c43553
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000002e,	Data: 32'hc234a884
+Layer 2, MEM Write, Addr: 30'h0000002c,	Data: 32'he6159acc
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000002f,	Data: 32'hcf82509f
+Layer 2, MEM Write, Addr: 30'h0000002d,	Data: 32'h66a5c3cd
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000030,	Data: 32'h254eb74a
+Layer 2, MEM Write, Addr: 30'h0000002e,	Data: 32'hc234a884
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000031,	Data: 32'h1a59dd34
+Layer 2, MEM Write, Addr: 30'h0000002f,	Data: 32'hcf82509f
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000032,	Data: 32'hc563c48a
+Layer 2, MEM Write, Addr: 30'h00000030,	Data: 32'h254eb74a
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000033,	Data: 32'hfd2c6afa
+Layer 2, MEM Write, Addr: 30'h00000031,	Data: 32'h1a59dd34
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000034,	Data: 32'h5873d1b0
+Layer 2, MEM Write, Addr: 30'h00000032,	Data: 32'hc563c48a
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000035,	Data: 32'h2df9f95b
+Layer 2, MEM Write, Addr: 30'h00000033,	Data: 32'hfd2c6afa
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000036,	Data: 32'h947ede28
+Layer 2, MEM Write, Addr: 30'h00000034,	Data: 32'h5873d1b0
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000037,	Data: 32'h62c287c5
+Layer 2, MEM Write, Addr: 30'h00000035,	Data: 32'h2df9f95b
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000038,	Data: 32'h2f84ed5f
+Layer 2, MEM Write, Addr: 30'h00000036,	Data: 32'h947ede28
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h00000039,	Data: 32'h518613a3
+Layer 2, MEM Write, Addr: 30'h00000037,	Data: 32'h62c287c5
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000003a,	Data: 32'hdf85fabf
+Layer 2, MEM Write, Addr: 30'h00000038,	Data: 32'h2f84ed5f
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000003b,	Data: 32'hb044a060
+Layer 2, MEM Write, Addr: 30'h00000039,	Data: 32'h518613a3
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000003c,	Data: 32'h5a8207b5
+Layer 2, MEM Write, Addr: 30'h0000003a,	Data: 32'hdf85fabf
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000003d,	Data: 32'h34fe2f69
+Layer 2, MEM Write, Addr: 30'h0000003b,	Data: 32'hb044a060
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000003e,	Data: 32'h567915ac
+Layer 2, MEM Write, Addr: 30'h0000003c,	Data: 32'h5a8207b5
+N2 RX Success
+Layer 1, MEM Read, Addr: 30'h0000003f,	Data: 32'h95b2bc2b
+Layer 2, MEM Write, Addr: 30'h0000003d,	Data: 32'h34fe2f69
+N2 RX Success
+Layer 2, MEM Write, Addr: 30'h0000003e,	Data: 32'h567915ac
+N2 RX Success
+N1 TX Success
+
+Layer 2, MEM Write, Addr: 30'h0000003f,	Data: 32'h95b2bc2b

@@ -11,6 +11,14 @@ module tb_layer_ctrl();
 	parameter LC_MEM_DEPTH=65536;
 	parameter LC_RF_DEPTH=256;
 
+	localparam BULK_MEM_CTRL_REG_IDX = 242;
+	localparam STREAM_CH0_REG0_IDX = 236;
+	localparam STREAM_CH0_REG1_IDX = 237;
+	localparam STREAM_CH0_REG2_IDX = 238;
+	localparam STREAM_CH1_REG0_IDX = 232;
+	localparam STREAM_CH1_REG1_IDX = 233;
+	localparam STREAM_CH1_REG2_IDX = 234;
+
    reg		         clk, resetn;
    wire 		 SCLK;
 
@@ -64,7 +72,6 @@ module tb_layer_ctrl();
 	reg	[7:0]	relay_addr;
 	reg [29:0]	mem_relay_loc;
 	reg [7:0]	rf_relay_loc;
-	reg	[31:0]	addr_increment;
 	reg	[3:0]	dest_short_addr;
 	reg [23:0]	rf_data;
 	reg [31:0]	mem_data;
@@ -156,7 +163,6 @@ begin
 	rf_read_length = 0;
 	rf_relay_loc = 0;
 	relay_addr = 0;
-	addr_increment = 0;
 	enum_short_addr = 4'h2;
 	long_addr = 20'haaaa0;
 	layer_number = 0;

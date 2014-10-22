@@ -48,15 +48,20 @@
  * However, user should be aware of the memory/RF depth at any time.
  * 
  *
- * Last modified date: 10/19 '14
+ * Last modified date: 10/22 '14
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  *
  * Update log:
  *
+ * 10/22 '14
+ * 1. Add PREFIX input, MEM_PEND output
+ * 2. Add streaming function
+ * 3. Add Alert message
+ * 4. Add many configuration registers, please see specs.
+ * 5. Remove address check for MEM/RF
+ *
  * 10/19 '14
  * Fixed MEM_READ and RF_READ, Added interrupt support for wakeup only and RF_WRITE
- * Note: RF_READ and RF_WRITE don't wrap around, if address fall outside the range would
- *		 be treated as an invalid command.
  *
  * 10/15 '14
  * Start working on generation 2
@@ -83,14 +88,13 @@
 module layer_ctrl #(
 	parameter LC_RF_DATA_WIDTH = 24,	// don't change this, stream will fail
 	parameter LC_RF_ADDR_WIDTH = 8,		// don't change this value
-	parameter LC_RF_DEPTH = 128,		// 1 ~ 2^8
+	parameter LC_RF_DEPTH = 256,		// 1 ~ 2^8
 
 	parameter LC_MEM_ADDR_WIDTH = 32,	// should ALWAYS less than DATA_WIDTH
 	parameter LC_MEM_DATA_WIDTH = 32,	// should ALWAYS less than DATA_WIDTH
 
 	parameter LC_INT_DEPTH = 8,
-	parameter LC_MEM_STREAM_CHANNELS = 2,
-	parameter LC_MEM_STREAM_SYSREG_OFFSET = 16
+	parameter LC_MEM_STREAM_CHANNELS = 2
 )
 (
 	input		CLK,
@@ -294,7 +298,10 @@ wire	[LC_MEM_ADDR_WIDTH-3:0] stream_write_buffer_base = {stream_reg1[stream_chan
 wire	[LC_MEM_ADDR_WIDTH-3:0] stream_write_buffer_tagt= stream_write_buffer_base + stream_reg3[stream_channel][19:0];
 wire	stream_enable_temp = ((rx_dat_buffer[LC_RF_DATA_WIDTH-1])==1'b1)? 1'b1: 1'b0;
 wire	[LC_MEM_STREAM_CHANNELS-1:0] channel_enable_set;
-localparam ALERT_PATTERN = 8'hfe;
+
+localparam LC_MEM_STREAM_SYSREG_OFFSET = 16;
+wire	[LC_RF_ADDR_WIDTH-1:0] stream_reg2_idx = (LC_RF_DEPTH - LC_MEM_STREAM_SYSREG_OFFSET - 1'b1 - (stream_channel<<2) - 1'b1);
+wire	[LC_RF_ADDR_WIDTH-1:0] stream_reg3_idx = (LC_RF_DEPTH - LC_MEM_STREAM_SYSREG_OFFSET - 1'b1 - (stream_channel<<2));
 
 generate
 	for (unpk_idx=0; unpk_idx<(LC_MEM_STREAM_CHANNELS); unpk_idx=unpk_idx+1)
@@ -309,7 +316,6 @@ endgenerate
 
 // System registers
 wire	[LC_RF_DATA_WIDTH-1:0] sys_reg_action	= rf_in_array[LC_RF_DEPTH-1];
-wire	[LC_RF_DATA_WIDTH-1:0] sys_reg_alert	= rf_in_array[LC_RF_DEPTH-2];
 wire	[LC_RF_DATA_WIDTH-1:0] sys_reg_bulk_mem = rf_in_array[LC_RF_DEPTH-LC_MEM_STREAM_SYSREG_OFFSET+2];
 wire	bulk_enable = sys_reg_bulk_mem[LC_RF_DATA_WIDTH-1];
 wire	bulk_ctrl_active = sys_reg_bulk_mem[LC_RF_DATA_WIDTH-2];
@@ -929,7 +935,7 @@ begin
 
 						STREAM_REG2_LOAD:
 						begin
-							next_rf_load = (1'b1<<(LC_RF_DEPTH - LC_MEM_STREAM_SYSREG_OFFSET - 1'b1 - (stream_channel<<2)) - 1'b1);
+							next_rf_load = (1'b1<<stream_reg2_idx);
 							next_stream_reg_update_state = STREAM_REG2_WR_DELAY;
 						end
 
@@ -966,7 +972,7 @@ begin
 
 						STREAM_REG3_LOAD:
 						begin
-							next_rf_load = (1'b1<<(LC_RF_DEPTH - LC_MEM_STREAM_SYSREG_OFFSET - 1'b1 - (stream_channel<<2)));	// reload offset
+							next_rf_load = (1'b1<<stream_reg3_idx);
 							next_stream_reg_update_state = STREAM_REG3_WR_DELAY;
 						end
 
@@ -1021,7 +1027,7 @@ begin
 			begin
 				next_tx_req = 1;
 				next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, stream_alert_dest_address};
-				next_tx_data = {ALERT_PATTERN, PREFIX_ADDR_IN, 2'b01, stream_channel, 
+				next_tx_data = {stream_reg1[stream_channel][LC_RF_DATA_WIDTH-1:LC_RF_DATA_WIDTH-8], PREFIX_ADDR_IN, 2'b01, stream_channel, 
 								stream_enable, stream_wrapping, stream_alert_double_bf, stream_alert_overflow, 12'b0};
 				next_tx_pend = 0;
 				next_lc_state = LC_STATE_BUS_TX;

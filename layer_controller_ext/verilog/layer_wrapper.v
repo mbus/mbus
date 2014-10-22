@@ -291,7 +291,7 @@ rf_ctrl #(.RF_DEPTH(RF_DEPTH)) rf0(
 );
 
 // always on interrupt command roms
-int_action_rom #(.LC_INT_DEPTH(LC_INT_DEPTH)) ir0(
+int_action_rom ir0(
 	.int_func_id(int_func_id_f_rom),
 	.int_payload(int_payload_f_rom),
 	.int_cmd_len(int_length_f_rom)

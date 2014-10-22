@@ -29,7 +29,9 @@ module mbus_layer_wrapper(
 	output 	LC_RELEASE_RST,
 	output 	LC_RELEASE_ISO,
 
-	input 	REQ_INT
+	input 	REQ_INT,
+
+	output	[`DYNA_WIDTH-1:0] PREFIX_ADDR_OUT
 );
 
 parameter ADDRESS = 20'h12345;
@@ -63,6 +65,8 @@ wire	[`DYNA_WIDTH-1:0] rf_addr_out_to_node, rf_addr_in_from_node;
 wire	rf_addr_valid, rf_addr_write, rf_addr_rstn;
 
 wire	sleep_ctrl_clr_busy;
+
+assign PREFIX_ADDR_OUT = rf_addr_out_to_node;
    
 // always on block, interface with layer controller
 mbus_regular_isolation iso0

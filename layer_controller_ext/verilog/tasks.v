@@ -310,7 +310,7 @@ begin
 	$fdisplay(handle, "-------------------------------------------------------------------------");
 	rf_addr = 238;				// only 2 channels available
 	dest_short_addr = 4'h3;
-	rf_w_data = {4'b1000, 20'd15};
+	rf_w_data = {4'b1010, 20'd15};
 	state = TB_SINGLE_RF_WRITE;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
@@ -346,7 +346,7 @@ begin
 	$fdisplay(handle, "-------------------------------------------------------------------------");
 	rf_addr = 234;				// only 2 channels available
 	dest_short_addr = 4'h3;
-	rf_w_data = {4'b1000, 20'd31};
+	rf_w_data = {4'b1100, 20'd7};
 	state = TB_SINGLE_RF_WRITE;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 
@@ -372,7 +372,46 @@ begin
 	word_counter = 9;
 	state = TB_STREAMING;
 	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge c0_rx_req)
+
+	#100000;
+	task_counter = task_counter + 1;
+	$fdisplay(handle, "\n-------------------------------------------------------------------------");
+	$fdisplay(handle, "TASK%d, RF Write", task_counter);
+	$fdisplay(handle, "CPU sends 10 word streaming data to Layer 1's stream channel 0, only 5 words are available, TX should fail, and generates alert");
+	$fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	stream_channel = 0;
+	word_counter = 9;
+	state = TB_STREAMING;
 	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge c0_rx_req)
+
+	#100000;
+	task_counter = task_counter + 1;
+	$fdisplay(handle, "\n-------------------------------------------------------------------------");
+	$fdisplay(handle, "TASK%d, RF Write", task_counter);
+	$fdisplay(handle, "CPU sends 8 word streaming data to Layer 1's stream channel 1, generates alert 0xC");
+	$fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	stream_channel = 1;
+	word_counter = 7;
+	state = TB_STREAMING;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge c0_rx_req)
+
+	#100000;
+	task_counter = task_counter + 1;
+	$fdisplay(handle, "\n-------------------------------------------------------------------------");
+	$fdisplay(handle, "TASK%d, RF Write", task_counter);
+	$fdisplay(handle, "CPU sends 16 word streaming data to Layer 1's stream channel 1, generates alert 0xD");
+	$fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	stream_channel = 1;
+	word_counter = 15;
+	state = TB_STREAMING;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge c0_rx_req)
 
 /*
 

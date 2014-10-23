@@ -93,7 +93,7 @@ module layer_ctrl_v2 #(
 	parameter LC_MEM_ADDR_WIDTH = 32,	// should ALWAYS less than DATA_WIDTH
 	parameter LC_MEM_DATA_WIDTH = 32,	// should ALWAYS less than DATA_WIDTH
 
-	parameter LC_INT_DEPTH = 8,
+	parameter LC_INT_DEPTH = 13,		
 	parameter LC_MEM_STREAM_CHANNELS = 2
 )
 (
@@ -908,7 +908,7 @@ begin
 
 				STREAM_MEM_WAIT:
 				begin
-					next_dma_counter = 2;
+					next_dma_counter = 1;
 					next_stream_reg_update_state = STREAM_REG2_UPDATE;
 					if (MEM_ACK_IN)
 						next_mem_sub_state = STREAM_MEM_REG_UPDATE;
@@ -946,7 +946,7 @@ begin
 								next_dma_counter = dma_counter - 1'b1;
 							else
 							begin
-								next_dma_counter = 2;
+								next_dma_counter = 1;
 								next_stream_reg_update_state = STREAM_REG3_UPDATE;
 							end
 						end
@@ -983,7 +983,7 @@ begin
 								next_dma_counter = dma_counter - 1'b1;
 							else
 							begin
-								next_dma_counter = 2;
+								next_dma_counter = 1;
 								next_stream_reg_update_state = STREAM_ERROR_CHECK;
 							end
 						end
@@ -1029,7 +1029,7 @@ begin
 				next_tx_req = 1;
 				next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, stream_alert_dest_address};
 				next_tx_data = {stream_reg1[stream_channel][LC_RF_DATA_WIDTH-1:LC_RF_DATA_WIDTH-8], PREFIX_ADDR_IN, 2'b01, stream_channel, 
-								stream_enable, stream_wrapping, stream_alert_double_bf, stream_alert_overflow, 12'b0};
+								stream_enable, stream_alert_buf_full, stream_alert_double_bf, stream_alert_overflow, 12'b0};
 				next_tx_pend = 0;
 				next_lc_state = LC_STATE_BUS_TX;
 				next_stream_alert_double_bf = 1'b0;

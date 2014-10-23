@@ -196,10 +196,10 @@ begin
       
       //SDF ANNOTATION
  `ifdef SYN
- 	$sdf_annotate("../syn/layer_ctrl.dc.sdf", layer0.lc0);
-   	$sdf_annotate("../syn/layer_ctrl.dc.sdf", layer1.lc0);
-   	$sdf_annotate("../syn/layer_ctrl.dc.sdf", layer2.lc0);
-   	$sdf_annotate("../syn/layer_ctrl.dc.sdf", layer3.lc0);
+ 	$sdf_annotate("../syn/layer_ctrl_v2.dc.sdf", layer0.lc0);
+   	$sdf_annotate("../syn/layer_ctrl_v2.dc.sdf", layer1.lc0);
+   	$sdf_annotate("../syn/layer_ctrl_v2.dc.sdf", layer2.lc0);
+   	$sdf_annotate("../syn/layer_ctrl_v2.dc.sdf", layer3.lc0);
 `endif
 	  /*
 `elsif APR

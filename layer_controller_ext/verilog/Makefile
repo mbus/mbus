@@ -70,7 +70,8 @@ SYNFILES = 	mbus_addr_rf.v \
 			layer_ctrl_isolation.v \
 			rf_ctrl.v \
 			int_action_rom.v \
-			../syn/layer_ctrl.nl.v \
+			/afs/eecs.umich.edu/kits/ARM/TSMC_cl018g/arm_2010q1/sc-x_2004q3v1/aci/sc/verilog/tsmc18_neg.v \
+			../syn/layer_ctrl_v2.nl.v \
 			layer_wrapper.v
 
 APRFILES = 	../apr/mbus_node32_ab/mbus_node32_ab.apr.v \

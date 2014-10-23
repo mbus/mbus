@@ -85,7 +85,7 @@
   * */
 `include "include/mbus_def.v"
 
-module layer_ctrl #(
+module layer_ctrl2 #(
 	parameter LC_RF_DATA_WIDTH = 24,	// don't change this, stream will fail
 	parameter LC_RF_ADDR_WIDTH = 8,		// don't change this value
 	parameter LC_RF_DEPTH = 256,		// 1 ~ 2^8

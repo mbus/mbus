@@ -402,6 +402,42 @@ begin
 	task_counter = task_counter + 1;
 	$fdisplay(handle, "\n-------------------------------------------------------------------------");
 	$fdisplay(handle, "TASK%d, Stream MEM Write", task_counter);
+	$fdisplay(handle, "CPU sends 16 word streaming data to Layer 1's stream channel 0, CPU should receive a buffer full alert");
+	$fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	stream_channel = 0;
+	word_counter = 15;
+	state = TB_STREAMING;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge c0_rx_req)
+
+	#100000;
+	task_counter = task_counter + 1;
+	$fdisplay(handle, "\n-------------------------------------------------------------------------");
+	$fdisplay(handle, "TASK%d, Stream MEM Write", task_counter);
+	$fdisplay(handle, "CPU sends 1 word streaming data to Layer 1's stream channel 0, nothing happens");
+	$fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	stream_channel = 0;
+	state = TB_STREAMING;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+	#100000;
+	task_counter = task_counter + 1;
+	$fdisplay(handle, "\n-------------------------------------------------------------------------");
+	$fdisplay(handle, "TASK%d, RF Write", task_counter);
+	$fdisplay(handle, "CPU configures Layer 1's stream channel 0, register 2, register 3 should be written by layer controller itself");
+	$fdisplay(handle, "-------------------------------------------------------------------------");
+	rf_addr = STREAM_CH0_REG2_IDX;				// only 2 channels available
+	dest_short_addr = 4'h3;
+	rf_w_data = {4'b1010, 20'd15};
+	state = TB_SINGLE_RF_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+	#100000;
+	task_counter = task_counter + 1;
+	$fdisplay(handle, "\n-------------------------------------------------------------------------");
+	$fdisplay(handle, "TASK%d, Stream MEM Write", task_counter);
 	$fdisplay(handle, "CPU sends 1 word streaming data to Layer 1's stream channel 0");
 	$fdisplay(handle, "-------------------------------------------------------------------------");
 	dest_short_addr = 4'h3;
@@ -961,6 +997,7 @@ begin
     state = TB_MEM_READ;
 	@ (posedge c0_tx_succ|c0_tx_fail);
 	@ (posedge layer1.tx_succ | layer1.tx_fail);
+
     #500000;
     $display("*************************************");
     $display("************TASK0 Complete***********");

@@ -52,6 +52,8 @@
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  *
  * Update log:
+ * 11/03 '14
+ * Fixed last word stream write
  *
  * 10/22 '14
  * 1. Add PREFIX input, MEM_PEND output
@@ -990,7 +992,7 @@ begin
 
 						STREAM_ERROR_CHECK:
 						begin
-							if ((~stream_remaining) & (~stream_wrapping) & (rx_pend_reg))
+							if ((~stream_enable) & (rx_pend_reg))
 							begin
 								next_mem_sub_state = 0;
 								next_lc_state = LC_STATE_ERROR;

@@ -52,6 +52,9 @@
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  *
  * Update log:
+ * 01/21 '15
+ * fix input stablizer reset port, using local reset
+ *
  * 11/03 '14
  * Fixed last word stream write
  *
@@ -156,16 +159,16 @@ module layer_ctrl_v2 #(
 
 wire		[LC_INT_DEPTH-1:0] INT_VECTOR_clocked;
 
-input_stabilizer_layer_ctrl input_stabilizer_layer_ctrl0[LC_INT_DEPTH-1:0]  (
-		.clk(CLK),
-		.reset(~RESETn),
-		.a(INT_VECTOR),
-		.a_clocked(INT_VECTOR_clocked)
-);
-
 `include "include/mbus_func.v"
 
 wire	RESETn_local = (RESETn & (~RELEASE_RST_FROM_MBUS));
+
+input_stabilizer_layer_ctrl input_stabilizer_layer_ctrl0[LC_INT_DEPTH-1:0]  (
+		.clk(CLK),
+		.reset(~RESETn_local),
+		.a(INT_VECTOR),
+		.a_clocked(INT_VECTOR_clocked)
+);
 
 parameter MAX_DMA_LENGTH = 20; // cannot greater than `DATA_WIDTH - `SHORT_ADDR_WIDTH
 

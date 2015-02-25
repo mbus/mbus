@@ -1,0 +1,4 @@
+
+`define LC_INT_ENABLE
+`define LC_MEM_ENABLE
+`define LC_RF_DATA_WIDTH	24

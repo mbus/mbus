@@ -47,7 +47,7 @@ SIMFILES = 	mbus_addr_rf.v \
 			layer_ctrl_isolation.v \
 			rf_ctrl.v \
 			int_action_rom.v \
-			layer_ctrl_v2.v \
+			layer_ctrl_v3.v \
 			layer_wrapper.v
 
 SYNFILES = 	mbus_addr_rf.v \

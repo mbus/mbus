@@ -53,7 +53,7 @@
  *
  * Update log:
  * 02/24 '15
- * 1. remove LC_RF_DATA_WIDTH parameter, turn into definition
+ * 1. remove LC_RF_DATA_WIDTH, LC_RF_ADDR_WIDTH  parameters, turn into definition
  * 2. add LC_MEM_ENABLE, LC_INT_ENABLE definition
  *
  * 01/21 '15
@@ -136,12 +136,6 @@ module layer_ctrl_v3 #(
 	input 		RELEASE_RST_FROM_MBUS,
 	// End of interface
 	
-	// Interface with Registers
-	input		[(`LC_RF_DATA_WIDTH*LC_RF_DEPTH)-1:0] REG_RD_DATA,
-	output reg	[`LC_RF_DATA_WIDTH-1:0] REG_WR_DATA,
-	output reg	[LC_RF_DEPTH-1:0] REG_WR_EN,
-	// End of interface
-	
 	`ifdef LC_MEM_ENABLE
 	// Interface with MEM
 	output 		MEM_REQ_OUT,
@@ -151,6 +145,8 @@ module layer_ctrl_v3 #(
 	output reg	[LC_MEM_DATA_WIDTH-1:0] MEM_WR_DATA,
 	input		[LC_MEM_DATA_WIDTH-1:0] MEM_RD_DATA,
 	output reg	[LC_MEM_ADDR_WIDTH-3:0] MEM_ADDR,
+	// PREFIX Addr
+	input		[`DYNA_WIDTH-1:0] PREFIX_ADDR_IN,
 	// End of interface
 	`endif
 	
@@ -164,18 +160,27 @@ module layer_ctrl_v3 #(
 	// End of interface
 	`endif
 
-	// PREFIX Addr
-	input		[`DYNA_WIDTH-1:0] PREFIX_ADDR_IN
+	// Interface with Registers
+	input		[(`LC_RF_DATA_WIDTH*LC_RF_DEPTH)-1:0] REG_RD_DATA,
+	output reg	[`LC_RF_DATA_WIDTH-1:0] REG_WR_DATA,
+	output reg	[LC_RF_DEPTH-1:0] REG_WR_EN
+	// End of interface
+	
 );
 
+`ifdef LC_MEM_ENABLE
+	`define MEM_OR_INT_ENABLE
+`elsif LC_INT_ENABLE
+	`define MEM_OR_INT_ENABLE
+`endif
 
-wire		[LC_INT_DEPTH-1:0] INT_VECTOR_clocked;
 
 `include "include/mbus_func.v"
 
 wire	RESETn_local = (RESETn & (~RELEASE_RST_FROM_MBUS));
 
 `ifdef LC_INT_ENABLE
+wire		[LC_INT_DEPTH-1:0] INT_VECTOR_clocked;
 input_stabilizer_layer_ctrl input_stabilizer_layer_ctrl0[LC_INT_DEPTH-1:0]  (
 		.clk(CLK),
 		.reset(~RESETn_local),
@@ -265,9 +270,9 @@ generate
 	end
 endgenerate
 reg		[LC_RF_DEPTH-1:0] next_rf_load;
-wire	[LC_RF_DEPTH-1:0] rf_load_temp = (1'b1<<(rx_dat_buffer[`DATA_WIDTH-1:`DATA_WIDTH-LC_RF_ADDR_WIDTH]));
+wire	[LC_RF_DEPTH-1:0] rf_load_temp = (1'b1<<(rx_dat_buffer[`DATA_WIDTH-1:`DATA_WIDTH-`LC_RF_ADDR_WIDTH]));
 reg		[`LC_RF_DATA_WIDTH-1:0] next_rf_dout;
-wire	[LC_RF_ADDR_WIDTH-1:0] rf_dma_length = rx_dat_buffer[23:16];
+wire	[`LC_RF_ADDR_WIDTH-1:0] rf_dma_length = rx_dat_buffer[23:16];
 wire	[log2(LC_RF_DEPTH-1)-1:0] rf_idx_temp = rx_dat_buffer[(24+log2(LC_RF_DEPTH-1)-1):24];
 wire	[`SHORT_ADDR_WIDTH-1:0] rf_relay_addr = rx_dat_buffer[15:15-`SHORT_ADDR_WIDTH+1];
 reg		[log2(LC_RF_DEPTH-1)-1:0] rf_idx, next_rf_idx;
@@ -328,8 +333,8 @@ localparam LC_MEM_STREAM_SYSREG_OFFSET = 16;
 // 32 bits and truncate to smaller to avoid port size mismatch warning.
 wire	[31:0] stream_reg2_param = (LC_RF_DEPTH - LC_MEM_STREAM_SYSREG_OFFSET - 1'b1 - (stream_channel<<2) - 1'b1);
 wire	[31:0] stream_reg3_param = (LC_RF_DEPTH - LC_MEM_STREAM_SYSREG_OFFSET - 1'b1 - (stream_channel<<2));
-wire	[LC_RF_ADDR_WIDTH-1:0] stream_reg2_idx = stream_reg2_param[LC_RF_ADDR_WIDTH-1:0];
-wire	[LC_RF_ADDR_WIDTH-1:0] stream_reg3_idx = stream_reg3_param[LC_RF_ADDR_WIDTH-1:0];
+wire	[`LC_RF_ADDR_WIDTH-1:0] stream_reg2_idx = stream_reg2_param[`LC_RF_ADDR_WIDTH-1:0];
+wire	[`LC_RF_ADDR_WIDTH-1:0] stream_reg3_idx = stream_reg3_param[`LC_RF_ADDR_WIDTH-1:0];
 
 generate
 	for (unpk_idx=0; unpk_idx<(LC_MEM_STREAM_CHANNELS); unpk_idx=unpk_idx+1)
@@ -338,7 +343,7 @@ generate
 		assign stream_reg1[unpk_idx] = rf_in_array[LC_RF_DEPTH-LC_MEM_STREAM_SYSREG_OFFSET-1-(4*unpk_idx)-2];	//8, 16
 		assign stream_reg2[unpk_idx] = rf_in_array[LC_RF_DEPTH-LC_MEM_STREAM_SYSREG_OFFSET-1-(4*unpk_idx)-1];	//4, 20 (Length)
 		assign stream_reg3[unpk_idx] = rf_in_array[LC_RF_DEPTH-LC_MEM_STREAM_SYSREG_OFFSET-1-(4*unpk_idx)];		//4, 20 (Count)
-		assign channel_enable_set[unpk_idx] = (rx_dat_buffer[`DATA_WIDTH-1:`DATA_WIDTH-LC_RF_ADDR_WIDTH]==(LC_RF_DEPTH-LC_MEM_STREAM_SYSREG_OFFSET-1-(4*unpk_idx)-1))? stream_enable_temp : 1'b0;
+		assign channel_enable_set[unpk_idx] = (rx_dat_buffer[`DATA_WIDTH-1:`DATA_WIDTH-`LC_RF_ADDR_WIDTH]==(LC_RF_DEPTH-LC_MEM_STREAM_SYSREG_OFFSET-1-(4*unpk_idx)-1))? stream_enable_temp : 1'b0;
 	end
 endgenerate
 
@@ -561,7 +566,7 @@ begin
 			end
 			else
 			`endif
-			`ifdef LC_MEM_ENABLE or LC_INT_ENABLE
+			`ifdef MEM_OR_INT_ENABLE
 			begin
 			`endif
 				if (RX_REQ_DL2 | RX_FAIL)							// Receive last
@@ -593,7 +598,7 @@ begin
 						end	
 					endcase
 				end
-			`ifdef LC_MEM_ENABLE or LC_INT_ENABLE
+			`ifdef MEM_OR_INT_ENABLE
 			end
 			`endif
 		end
@@ -605,7 +610,7 @@ begin
 				begin
 					if (~rx_pend_reg)
 					begin
-						next_dma_counter = {{(MAX_DMA_LENGTH-LC_RF_ADDR_WIDTH){1'b0}}, rf_dma_length};
+						next_dma_counter = {{(MAX_DMA_LENGTH-`LC_RF_ADDR_WIDTH){1'b0}}, rf_dma_length};
 						next_rf_idx = rf_idx_temp;
 						next_mem_sub_state = 1;
 						next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, rf_relay_addr};
@@ -639,7 +644,7 @@ begin
 
 				2:
 				begin
-					if (rf_idx < {LC_RF_ADDR_WIDTH{1'b1}})
+					if (rf_idx < {`LC_RF_ADDR_WIDTH{1'b1}})
 						next_rf_idx = rf_idx + 1'b1;
 					else
 						next_rf_idx = 0;
@@ -661,12 +666,15 @@ begin
 				RF_WRITE_LOAD:
 				begin
 					next_rf_load = rf_load_temp;
+					`ifdef LC_MEM_ENABLE
 					if (channel_enable_set)	// enable is being set to configuration registers
 						next_mem_sub_state = RF_WRITE_STREAM_COUNTER;
 					else
+					`endif
 						next_mem_sub_state = RF_WRITE_CHECK;
 				end
 
+				`ifdef LC_MEM_ENABLE
 				RF_WRITE_STREAM_COUNTER:
 				begin
 					next_rf_dout = 0;		// clear offset
@@ -678,18 +686,23 @@ begin
 					next_rf_load = (rf_load_temp<<1);
 					next_mem_sub_state = RF_WRITE_CHECK;
 				end
+				`endif
 
 				RF_WRITE_CHECK:
 				begin
+					`ifdef LC_INT_ENABLE
 					if (layer_interrupted)
 						next_mem_sub_state = RF_WRITE_INT_COPY;
 					else
 					begin
+					`endif
 						if (rx_pend_reg)
 							next_mem_sub_state = RF_WRITE_RECEIVE;
 						else
 							next_lc_state = LC_STATE_IDLE;
+					`ifdef LC_INT_ENABLE
 					end
+					`endif
 				end
 
 				RF_WRITE_RECEIVE:
@@ -708,6 +721,7 @@ begin
 					end
 				end
 
+				`ifdef LC_INT_ENABLE
 				RF_WRITE_INT_COPY:
 				begin
 					next_mem_sub_state = 0;
@@ -727,6 +741,7 @@ begin
 						next_lc_state = LC_STATE_CLR_INT;
 						
 				end
+				`endif
 
 			endcase
 

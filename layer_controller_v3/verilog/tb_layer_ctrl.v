@@ -8,7 +8,7 @@
 module tb_layer_ctrl();
 `include "include/mbus_func.v"
 
-	`define LC_INT_ENABLE
+	`ifdef LC_INT_ENABLE
 	localparam LC_INT_DEPTH=13;
 	`endif
 	`ifdef LC_MEM_ENABLE
@@ -27,7 +27,7 @@ module tb_layer_ctrl();
    reg		         clk, resetn;
    wire 		 SCLK;
 
-	`define LC_INT_ENABLE
+	`ifdef LC_INT_ENABLE
 	// n0 connections
 	reg		[LC_INT_DEPTH-1:0] n0_int_vector;
 	wire	[LC_INT_DEPTH-1:0]	n0_clr_int;
@@ -119,7 +119,7 @@ module tb_layer_ctrl();
 
 layer_wrapper #(.ADDRESS(20'hbbbb0), .LC_INT_DEPTH(LC_INT_DEPTH)) layer0(
 	.CLK(clk), .RESETn(resetn),
-	`define LC_INT_ENABLE
+	`ifdef LC_INT_ENABLE
 	.INT_VECTOR(n0_int_vector),
 	.CLR_INT_EXTERNAL(n0_clr_int),
 	`endif
@@ -128,7 +128,7 @@ layer_wrapper #(.ADDRESS(20'hbbbb0), .LC_INT_DEPTH(LC_INT_DEPTH)) layer0(
 
 layer_wrapper #(.ADDRESS(20'hbbbb1), .LC_INT_DEPTH(LC_INT_DEPTH)) layer1(
 	.CLK(clk), .RESETn(resetn),
-	`define LC_INT_ENABLE
+	`ifdef LC_INT_ENABLE
 	.INT_VECTOR(n1_int_vector),
 	.CLR_INT_EXTERNAL(n1_clr_int),
 	`endif
@@ -137,7 +137,7 @@ layer_wrapper #(.ADDRESS(20'hbbbb1), .LC_INT_DEPTH(LC_INT_DEPTH)) layer1(
 
 layer_wrapper #(.ADDRESS(20'hbbbb2), .LC_INT_DEPTH(LC_INT_DEPTH)) layer2(
 	.CLK(clk), .RESETn(resetn),
-	`define LC_INT_ENABLE
+	`ifdef LC_INT_ENABLE
 	.INT_VECTOR(n2_int_vector),
 	.CLR_INT_EXTERNAL(n2_clr_int),
 	`endif
@@ -146,7 +146,7 @@ layer_wrapper #(.ADDRESS(20'hbbbb2), .LC_INT_DEPTH(LC_INT_DEPTH)) layer2(
 
 layer_wrapper #(.ADDRESS(20'hbbbb2), .LC_INT_DEPTH(LC_INT_DEPTH)) layer3(
 	.CLK(clk), .RESETn(resetn),
-	`define LC_INT_ENABLE
+	`ifdef LC_INT_ENABLE
 	.INT_VECTOR(n3_int_vector),
 	.CLR_INT_EXTERNAL(n3_clr_int),
 	`endif
@@ -230,18 +230,37 @@ begin
       //Calls Tasks from tasks.v
       //***********************
 
-`ifdef TASK0
+//`ifdef TASK0
+//	task0();
+//`elsif TASK1
+//	task1();
+//`elsif TASK2
+//	task2();
+//`else
+//      $display("**************************************");
+//      $display("************NO TASKS SUPPLIED*********");
+//      $display("****************FAILURE***************");
+//      $display("**************************************");
+//      $finish;
+//`endif
+
+`ifdef LC_MEM_ENABLE
+	// contains memory and interrupt
+	`ifdef LC_INT_ENABLE
+		task0();
+	// contains memory only --> wrong state
+	`else
+		$display("**************************************");
+		$display("******  Error configuration  *********");
+		$display("**************************************");
+		$finish;
+	`endif
+	// Interrupt only
+`elsif LC_INT_ENABLE
 	task0();
-`elsif TASK1
-	task1();
-`elsif TASK2
-	task2();
+	// no memory and interrupt
 `else
-      $display("**************************************");
-      $display("************NO TASKS SUPPLIED*********");
-      $display("****************FAILURE***************");
-      $display("**************************************");
-      $finish;
+	task2()
 `endif
    
 end // initial begin
@@ -286,7 +305,7 @@ always @ (posedge clk or negedge resetn)
 begin
 	if (~resetn)
 	begin
-		`define LC_INT_ENABLE
+		`ifdef LC_INT_ENABLE
 	  	n0_int_vector <= 0;
 	  	n1_int_vector <= 0;
 	  	n2_int_vector <= 0;
@@ -310,7 +329,7 @@ begin
 	end
 end
 
-`define LC_INT_ENABLE
+`ifdef LC_INT_ENABLE
 // n0 interrupt control
 wire	[LC_INT_DEPTH-1:0] n0_int_clr_mask = (n0_clr_int & n0_int_vector);
 always @ (posedge clk)
@@ -336,7 +355,7 @@ always @ (posedge layer0.tx_fail)
 	$fdisplay(handle, "N0 TX Fail\n");
 // end of n0 interrupt control
 
-`define LC_INT_ENABLE
+`ifdef LC_INT_ENABLE
 // n1 interrupt control
 wire	[LC_INT_DEPTH-1:0] n1_int_clr_mask = (n1_clr_int & n1_int_vector);
 always @ (posedge clk)
@@ -362,7 +381,7 @@ always @ (posedge layer1.tx_fail)
 	$fdisplay(handle, "N1 TX Fail\n");
 // end of n1 interrupt control
 
-`define LC_INT_ENABLE
+`ifdef LC_INT_ENABLE
 // n2 interrupt control
 wire	[LC_INT_DEPTH-1:0] n2_int_clr_mask = (n2_clr_int & n2_int_vector);
 always @ (posedge clk)
@@ -388,7 +407,7 @@ always @ (posedge layer2.tx_fail)
 	$fdisplay(handle, "N2 TX Fail\n");
 // end of n2 interrupt control
 
-`define LC_INT_ENABLE
+`ifdef LC_INT_ENABLE
 // n3 interrupt control
 wire	[LC_INT_DEPTH-1:0] n3_int_clr_mask = (n3_clr_int & n3_int_vector);
 always @ (posedge clk)

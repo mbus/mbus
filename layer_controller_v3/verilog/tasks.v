@@ -1006,3 +1006,166 @@ begin
 end
 endtask // task0
 
+// Interrupt only
+task task1;
+begin
+    handle=$fopen("result_task1.txt");
+
+    #100000;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK0%d, Master node and Processor wake up", task_counter);
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+    state = TB_PROC_UP;
+	@ (posedge SCLK);
+	c0_req_int = 0;
+    #50000;
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Query", task_counter);
+    $fdisplay(handle, "Master node sends out query");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+    state = TB_QUERY;
+	@ (posedge c0_rx_req);
+	@ (posedge c0_rx_req);
+	@ (posedge c0_rx_req);
+	@ (posedge c0_rx_req);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Enumerate", task_counter);
+    $fdisplay(handle, "Master node enumerate with address 4'h2");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	enum_short_addr = 4'h2;
+    state = TB_ENUM;
+	@ (posedge c0_rx_req);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Enumerate", task_counter);
+    $fdisplay(handle, "Master node enumerate with address 4'h3");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	enum_short_addr = 4'h3;
+    state = TB_ENUM;
+	@ (posedge c0_rx_req);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Enumerate", task_counter);
+    $fdisplay(handle, "Master node enumerate with address 4'h4");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	enum_short_addr = 4'h4;
+    state = TB_ENUM;
+	@ (posedge c0_rx_req);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Enumerate", task_counter);
+    $fdisplay(handle, "Master node enumerate with address 4'h5");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	enum_short_addr = 4'h5;
+    state = TB_ENUM;
+	@ (posedge c0_rx_req);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, All Wake", task_counter);
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+    state = TB_ALL_WAKEUP;
+	@ (posedge c0_tx_succ | c0_tx_fail);
+
+    #500000;
+    $display("*************************************");
+    $display("************TASK1 Complete***********");
+    $display("*************************************");
+    $finish;
+end
+endtask // end of task 1
+
+task task2;
+begin
+    handle=$fopen("result_task2.txt");
+
+    #100000;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK0%d, Master node and Processor wake up", task_counter);
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+    state = TB_PROC_UP;
+	@ (posedge SCLK);
+	c0_req_int = 0;
+    #50000;
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Query", task_counter);
+    $fdisplay(handle, "Master node sends out query");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+    state = TB_QUERY;
+	@ (posedge c0_rx_req);
+	@ (posedge c0_rx_req);
+	@ (posedge c0_rx_req);
+	@ (posedge c0_rx_req);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Enumerate", task_counter);
+    $fdisplay(handle, "Master node enumerate with address 4'h2");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	enum_short_addr = 4'h2;
+    state = TB_ENUM;
+	@ (posedge c0_rx_req);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Enumerate", task_counter);
+    $fdisplay(handle, "Master node enumerate with address 4'h3");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	enum_short_addr = 4'h3;
+    state = TB_ENUM;
+	@ (posedge c0_rx_req);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Enumerate", task_counter);
+    $fdisplay(handle, "Master node enumerate with address 4'h4");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	enum_short_addr = 4'h4;
+    state = TB_ENUM;
+	@ (posedge c0_rx_req);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Enumerate", task_counter);
+    $fdisplay(handle, "Master node enumerate with address 4'h5");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	enum_short_addr = 4'h5;
+    state = TB_ENUM;
+	@ (posedge c0_rx_req);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, All Wake", task_counter);
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+    state = TB_ALL_WAKEUP;
+	@ (posedge c0_tx_succ | c0_tx_fail);
+
+    #500000;
+    $display("*************************************");
+    $display("************TASK2 Complete***********");
+    $display("*************************************");
+    $finish;
+end
+endtask // end of task 2
+

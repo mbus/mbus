@@ -139,10 +139,9 @@ layer_ctrl_isolation #(
 	.LC_MEM_DATA_WIDTH(LC_MEM_DATA_WIDTH), .LC_MEM_ADDR_WIDTH(LC_MEM_ADDR_WIDTH), 
 	`endif
 	`ifdef LC_INT_ENABLE
-	.LC_INT_DEPTH(LC_INT_DEPTH)),
+	.LC_INT_DEPTH(LC_INT_DEPTH),
 	`endif
-	.LC_RF_DEPTH(LC_RF_DEPTH) 
-	lc_iso0(
+	.LC_RF_DEPTH(LC_RF_DEPTH)) lc_iso0(
 	.LC_ISOLATION(lc_release_iso),
 	// Interface with MBus
 	.TX_ADDR_FROM_LC(tx_addr_f_lc), .TX_DATA_FROM_LC(tx_data_f_lc), .TX_PEND_FROM_LC(tx_pend_f_lc), .TX_REQ_FROM_LC(tx_req_f_lc),
@@ -201,10 +200,6 @@ layer_ctrl_v3 #(
 	.TX_SUCC(tx_succ), 
 	.TX_RESP_ACK(tx_resp_ack),
 	.RELEASE_RST_FROM_MBUS(lc_release_rst),
-	// Interface with Registers
-	.REG_RD_DATA(rf_dout_f_rf),
-	.REG_WR_DATA(rf_dout),
-	.REG_WR_EN(rf_load),
 	`ifdef LC_MEM_ENABLE
 	// Interface with MEM
 	.MEM_REQ_OUT(mem_req_out),
@@ -214,6 +209,8 @@ layer_ctrl_v3 #(
 	.MEM_RD_DATA(mem_data_f_mem),
 	.MEM_ADDR(mem_aout),
 	.MEM_PEND(mem_pend),
+	// PREFIX
+	.PREFIX_ADDR_IN(prefix_addr),
 	`endif
 	`ifdef LC_INT_ENABLE
 	// Interrupt
@@ -223,8 +220,10 @@ layer_ctrl_v3 #(
 	.INT_CMD(int_payload_f_rom),
 	.INT_CMD_LEN(int_length_f_rom),
 	`endif
-	// PREFIX
-	.PREFIX_ADDR_IN(prefix_addr)
+	// Interface with Registers
+	.REG_RD_DATA(rf_dout_f_rf),
+	.REG_WR_DATA(rf_dout),
+	.REG_WR_EN(rf_load)
 );
 
 mbus_layer_wrapper #(.ADDRESS(ADDRESS)) mbus_node0

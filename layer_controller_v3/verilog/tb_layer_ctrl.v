@@ -86,7 +86,9 @@ module tb_layer_ctrl();
 	reg [3:0]	enum_short_addr;
 	reg [19:0]	long_addr;
 	reg [1:0]	layer_number;
+	`ifdef LC_INT_ENABLE
 	reg [LC_INT_DEPTH-1:0] int_vec;
+	`endif
 	reg [31:0]	mem_w_data;
 	reg [3:0]	functional_id;
 	reg	[23:0]	rf_w_data;
@@ -117,7 +119,11 @@ module tb_layer_ctrl();
    reg	c0_auto_rx_ack;
 
 
-layer_wrapper #(.ADDRESS(20'hbbbb0), .LC_INT_DEPTH(LC_INT_DEPTH)) layer0(
+layer_wrapper #(
+	`ifdef LC_INT_ENABLE
+	.LC_INT_DEPTH(LC_INT_DEPTH),
+	`endif
+	.ADDRESS(20'hbbbb0)) layer0(
 	.CLK(clk), .RESETn(resetn),
 	`ifdef LC_INT_ENABLE
 	.INT_VECTOR(n0_int_vector),
@@ -126,7 +132,11 @@ layer_wrapper #(.ADDRESS(20'hbbbb0), .LC_INT_DEPTH(LC_INT_DEPTH)) layer0(
 	// mbus
 	.CLKIN(SCLK), .CLKOUT(w_n0_clk_out), .DIN(w_c0n0), .DOUT(w_n0n1)); 
 
-layer_wrapper #(.ADDRESS(20'hbbbb1), .LC_INT_DEPTH(LC_INT_DEPTH)) layer1(
+layer_wrapper #(
+	`ifdef LC_INT_ENABLE
+	.LC_INT_DEPTH(LC_INT_DEPTH),
+	`endif
+	.ADDRESS(20'hbbbb1)) layer1(
 	.CLK(clk), .RESETn(resetn),
 	`ifdef LC_INT_ENABLE
 	.INT_VECTOR(n1_int_vector),
@@ -135,7 +145,11 @@ layer_wrapper #(.ADDRESS(20'hbbbb1), .LC_INT_DEPTH(LC_INT_DEPTH)) layer1(
 	// mbus
 	.CLKIN(w_n0_clk_out), .CLKOUT(w_n1_clk_out), .DIN(w_n0n1), .DOUT(w_n1n2)); 
 
-layer_wrapper #(.ADDRESS(20'hbbbb2), .LC_INT_DEPTH(LC_INT_DEPTH)) layer2(
+layer_wrapper #(
+	`ifdef LC_INT_ENABLE
+	.LC_INT_DEPTH(LC_INT_DEPTH),
+	`endif
+	.ADDRESS(20'hbbbb2)) layer2(
 	.CLK(clk), .RESETn(resetn),
 	`ifdef LC_INT_ENABLE
 	.INT_VECTOR(n2_int_vector),
@@ -144,7 +158,11 @@ layer_wrapper #(.ADDRESS(20'hbbbb2), .LC_INT_DEPTH(LC_INT_DEPTH)) layer2(
 	// mbus
 	.CLKIN(w_n1_clk_out), .CLKOUT(w_n2_clk_out), .DIN(w_n1n2), .DOUT(w_n2n3)); 
 
-layer_wrapper #(.ADDRESS(20'hbbbb2), .LC_INT_DEPTH(LC_INT_DEPTH)) layer3(
+layer_wrapper #(
+	`ifdef LC_INT_ENABLE
+	.LC_INT_DEPTH(LC_INT_DEPTH),
+	`endif
+	.ADDRESS(20'hbbbb2)) layer3(
 	.CLK(clk), .RESETn(resetn),
 	`ifdef LC_INT_ENABLE
 	.INT_VECTOR(n3_int_vector),
@@ -181,7 +199,9 @@ begin
 	enum_short_addr = 4'h2;
 	long_addr = 20'haaaa0;
 	layer_number = 0;
+	`ifdef LC_INT_ENABLE
 	int_vec = 0;
+	`endif
 	mem_w_data = 0;
 	functional_id = 0;
 	stream_channel = 0;
@@ -257,10 +277,10 @@ begin
 	`endif
 	// Interrupt only
 `elsif LC_INT_ENABLE
-	task0();
+	task1();
 	// no memory and interrupt
 `else
-	task2()
+	task2();
 `endif
    
 end // initial begin
@@ -455,10 +475,7 @@ begin
 	if ((c0_rx_req | c0_rx_fail) & c0_auto_rx_ack)
 		`SD c0_rx_ack <= 1;
 	
-	if (c0_rx_ack & (~c0_rx_req))
-		`SD c0_rx_ack <= 0;
-	
-	if (c0_rx_ack & (~c0_rx_fail))
+	if (c0_rx_ack & (~c0_rx_req) & (~c0_rx_fail))
 		`SD c0_rx_ack <= 0;
 end
 

@@ -2,6 +2,7 @@
 //****************************************
 //Task 0 testbench: Comprehensive testbench
 //****************************************
+`ifdef LC_INT_ENABLE
 task task0;
 begin
     handle=$fopen("result_task0.txt");
@@ -582,7 +583,6 @@ begin
     state = TB_SINGLE_INTERRUPT;
 	@ (posedge n1_clr_int[int_vec]);
 
-
     #100000;
 	task_counter = task_counter + 1;
     $fdisplay(handle, "\n-------------------------------------------------------------------------");
@@ -1080,6 +1080,157 @@ begin
     state = TB_ALL_WAKEUP;
 	@ (posedge c0_tx_succ | c0_tx_fail);
 
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, MEM Write", task_counter);
+    $fdisplay(handle, "CPU bulk writes random data to Layer 1's MEM address 1-3, no MEM present, should fail");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	mem_addr = 1;
+	word_counter = 2;
+    state = TB_MEM_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, MEM Read", task_counter);
+    $fdisplay(handle, "Read Layer 1's MEM address 0, and write to layer 2's MEM, address 0x0, no MEM present, should fail");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	mem_read_length = 63;
+	mem_addr = 0;
+	relay_addr = ((4'h4<<4) | `LC_CMD_MEM_WRITE);
+	mem_relay_loc = 30'd0;
+    state = TB_MEM_READ;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Sleep all", task_counter);
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	state = TB_ALL_SLEEP;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Interrupt", task_counter);
+    $fdisplay(handle, "Layer 1, Interrupt vector 7, MEM read, no MEM present. only wakeup layer controller");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	layer_number = 1;
+	int_vec = 7;	
+    state = TB_SINGLE_INTERRUPT;
+	@ (posedge n1_clr_int[int_vec]);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Master node and Processor wake up", task_counter);
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+    state = TB_PROC_UP;
+	@ (posedge SCLK);
+	c0_req_int = 0;
+    #50000;
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, RF Write", task_counter);
+    $fdisplay(handle, "CPU bulk writes random data to Layer 1 RF address 0-9");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	rf_addr = 0;
+	dest_short_addr = 4'h3;
+	word_counter = 9;
+    state = TB_RF_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, RF Read", task_counter);
+    $fdisplay(handle, "Read Layer 1's RF address 0, and write to Layer 2's RF address 0xa");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	rf_addr = 0;
+	rf_read_length = 9;
+	relay_addr = ((4'h4<<4) | `LC_CMD_RF_WRITE);
+	rf_relay_loc = 8'ha;
+    state = TB_RF_READ;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
+
+	#100000;
+	task_counter = task_counter + 1;
+	$fdisplay(handle, "\n-------------------------------------------------------------------------");
+	$fdisplay(handle, "TASK%d, Stream MEM Write", task_counter);
+	$fdisplay(handle, "CPU sends 1 word streaming data to Layer 3's stream channel 0, no MEM present, should fail");
+	$fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h5;
+	stream_channel = 0;
+	word_counter = 2;
+	state = TB_STREAMING;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Interrupt", task_counter);
+    $fdisplay(handle, "Layer 1, Interrupt vector 3, Write to layer 1's RF address 0");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	layer_number = 1;
+	int_vec = 3;	
+    state = TB_SINGLE_INTERRUPT;
+	@ (posedge n1_clr_int[int_vec]);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Interrupt", task_counter);
+    $fdisplay(handle, "Layer 1, Interrupt vector 4, Write to layer 1's RF address 1, and 3");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	layer_number = 1;
+	int_vec = 4;	
+    state = TB_SINGLE_INTERRUPT;
+	@ (posedge n1_clr_int[int_vec]);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Interrupt", task_counter);
+    $fdisplay(handle, "Layer 1, Interrupt vector 0, Read layer 1's RF address 0, and write to layer 2's RF address 0");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	layer_number = 1;
+	int_vec = 0;	
+    state = TB_SINGLE_INTERRUPT;
+	@ (posedge n1_clr_int[int_vec]);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Interrupt", task_counter);
+    $fdisplay(handle, "Layer 1, Interrupt vector 1, Bulk read layer 1's RF address 2-6, and write to layer 2's RF address 2");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	layer_number = 1;
+	int_vec = 1;	
+    state = TB_SINGLE_INTERRUPT;
+	@ (posedge n1_clr_int[int_vec]);
+
+	#100000;
+	task_counter = task_counter + 1;
+	$fdisplay(handle, "\n-------------------------------------------------------------------------");
+	$fdisplay(handle, "TASK%d, RF Read", task_counter);
+	$fdisplay(handle, "Read layer 3's MEM and stream to layer 1's MEM, channel 1, no MEM present, nothing should happen");
+	$fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h5;
+	mem_read_length = 3;
+	mem_addr = 0;
+	relay_addr = {4'd3, 2'b01, 2'b01};	// to layer 1, stream, channel 1
+	state = TB_SHORT_MEM_READ;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
     #500000;
     $display("*************************************");
     $display("************TASK1 Complete***********");
@@ -1087,6 +1238,7 @@ begin
     $finish;
 end
 endtask // end of task 1
+`endif
 
 task task2;
 begin
@@ -1160,6 +1312,149 @@ begin
     $fdisplay(handle, "-------------------------------------------------------------------------");
     state = TB_ALL_WAKEUP;
 	@ (posedge c0_tx_succ | c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, MEM Write", task_counter);
+    $fdisplay(handle, "CPU bulk writes random data to Layer 1's MEM address 1-3, no MEM present, should fail");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	mem_addr = 1;
+	word_counter = 2;
+    state = TB_MEM_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, MEM Read", task_counter);
+    $fdisplay(handle, "Read Layer 1's MEM address 0, and write to layer 2's MEM, address 0x0, no MEM present, should fail");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	mem_read_length = 63;
+	mem_addr = 0;
+	relay_addr = ((4'h4<<4) | `LC_CMD_MEM_WRITE);
+	mem_relay_loc = 30'd0;
+    state = TB_MEM_READ;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Sleep all", task_counter);
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	state = TB_ALL_SLEEP;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Master node and Processor wake up", task_counter);
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+    state = TB_PROC_UP;
+	@ (posedge SCLK);
+	c0_req_int = 0;
+    #50000;
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, RF Write", task_counter);
+    $fdisplay(handle, "CPU bulk writes random data to Layer 1 RF address 0-9");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	rf_addr = 0;
+	dest_short_addr = 4'h3;
+	word_counter = 9;
+    state = TB_RF_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, RF Read", task_counter);
+    $fdisplay(handle, "Read Layer 1's RF address 0, and write to Layer 2's RF address 0xa");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	rf_addr = 0;
+	rf_read_length = 9;
+	relay_addr = ((4'h4<<4) | `LC_CMD_RF_WRITE);
+	rf_relay_loc = 8'ha;
+    state = TB_RF_READ;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
+
+	#100000;
+	task_counter = task_counter + 1;
+	$fdisplay(handle, "\n-------------------------------------------------------------------------");
+	$fdisplay(handle, "TASK%d, Stream MEM Write", task_counter);
+	$fdisplay(handle, "CPU sends 1 word streaming data to Layer 3's stream channel 0, no MEM present, should fail");
+	$fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h5;
+	stream_channel = 0;
+	word_counter = 2;
+	state = TB_STREAMING;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, RF Write", task_counter);
+    $fdisplay(handle, "CPU bulk writes random data to Layer 1 RF address 10");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	rf_addr = 10;
+	dest_short_addr = 4'h3;
+	word_counter = 0;
+    state = TB_RF_WRITE;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, RF Read", task_counter);
+    $fdisplay(handle, "Read Layer 1's RF address 10, and write to Layer 2's RF address 0xa");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	rf_addr = 10;
+	rf_read_length = 0;
+	relay_addr = ((4'h4<<4) | `LC_CMD_RF_WRITE);
+	rf_relay_loc = 8'ha;
+    state = TB_RF_READ;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Sleep all", task_counter);
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	state = TB_ALL_SLEEP;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, Master node and Processor wake up", task_counter);
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+    state = TB_PROC_UP;
+	@ (posedge SCLK);
+	c0_req_int = 0;
+    #50000;
+
+    #100000;
+	task_counter = task_counter + 1;
+    $fdisplay(handle, "\n-------------------------------------------------------------------------");
+    $fdisplay(handle, "TASK%d, RF Read", task_counter);
+    $fdisplay(handle, "Read Layer 1's RF address 10, and write to Layer 2's RF address 0xa");
+    $fdisplay(handle, "-------------------------------------------------------------------------");
+	dest_short_addr = 4'h3;
+	rf_addr = 10;
+	rf_read_length = 0;
+	relay_addr = ((4'h4<<4) | `LC_CMD_RF_WRITE);
+	rf_relay_loc = 8'ha;
+    state = TB_RF_READ;
+	@ (posedge c0_tx_succ|c0_tx_fail);
+	@ (posedge layer1.tx_succ|layer1.tx_fail);
 
     #500000;
     $display("*************************************");

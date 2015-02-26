@@ -1159,7 +1159,9 @@ begin
 				case (interrupt_functional_id[int_idx])
 					`LC_CMD_RF_WRITE: begin next_lc_state = LC_STATE_RF_WRITE; next_rx_pend_reg = interrupt_command_length[int_idx][1]; next_int_cmd_cnt = 2; end
 					`LC_CMD_RF_READ: begin next_lc_state = LC_STATE_RF_READ; next_rx_pend_reg = 0; end
+					`ifdef LC_MEM_ENABLE
 					`LC_CMD_MEM_READ: begin next_lc_state = LC_STATE_MEM_READ; next_rx_pend_reg = 1; end
+					`endif
 					default: begin next_lc_state = LC_STATE_CLR_INT; end	// Invalid interrupt message
 				endcase
 			end
@@ -1197,14 +1199,14 @@ begin
 			endcase
 		end
 
-		`ifdef LC_INT_ENABLE
 		LC_STATE_CLR_INT:
 		begin
 			next_lc_state = LC_STATE_IDLE;
+			`ifdef LC_INT_ENABLE
 			if (layer_interrupted)
 				next_clr_int = (1'b1 << int_idx);
+			`endif
 		end
-		`endif
 
 		default:
 		begin

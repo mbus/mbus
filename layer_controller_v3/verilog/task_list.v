@@ -329,6 +329,7 @@ always @ (posedge clk or negedge resetn) begin
 				end
 			end
 
+			`ifdef LC_INT_ENABLE
 			// Interrupt
 			// Parameters:	layer_number (0-3)
 			//				int_vec		 (LC_INT_DEPTH bits)
@@ -342,6 +343,7 @@ always @ (posedge clk or negedge resetn) begin
 				endcase
 				state <= TX_WAIT;
 			end
+			`endif
 
 			// Arbitrary command
 			// Parameters:	dest_short_addr (4 bits)

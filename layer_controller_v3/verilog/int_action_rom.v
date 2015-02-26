@@ -93,7 +93,7 @@ assign rf_read_reply_loc[0] = 8'h0;				// Send to 8'h0
 	// Test Case A2, 2: Read 5 locations, write to layer 2's RF
 assign rf_read_from[1] = 8'h2;					// Read from address 8'h2
 assign rf_read_length[1] = 8'h4;				// Read 5 loc. (24-bit)
-assign rf_read_reply_addr[1] = {4'd4, | `LC_CMD_RF_WRITE};// Send to layer 2, with RF write command
+assign rf_read_reply_addr[1] = {4'd4, `LC_CMD_RF_WRITE}; // Send to layer 2, with RF write command
 assign rf_read_reply_loc[1] = 8'h2;				// Send to 8'h2
 
 	// Test Case A3, 3: Read 10 locations, stream to layer 2's MEM

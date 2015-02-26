@@ -1,0 +1,239 @@
+
+-------------------------------------------------------------------------
+TASK0          0, Master node and Processor wake up
+-------------------------------------------------------------------------
+Processor Wakeup
+N0 RX Fail
+N1 RX Fail
+N2 RX Fail
+N3 RX Fail
+
+-------------------------------------------------------------------------
+TASK          1, Query
+Master node sends out query
+-------------------------------------------------------------------------
+C0 TX Success
+C0 RX Success
+C0 Data out =	32'h10bbbb0f
+N0 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb1f
+N1 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb2f
+N2 TX Success
+
+C0 RX Success
+C0 Data out =	32'h10bbbb2f
+N3 TX Success
+
+
+-------------------------------------------------------------------------
+TASK          2, Enumerate
+Master node enumerate with address 4'h2
+-------------------------------------------------------------------------
+C0 TX Success
+C0 RX Success
+C0 Data out =	32'h10bbbb02
+
+-------------------------------------------------------------------------
+TASK          3, Enumerate
+Master node enumerate with address 4'h3
+-------------------------------------------------------------------------
+C0 TX Success
+C0 RX Success
+C0 Data out =	32'h10bbbb13
+
+-------------------------------------------------------------------------
+TASK          4, Enumerate
+Master node enumerate with address 4'h4
+-------------------------------------------------------------------------
+C0 TX Success
+C0 RX Success
+C0 Data out =	32'h10bbbb24
+
+-------------------------------------------------------------------------
+TASK          5, Enumerate
+Master node enumerate with address 4'h5
+-------------------------------------------------------------------------
+C0 TX Success
+C0 RX Success
+C0 Data out =	32'h10bbbb25
+
+-------------------------------------------------------------------------
+TASK          6, All Wake
+-------------------------------------------------------------------------
+N0 LC Wakeup
+N1 LC Wakeup
+N2 LC Wakeup
+N3 LC Wakeup
+C0 TX Success
+
+-------------------------------------------------------------------------
+TASK          7, MEM Write
+CPU bulk writes random data to Layer 1's MEM address 1-3, no MEM present, should fail
+-------------------------------------------------------------------------
+N1 RX Success
+N1 RX Success
+N1 RX Fail
+C0 TX Fail
+
+-------------------------------------------------------------------------
+TASK          8, MEM Read
+Read Layer 1's MEM address 0, and write to layer 2's MEM, address 0x0, no MEM present, should fail
+-------------------------------------------------------------------------
+N1 RX Success
+N1 RX Success
+N1 RX Fail
+C0 TX Fail
+
+-------------------------------------------------------------------------
+TASK          9, Sleep all
+-------------------------------------------------------------------------
+C0 TX Success
+N0 LC Sleep
+N1 LC Sleep
+N2 LC Sleep
+N3 LC Sleep
+Processor Sleep
+
+-------------------------------------------------------------------------
+TASK         10, Interrupt
+Layer 1, Interrupt vector 7, MEM read, no MEM present. only wakeup layer controller
+-------------------------------------------------------------------------
+N1 LC Wakeup
+C0 RX Fail
+N0 RX Fail
+N2 RX Fail
+N3 RX Fail
+
+-------------------------------------------------------------------------
+TASK         11, Master node and Processor wake up
+-------------------------------------------------------------------------
+Processor Wakeup
+N1 RX Fail
+
+-------------------------------------------------------------------------
+TASK         12, RF Write
+CPU bulk writes random data to Layer 1 RF address 0-9
+-------------------------------------------------------------------------
+Write RF addr: 8'h00,	Data: 24'h7d448c
+Write RF addr: 8'h01,	Data: 24'h4e74f6
+Write RF addr: 8'h02,	Data: 24'h6fc6bc
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h00,	Data: 24'h7d448c
+Write RF addr: 8'h03,	Data: 24'h90def3
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h01,	Data: 24'h4e74f6
+Write RF addr: 8'h04,	Data: 24'he2b85d
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h02,	Data: 24'h6fc6bc
+Write RF addr: 8'h05,	Data: 24'h25518e
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h03,	Data: 24'h90def3
+Write RF addr: 8'h06,	Data: 24'h18a896
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h04,	Data: 24'he2b85d
+Write RF addr: 8'h07,	Data: 24'h7cc306
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h05,	Data: 24'h25518e
+Write RF addr: 8'h08,	Data: 24'h119bf2
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h06,	Data: 24'h18a896
+Write RF addr: 8'h09,	Data: 24'h9733e9
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h07,	Data: 24'h7cc306
+N1 RX Success
+Layer 1, RF Write, Addr: 8'h08,	Data: 24'h119bf2
+N1 RX Success
+C0 TX Success
+Layer 1, RF Write, Addr: 8'h09,	Data: 24'h9733e9
+
+-------------------------------------------------------------------------
+TASK         13, RF Read
+Read Layer 1's RF address 0, and write to Layer 2's RF address 0xa
+-------------------------------------------------------------------------
+N1 RX Success
+C0 TX Success
+N2 LC Wakeup
+N2 RX Success
+Layer 2, RF Write, Addr: 8'h0a,	Data: 24'h7d448c
+N2 RX Success
+Layer 2, RF Write, Addr: 8'h0b,	Data: 24'h4e74f6
+N2 RX Success
+Layer 2, RF Write, Addr: 8'h0c,	Data: 24'h6fc6bc
+N2 RX Success
+Layer 2, RF Write, Addr: 8'h0d,	Data: 24'h90def3
+N2 RX Success
+Layer 2, RF Write, Addr: 8'h0e,	Data: 24'he2b85d
+N2 RX Success
+Layer 2, RF Write, Addr: 8'h0f,	Data: 24'h25518e
+N2 RX Success
+Layer 2, RF Write, Addr: 8'h10,	Data: 24'h18a896
+N2 RX Success
+Layer 2, RF Write, Addr: 8'h11,	Data: 24'h7cc306
+N2 RX Success
+Layer 2, RF Write, Addr: 8'h12,	Data: 24'h119bf2
+N2 RX Success
+N1 TX Success
+
+Layer 2, RF Write, Addr: 8'h13,	Data: 24'h9733e9
+
+-------------------------------------------------------------------------
+TASK         14, Stream MEM Write
+CPU sends 1 word streaming data to Layer 3's stream channel 0, no MEM present, should fail
+-------------------------------------------------------------------------
+N3 LC Wakeup
+N3 RX Success
+N3 RX Success
+N3 RX Fail
+C0 TX Fail
+
+-------------------------------------------------------------------------
+TASK         15, Interrupt
+Layer 1, Interrupt vector 3, Write to layer 1's RF address 0
+-------------------------------------------------------------------------
+Layer 1, RF Write, Addr: 8'h00,	Data: 24'habcdef
+
+-------------------------------------------------------------------------
+TASK         16, Interrupt
+Layer 1, Interrupt vector 4, Write to layer 1's RF address 1, and 3
+-------------------------------------------------------------------------
+Layer 1, RF Write, Addr: 8'h01,	Data: 24'h123456
+Layer 1, RF Write, Addr: 8'h03,	Data: 24'h987654
+
+-------------------------------------------------------------------------
+TASK         17, Interrupt
+Layer 1, Interrupt vector 0, Read layer 1's RF address 0, and write to layer 2's RF address 0
+-------------------------------------------------------------------------
+N2 RX Success
+N1 TX Success
+
+Layer 2, RF Write, Addr: 8'h00,	Data: 24'habcdef
+
+-------------------------------------------------------------------------
+TASK         18, Interrupt
+Layer 1, Interrupt vector 1, Bulk read layer 1's RF address 2-6, and write to layer 2's RF address 2
+-------------------------------------------------------------------------
+N2 RX Success
+Layer 2, RF Write, Addr: 8'h02,	Data: 24'h6fc6bc
+N2 RX Success
+Layer 2, RF Write, Addr: 8'h03,	Data: 24'h987654
+N2 RX Success
+Layer 2, RF Write, Addr: 8'h04,	Data: 24'he2b85d
+N2 RX Success
+Layer 2, RF Write, Addr: 8'h05,	Data: 24'h25518e
+N2 RX Success
+N1 TX Success
+
+Layer 2, RF Write, Addr: 8'h06,	Data: 24'h18a896
+
+-------------------------------------------------------------------------
+TASK         19, RF Read
+Read layer 3's MEM and stream to layer 1's MEM, channel 1, no MEM present, nothing should happen
+-------------------------------------------------------------------------
+N3 RX Success
+N3 RX Success
+C0 TX Success

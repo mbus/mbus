@@ -52,6 +52,9 @@
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  *
  * Update log:
+ * 05/14 '15
+ * Double latch TX_SUCC, TX_FAIL
+ *
  * 02/24 '15
  * 1. remove LC_RF_DATA_WIDTH, LC_RF_ADDR_WIDTH  parameters, turn into definition
  * 2. add LC_MEM_ENABLE, LC_INT_ENABLE definition
@@ -241,6 +244,8 @@ localparam STREAM_ERROR_CHECK	= 3'd6;
 // Double latching registers
 reg		TX_ACK_DL1, TX_ACK_DL2;
 reg		RX_REQ_DL1, RX_REQ_DL2;
+reg		TX_FAIL_DL1, TX_FAIL_DL2;
+reg		TX_SUCC_DL1, TX_SUCC_DL2;
 
 // General registers
 reg		[3:0]	lc_state, next_lc_state, lc_return_state, next_lc_return_state;
@@ -363,6 +368,10 @@ begin
 		TX_ACK_DL2 <= 0;
 		RX_REQ_DL1 <= 0;
 		RX_REQ_DL2 <= 0;
+		TX_FAIL_DL1 <= 0;
+		TX_FAIL_DL2 <= 0;
+		TX_SUCC_DL1 <= 0;
+		TX_SUCC_DL2 <= 0;
 	end
 	else
 	begin
@@ -370,6 +379,10 @@ begin
 		TX_ACK_DL2 <= TX_ACK_DL1;
 		RX_REQ_DL1 <= RX_REQ;
 		RX_REQ_DL2 <= RX_REQ_DL1;
+		TX_FAIL_DL1 <= TX_FAIL;
+		TX_FAIL_DL2 <= TX_FAIL_DL1;
+		TX_SUCC_DL1 <= TX_SUCC;
+		TX_SUCC_DL2 <= TX_SUCC_DL1;
 	end
 end
 
@@ -525,13 +538,13 @@ begin
 	if (TX_ACK_DL2 & TX_REQ)
 		next_tx_req = 0;
 
-	if (TX_SUCC | TX_FAIL)
+	if (TX_SUCC_DL2 | TX_FAIL_DL2)
 		next_tx_resp_ack = 1;
 
-	if ((~(TX_SUCC | TX_FAIL)) & TX_RESP_ACK)
+	if ((~(TX_SUCC_DL2 | TX_FAIL_DL2)) & TX_RESP_ACK)
 		next_tx_resp_ack = 0;
 
-	if (TX_FAIL & (~TX_RESP_ACK) & (TX_REQ))
+	if (TX_FAIL_DL2 & (~TX_RESP_ACK) & (TX_REQ))
 		next_tx_req = 0;
 	
 	`ifdef LC_MEM_ENABLE
@@ -1118,7 +1131,7 @@ begin
 
 		LC_STATE_BUS_TX:
 		begin // cannot modify mem_sub_state here
-			if (TX_FAIL)
+			if (TX_FAIL_DL2)
 				next_lc_state = LC_STATE_CLR_INT;
 			else if (TX_ACK_DL2)
 			begin
@@ -1131,7 +1144,7 @@ begin
 
 		LC_STATE_WAIT_CPL:
 		begin
-			if (TX_SUCC | TX_FAIL)
+			if (TX_SUCC_DL2 | TX_FAIL_DL2)
 				next_lc_state = LC_STATE_CLR_INT;
 		end
 

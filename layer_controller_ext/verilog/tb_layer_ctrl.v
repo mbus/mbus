@@ -215,19 +215,7 @@ begin
       //Calls Tasks from tasks.v
       //***********************
 
-`ifdef TASK0
 	task0();
-`elsif TASK1
-	task1();
-`elsif TASK2
-	task2();
-`else
-      $display("**************************************");
-      $display("************NO TASKS SUPPLIED*********");
-      $display("****************FAILURE***************");
-      $display("**************************************");
-      $finish;
-`endif
    
 end // initial begin
 

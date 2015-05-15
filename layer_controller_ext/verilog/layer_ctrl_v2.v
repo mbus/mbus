@@ -52,6 +52,9 @@
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  *
  * Update log:
+ * 05/15 '15
+ * Double latch RX_FAIL, RX_PEND, MEM_ACK_IN
+ *
  * 05/14 '15
  * Double latch TX_SUCC, TX_FAIL
  *
@@ -227,6 +230,9 @@ reg		TX_ACK_DL1, TX_ACK_DL2;
 reg		RX_REQ_DL1, RX_REQ_DL2;
 reg		TX_FAIL_DL1, TX_FAIL_DL2;
 reg		TX_SUCC_DL1, TX_SUCC_DL2;
+reg		RX_FAIL_DL1, RX_FAIL_DL2;
+reg		RX_PEND_DL1, RX_PEND_DL2;
+reg		MEM_ACK_IN_DL1, MEM_ACK_IN_DL2;
 
 // General registers
 reg		[3:0]	lc_state, next_lc_state, lc_return_state, next_lc_return_state;
@@ -310,8 +316,10 @@ wire	stream_enable_temp = ((rx_dat_buffer[LC_RF_DATA_WIDTH-1])==1'b1)? 1'b1: 1'b
 wire	[LC_MEM_STREAM_CHANNELS-1:0] channel_enable_set;
 
 localparam LC_MEM_STREAM_SYSREG_OFFSET = 16;
-wire	[LC_RF_ADDR_WIDTH-1:0] stream_reg2_idx = (LC_RF_DEPTH - LC_MEM_STREAM_SYSREG_OFFSET - 1'b1 - (stream_channel<<2) - 1'b1);
-wire	[LC_RF_ADDR_WIDTH-1:0] stream_reg3_idx = (LC_RF_DEPTH - LC_MEM_STREAM_SYSREG_OFFSET - 1'b1 - (stream_channel<<2));
+wire	[31:0] stream_reg2_param = (LC_RF_DEPTH - LC_MEM_STREAM_SYSREG_OFFSET - 1'b1 - (stream_channel<<2) - 1'b1);
+wire	[31:0] stream_reg3_param = (LC_RF_DEPTH - LC_MEM_STREAM_SYSREG_OFFSET - 1'b1 - (stream_channel<<2));
+wire	[LC_RF_ADDR_WIDTH-1:0] stream_reg2_idx = stream_reg2_param[LC_RF_ADDR_WIDTH-1:0];
+wire	[LC_RF_ADDR_WIDTH-1:0] stream_reg3_idx = stream_reg3_param[LC_RF_ADDR_WIDTH-1:0];
 
 generate
 	for (unpk_idx=0; unpk_idx<(LC_MEM_STREAM_CHANNELS); unpk_idx=unpk_idx+1)
@@ -343,6 +351,12 @@ begin
 		TX_FAIL_DL2 <= 0;
 		TX_SUCC_DL1 <= 0;
 		TX_SUCC_DL2 <= 0;
+		RX_FAIL_DL1 <= 0;
+		RX_FAIL_DL2 <= 0;
+		RX_PEND_DL1 <= 0;
+		RX_PEND_DL2 <= 0;
+		MEM_ACK_IN_DL1 <= 0;
+		MEM_ACK_IN_DL2 <= 0;
 	end
 	else
 	begin
@@ -354,6 +368,12 @@ begin
 		TX_FAIL_DL2 <= TX_FAIL_DL1;
 		TX_SUCC_DL1 <= TX_SUCC;
 		TX_SUCC_DL2 <= TX_SUCC_DL1;
+		RX_FAIL_DL1 <= RX_FAIL;
+		RX_FAIL_DL2 <= RX_FAIL_DL1;
+		RX_PEND_DL1 <= RX_PEND;
+		RX_PEND_DL2 <= RX_PEND_DL1;
+		MEM_ACK_IN_DL1 <= MEM_ACK_IN;
+		MEM_ACK_IN_DL2 <= MEM_ACK_IN_DL1;
 	end
 end
 
@@ -486,7 +506,7 @@ begin
 
 
 	// Asynchronized interface
-	if ((~(RX_REQ_DL2 | RX_FAIL)) & RX_ACK)
+	if ((~(RX_REQ_DL2 | RX_FAIL_DL2)) & RX_ACK)
 		next_rx_ack = 0;
 	
 	if (CLR_INT & (~INT_VECTOR_clocked))
@@ -504,7 +524,7 @@ begin
 	if (TX_FAIL_DL2 & (~TX_RESP_ACK) & (TX_REQ))
 		next_tx_req = 0;
 	
-	if (MEM_ACK_IN & MEM_REQ_OUT)
+	if (MEM_ACK_IN_DL2 & MEM_REQ_OUT)
 	begin
 		next_mem_read = 0;
 		next_mem_write = 0;
@@ -528,13 +548,13 @@ begin
 			end
 			else
 			begin
-				if (RX_REQ_DL2 | RX_FAIL)							// Receive last
+				if (RX_REQ_DL2 | RX_FAIL_DL2)							// Receive last
 					next_rx_ack = 1;
 
 				if (RX_REQ_DL2 & (~RX_ACK))	 // prevent double trigger
 				begin
 					next_rx_dat_buffer = RX_DATA;
-					next_rx_pend_reg = RX_PEND;
+					next_rx_pend_reg = RX_PEND_DL2;
 					case (RX_ADDR[`FUNC_WIDTH-1:0])
 						`LC_CMD_RF_READ: begin next_lc_state = LC_STATE_RF_READ; end
 						`LC_CMD_RF_WRITE: begin next_lc_state = LC_STATE_RF_WRITE; end
@@ -547,7 +567,7 @@ begin
 								next_stream_channel = STREAM_CH;
 								next_lc_state = LC_STATE_STREAM_WRITE;
 							end
-							else if (RX_PEND)  // Invalid message
+							else if (RX_PEND_DL2)  // Invalid message
 								next_lc_state = LC_STATE_ERROR; 
 						end	
 					endcase
@@ -656,9 +676,9 @@ begin
 						next_rx_ack = 1;
 						next_mem_sub_state = 0;
 						next_rx_dat_buffer = RX_DATA;
-						next_rx_pend_reg = RX_PEND;
+						next_rx_pend_reg = RX_PEND_DL2;
 					end
-					else if ((RX_FAIL) & (~RX_ACK))
+					else if ((RX_FAIL_DL2) & (~RX_ACK))
 					begin
 						next_rx_ack = 1;
 						next_lc_state = LC_STATE_IDLE;
@@ -721,12 +741,12 @@ begin
 							next_tx_pend = 1;
 							next_rx_ack = 1;
 							next_mem_aout = RX_DATA[`DATA_WIDTH-1:2]; // bit 63 ~ 34
-							if (RX_PEND)
+							if (RX_PEND_DL2)
 								next_mem_sub_state = MEM_READ_WAIT_DEST_LOCATION;
 							else 
 								next_mem_sub_state = MEM_READ_ACCESS_READ;
 						end
-						else if (RX_FAIL & (~RX_ACK))
+						else if (RX_FAIL_DL2 & (~RX_ACK))
 						begin
 							next_rx_ack = 1;
 							next_lc_state = LC_STATE_IDLE;
@@ -747,7 +767,7 @@ begin
 						begin
 							next_rx_ack = 1;
 							next_tx_data = (RX_DATA & 32'hfffffffc);	// clear last two bits, address is 30 bits only
-							if (RX_PEND) // Error MBus command
+							if (RX_PEND_DL2) // Error MBus command
 							begin
 								next_rx_pend_reg = 1;
 								next_mem_sub_state = 0;
@@ -756,7 +776,7 @@ begin
 							else 
 								next_mem_sub_state = MEM_READ_TX_DEST_LOC;
 						end
-						else if (RX_FAIL & (~RX_ACK))
+						else if (RX_FAIL_DL2 & (~RX_ACK))
 						begin
 							next_rx_ack = 1;
 							next_lc_state = LC_STATE_IDLE;
@@ -790,7 +810,7 @@ begin
 
 				MEM_READ_ACCESS_WAIT:
 				begin
-					if (MEM_ACK_IN) // Read complete
+					if (MEM_ACK_IN_DL2) // Read complete
 						next_mem_sub_state = MEM_READ_TX_WAIT;
 				end
 
@@ -842,9 +862,9 @@ begin
 						next_rx_ack = 1;
 						next_mem_sub_state = 2;
 						next_mem_dout = RX_DATA[LC_MEM_DATA_WIDTH-1:0];
-						next_rx_pend_reg = RX_PEND;
+						next_rx_pend_reg = RX_PEND_DL2;
 					end
-					else if (RX_FAIL & (~RX_ACK))
+					else if (RX_FAIL_DL2 & (~RX_ACK))
 					begin
 						next_rx_ack = 1;
 						next_lc_state = LC_STATE_IDLE;
@@ -867,7 +887,7 @@ begin
 				3:
 				begin
 					// write complete
-					if (MEM_ACK_IN)
+					if (MEM_ACK_IN_DL2)
 					begin
 						if (rx_pend_reg)
 						begin
@@ -928,7 +948,7 @@ begin
 				begin
 					next_dma_counter = 1;
 					next_stream_reg_update_state = STREAM_REG2_UPDATE;
-					if (MEM_ACK_IN)
+					if (MEM_ACK_IN_DL2)
 						next_mem_sub_state = STREAM_MEM_REG_UPDATE;
 				end
 
@@ -1029,9 +1049,9 @@ begin
 						next_rx_ack = 1;
 						next_mem_sub_state = 0;
 						next_rx_dat_buffer = RX_DATA;
-						next_rx_pend_reg = RX_PEND;
+						next_rx_pend_reg = RX_PEND_DL2;
 					end
-					else if ((RX_FAIL) & (~RX_ACK))
+					else if ((RX_FAIL_DL2) & (~RX_ACK))
 					begin
 						next_rx_ack = 1;
 						next_lc_state = LC_STATE_IDLE;
@@ -1115,7 +1135,7 @@ begin
 				begin
 					if (RX_REQ_DL2 & (~RX_ACK))
 					begin
-						next_rx_pend_reg = RX_PEND;
+						next_rx_pend_reg = RX_PEND_DL2;
 						next_mem_sub_state = 1;
 					end
 				end
@@ -1127,7 +1147,7 @@ begin
 						next_rx_ack = 1;
 						next_lc_state = LC_STATE_IDLE;
 					end
-					else if (RX_FAIL)
+					else if (RX_FAIL_DL2)
 					begin
 						next_rx_ack = 1;
 						next_lc_state = LC_STATE_IDLE;

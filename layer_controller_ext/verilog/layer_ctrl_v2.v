@@ -52,6 +52,10 @@
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  *
  * Update log:
+ * 05/22 '15
+ * Fix slow MBUS clock TX_ACK issue. 
+ * Layer controller has to check TX_ACK before asserting TX_REQ
+ *
  * 05/15 '15
  * Double latch RX_FAIL, RX_PEND, MEM_ACK_IN
  *
@@ -596,7 +600,7 @@ begin
 
 				1:
 				begin
-					if (~TX_REQ)
+					if (~TX_REQ & ~TX_ACK_DL2)
 					begin
 						// Warning!! non-32 bit DATA_WIDTH and non-24 bit RF_WIDTH may fail
 						next_tx_data = (((rx_dat_buffer[(`DATA_WIDTH-24-1):0] + (rf_idx-rf_idx_temp))<<24) | rf_in_array[rf_idx]);
@@ -786,7 +790,7 @@ begin
 
 				MEM_READ_TX_DEST_LOC:
 				begin
-					if (~TX_REQ)
+					if (~TX_REQ & ~TX_ACK_DL2)
 					begin
 						next_tx_req = 1;
 						next_mem_sub_state = MEM_READ_ACCESS_READ;
@@ -816,7 +820,7 @@ begin
 
 				MEM_READ_TX_WAIT:
 				begin
-					if (~TX_REQ)
+					if (~TX_REQ & ~TX_ACK_DL2)
 					begin
 						next_tx_req = 1;
 						next_tx_data = MEM_RD_DATA;
@@ -1062,7 +1066,7 @@ begin
 
 		LC_STATE_STREAM_ALERT:
 		begin
-			if (~TX_REQ)
+			if (~TX_REQ & ~TX_ACK_DL2)
 			begin
 				next_tx_req = 1;
 				next_tx_addr = {{(`ADDR_WIDTH-`SHORT_ADDR_WIDTH){1'b0}}, stream_alert_dest_address};

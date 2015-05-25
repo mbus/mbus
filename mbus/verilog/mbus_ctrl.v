@@ -1,8 +1,9 @@
 
 /*
- * Last modified date: 04/08 '13
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
- * Last modified content: Added glitch reset
+ * 05/25 '15: Add double latch for DIN
+ *
+ * 04/08 '13: Added glitch reset
  * */
 `include "include/mbus_def.v"
 
@@ -44,6 +45,22 @@ reg		[2:0] din_sampled_neg, din_sampled_pos;
 
 reg		[`WATCH_DOG_WIDTH-1:0] threshold_cnt, next_threshold_cnt;
 
+reg din_dly_1, din_dly_2;
+
+always @(posedge CLK_EXT or negedge RESETn) 
+begin
+	if (~RESETn) 
+	begin
+		din_dly_1 <= 1'b1;
+		din_dly_2 <= 1'b1;
+	end
+	else begin
+		din_dly_1 <= DIN;
+		din_dly_2 <= din_dly_1;
+	end
+end
+
+
 assign CLKOUT = (clk_en)? CLK_EXT : 1'b1;
 
 wire [1:0] CONTROL_BITS = `CONTROL_SEQ;	// EOM?, ~ACK?
@@ -79,7 +96,7 @@ begin
 	case (bus_state)
 		BUS_IDLE:
 		begin
-			if (~DIN)
+			if (~din_dly_2)
 				next_bus_state = BUS_WAIT_START;	
 			next_start_cycle_cnt = START_CYCLES - 1'b1;
 		end
@@ -91,8 +108,13 @@ begin
 				next_start_cycle_cnt = start_cycle_cnt - 1'b1;
 			else
 			begin
-				next_clk_en = 1;
-				next_bus_state = BUS_START;
+				if (~din_dly_2)
+				begin
+					next_clk_en = 1;
+					next_bus_state = BUS_START;
+				end
+				else
+					next_bus_state = BUS_IDLE;
 			end
 		end
 
@@ -208,7 +230,7 @@ begin
 	case (bus_state_neg)
 		BUS_IDLE: begin DOUT = 1; end
 		BUS_WAIT_START: begin DOUT = 1; end
-		BUS_START : begin DOUT = 1; end
+		BUS_START: begin DOUT = 1; end
 		BUS_INTERRUPT: begin DOUT = CLK_EXT; end
 		BUS_CONTROL0: begin if (threshold_cnt==THRESHOLD) DOUT = (~CONTROL_BITS[1]); end
 		BUS_BACK_TO_IDLE: begin DOUT = 1; end

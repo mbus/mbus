@@ -140,7 +140,7 @@ mbus_layer_wrapper #(.ADDRESS(20'hbbbb0)) n0
       .RX_ADDR(n0_rx_addr), .RX_DATA(n0_rx_data), .RX_REQ(n0_rx_req), .RX_ACK(n0_rx_ack), .RX_FAIL(n0_rx_fail), .RX_PEND(n0_rx_pend),
       .TX_SUCC(n0_tx_succ), .TX_FAIL(n0_tx_fail), .TX_RESP_ACK(n0_tx_resp_ack), .RX_BROADCAST(n0_rx_broadcast),
       .LC_POWER_ON(n0_lc_pwr_on), .LC_RELEASE_CLK(n0_lc_release_clk), .LC_RELEASE_RST(n0_lc_release_rst), .LC_RELEASE_ISO(n0_lc_release_iso),
-      .REQ_INT(n0_req_int));
+      .REQ_INT(n0_req_int), .PREFIX_ADDR_OUT());
 
 mbus_layer_wrapper #(.ADDRESS(20'hbbbb1)) n1
      (.CLKIN(w_n0_clk_out), .CLKOUT(w_n1_clk_out), .RESETn(resetn), .DIN(w_n0n1), .DOUT(w_n1n2), 
@@ -148,7 +148,7 @@ mbus_layer_wrapper #(.ADDRESS(20'hbbbb1)) n1
       .RX_ADDR(n1_rx_addr), .RX_DATA(n1_rx_data), .RX_REQ(n1_rx_req), .RX_ACK(n1_rx_ack), .RX_FAIL(n1_rx_fail), .RX_PEND(n1_rx_pend),
       .TX_SUCC(n1_tx_succ), .TX_FAIL(n1_tx_fail), .TX_RESP_ACK(n1_tx_resp_ack), .RX_BROADCAST(n1_rx_broadcast),
       .LC_POWER_ON(n1_lc_pwr_on), .LC_RELEASE_CLK(n1_lc_release_clk), .LC_RELEASE_RST(n1_lc_release_rst), .LC_RELEASE_ISO(n1_lc_release_iso),
-      .REQ_INT(n1_req_int));
+      .REQ_INT(n1_req_int), .PREFIX_ADDR_OUT());
 
 mbus_layer_wrapper #(.ADDRESS(20'hbbbb2)) n2
      (.CLKIN(w_n1_clk_out), .CLKOUT(w_n2_clk_out), .RESETn(resetn), .DIN(w_n1n2), .DOUT(w_n2n3), 
@@ -156,7 +156,7 @@ mbus_layer_wrapper #(.ADDRESS(20'hbbbb2)) n2
       .RX_ADDR(n2_rx_addr), .RX_DATA(n2_rx_data), .RX_REQ(n2_rx_req), .RX_ACK(n2_rx_ack), .RX_FAIL(n2_rx_fail), .RX_PEND(n2_rx_pend),
       .TX_SUCC(n2_tx_succ), .TX_FAIL(n2_tx_fail), .TX_RESP_ACK(n2_tx_resp_ack), .RX_BROADCAST(n2_rx_broadcast),
 	  .LC_POWER_ON(n2_lc_pwr_on), .LC_RELEASE_CLK(n2_lc_release_clk), .LC_RELEASE_RST(n2_lc_release_rst), .LC_RELEASE_ISO(n2_lc_release_iso),
-	  .REQ_INT(n2_req_int));
+	  .REQ_INT(n2_req_int), .PREFIX_ADDR_OUT());
 
 mbus_err_inject err0
 ( 	.CLK_FAST(err_clk), .RESETn(resetn), .CLK_IN(w_n2_clk_out), .CLK_OUT(w_clk_err), .DIN(w_n2n3), .DOUT(w_dat_err), .ERR_TYPE(err_type), .inject_start(err_start));
@@ -168,7 +168,7 @@ mbus_layer_wrapper #(.ADDRESS(20'hbbbb2)) n3
       .RX_ADDR(n3_rx_addr), .RX_DATA(n3_rx_data), .RX_REQ(n3_rx_req), .RX_ACK(n3_rx_ack), .RX_FAIL(n3_rx_fail), .RX_PEND(n3_rx_pend),
       .TX_SUCC(n3_tx_succ), .TX_FAIL(n3_tx_fail), .TX_RESP_ACK(n3_tx_resp_ack), .RX_BROADCAST(n3_rx_broadcast),
 	  .LC_POWER_ON(n3_lc_pwr_on), .LC_RELEASE_CLK(n3_lc_release_clk), .LC_RELEASE_RST(n3_lc_release_rst), .LC_RELEASE_ISO(n3_lc_release_iso),
-	  .REQ_INT(n3_req_int));
+	  .REQ_INT(n3_req_int), .PREFIX_ADDR_OUT());
 
 mbus_ctrl_layer_wrapper #(.ADDRESS(20'haaaa0)) c0 
      (.CLK_EXT(clk), .CLKIN(w_n3_clk_out), .CLKOUT(SCLK), .RESETn(resetn), .DIN(w_n3c0), .DOUT(w_c0n0), 

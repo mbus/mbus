@@ -48,10 +48,13 @@
  * However, user should be aware of the memory/RF depth at any time.
  * 
  *
- * Last modified date: 
+ * Last modified date: Jun 29 '15
  * Last modified by: Ye-sheng Kuo <samkuo@umich.edu>
  *
  * Update log:
+ * 9/29 '15
+ * Remove RX_PEND double latch, only double latches RX_REQ. (Yejoong's suggestion)
+ *
  * 05/22 '15
  * Fix slow MBUS clock TX_ACK issue. 
  * Layer controller has to check TX_ACK before asserting TX_REQ
@@ -254,7 +257,7 @@ reg		RX_REQ_DL1, RX_REQ_DL2;
 reg		TX_FAIL_DL1, TX_FAIL_DL2;
 reg		TX_SUCC_DL1, TX_SUCC_DL2;
 reg		RX_FAIL_DL1, RX_FAIL_DL2;
-reg		RX_PEND_DL1, RX_PEND_DL2;
+reg		RX_PEND_DL2;
 reg		MEM_ACK_IN_DL1, MEM_ACK_IN_DL2;
 
 // General registers
@@ -370,6 +373,17 @@ wire	bulk_ctrl_active = sys_reg_bulk_mem[`LC_RF_DATA_WIDTH-2];
 wire	[19:0] bulk_max_length = sys_reg_bulk_mem[19:0];
 `endif
 
+always @ (posedge CLK or negedge RESETn_local) 
+begin
+	if (~RESETn_local) 
+		RX_PEND_DL2 <= 1'b0;
+	else if (RX_REQ_DL1 & ~RX_REQ_DL2) 
+		RX_PEND_DL2 <= RX_PEND;
+	else if (~RX_REQ_DL1) 
+		RX_PEND_DL2 <= 1'b0;
+end
+
+
 always @ (posedge CLK or negedge RESETn_local)
 begin
 	if (~RESETn_local)
@@ -384,8 +398,6 @@ begin
 		TX_SUCC_DL2 <= 0;
 		RX_FAIL_DL1 <= 0;
 		RX_FAIL_DL2 <= 0;
-		RX_PEND_DL1 <= 0;
-		RX_PEND_DL2 <= 0;
 		`ifdef LC_MEM_ENABLE
 		MEM_ACK_IN_DL1 <= 0;
 		MEM_ACK_IN_DL2 <= 0;
@@ -403,8 +415,6 @@ begin
 		TX_SUCC_DL2 <= TX_SUCC_DL1;
 		RX_FAIL_DL1 <= RX_FAIL;
 		RX_FAIL_DL2 <= RX_FAIL_DL1;
-		RX_PEND_DL1 <= RX_PEND;
-		RX_PEND_DL2 <= RX_PEND_DL1;
 		`ifdef LC_MEM_ENABLE
 		MEM_ACK_IN_DL1 <= MEM_ACK_IN;
 		MEM_ACK_IN_DL2 <= MEM_ACK_IN_DL1;

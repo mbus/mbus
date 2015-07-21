@@ -13,7 +13,7 @@ Design Hierarchy for MBus
 2. mbus_ctrl_layer_wrapper.v
 	- mbus_master_sleep_ctrl.v
 	- mbus_clk_sim.v
-	- mbus_wire_ctrl.v
+	- mbus_master_wire_ctrl.v
 	- mbus_ext_int.v
 	- mbus_ctrl_wrapper.v
 		- mbus_ctrl.v

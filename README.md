@@ -30,7 +30,7 @@ of fabricated chips.
  * mbus: The development directory of MBus.
  * layer_controller: A higher-level interface that wraps the MBus frontend.
    The layer controller implements the MPQ protocol described in the
-   (MBus Specification)[http://mbus.io/spec.html] and provides a register/memory
+   [MBus Specification](http://mbus.io/spec.html) and provides a register/memory
    interface to the rest of the chip.
    - The layer controller originally had separate implementations for simpler
      peripherals and complex chips (the CPU). As of v3, these are now

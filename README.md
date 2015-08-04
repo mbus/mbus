@@ -40,7 +40,7 @@ of fabricated chips.
 ------------
 
 
-MBus Copyright 2015 Regents of the University of Michigan
+Copyright 2015 Regents of the University of Michigan
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -53,5 +53,13 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+
+MBus Name and Logo
+------------------
+
+Use of the MBus name and logo are subject to the MBus Research End User License Agreement.
+
+The agreement is available at http://mbus.io/static/MBus_EULA_v1.0.pdf
 
 

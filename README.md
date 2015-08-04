@@ -2,7 +2,7 @@ MBus
 ====
 
 MBus is the next-generation interconnect that enables the millimeter-scale
-computing class
+computing class.
 
 MBus is a chip-to-chip bus designed for ultra-constrained systems. MBus is a
 multi-master bus supporting an arbitrary number of nodes, priority arbitration,

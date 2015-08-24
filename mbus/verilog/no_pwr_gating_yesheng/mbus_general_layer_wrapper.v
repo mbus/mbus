@@ -16,6 +16,10 @@
 
 `include "include/mbus_def.v"
 
+`ifdef POWER_GATING
+`undef POWER_GATING
+`endif
+
 module mbus_general_layer_wrapper(
 	input 	CLK_EXT,
 	input	MASTER_EN,

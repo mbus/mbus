@@ -24,6 +24,11 @@ module mbus_general_layer_wrapper(
 	input 	CLK_EXT,
 	input	MASTER_EN,
 	input	[19:0] ADDRESS,
+	input	[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_IN,
+	output	[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_OUT,
+	input	ASSIGNED_ADDR_VALID,
+	output	reg	ASSIGNED_ADDR_WRITE,
+	output	reg	ASSIGNED_ADDR_INVALIDn,
 	input 	CLKIN,
 	output	CLKOUT,
 	input 	RESETn,
@@ -78,19 +83,6 @@ wire 	RESETn_local = (RESETn & (~MBC_RESET) & MASTER_EN);
 `else
 wire 	RESETn_local = RESETn & MASTER_EN;
 `endif
-
-wire [3:0] rf_addr_out_to_node;
-wire [3:0] assigned_addr_in = (MASTER_EN==1'b1)? 4'h1 : rf_addr_out_to_node;
-
-wire rf_addr_valid;
-wire assigned_addr_valid = (MASTER_EN==1'b1)? 1'b1 : rf_addr_valid;
-
-wire assigned_addr_write;
-wire rf_addr_write = (MASTER_EN==1'b1)? 1'b0 : assigned_addr_write;
-
-wire assigned_addr_invalidn;
-wire rf_addr_rstn = (MASTER_EN==1'b1)? 1'b1 : assigned_addr_invalidn;
-wire [3:0] assigned_addr_out;
 
 wire dout_from_bus, clkout_from_bus;
 
@@ -178,22 +170,13 @@ mbus_node node0(
 	.CLR_EXT_INT(CLR_EXT_INT),
 	.CLR_BUSY(CLR_BUSY),
 	`endif
-	.ASSIGNED_ADDR_IN(assigned_addr_in),
-	.ASSIGNED_ADDR_OUT(assigned_addr_out),
-	.ASSIGNED_ADDR_VALID(assigned_addr_valid),
-	.ASSIGNED_ADDR_WRITE(assigned_addr_write),
-	.ASSIGNED_ADDR_INVALIDn(assigned_addr_invalidn),
+	.ASSIGNED_ADDR_IN(ASSIGNED_ADDR_IN),
+	.ASSIGNED_ADDR_OUT(ASSIGNED_ADDR_OUT),
+	.ASSIGNED_ADDR_VALID(ASSIGNED_ADDR_VALID),
+	.ASSIGNED_ADDR_WRITE(ASSIGNED_ADDR_WRITE),
+	.ASSIGNED_ADDR_INVALIDn(ASSIGNED_ADDR_INVALIDn),
 	.MASTER_EN(MASTER_EN),
 	.ADDRESS(ADDRESS)
-);
-
-mbus_addr_rf rf0 (
-	.RESETn(RESETn),
-	.ADDR_OUT(rf_addr_out_to_node),
-	.ADDR_IN(assigned_addr_out),
-	.ADDR_VALID(rf_addr_valid),
-	.ADDR_WR_EN(rf_addr_write),
-	.ADDR_CLRn(rf_addr_rstn)
 );
 
 mbus_wire_ctrl wc0(

@@ -126,6 +126,7 @@ module mbus_node(
 	output 	reg RX_REQ, 
 	input 		RX_ACK, 
 	output 		RX_BROADCAST,
+	output  reg [1:0] ice_export_control_bits,
 
 	output 	reg RX_FAIL,
 	output 	reg TX_FAIL, 
@@ -223,6 +224,10 @@ reg		[`DATA_WIDTH-1:0] DATA, next_data;
 reg		tx_pend, next_tx_pend;
 reg		tx_underflow, next_tx_underflow;
 reg		ctrl_bit_buf, next_ctrl_bit_buf;
+
+// ICE-specific, save and export control bits
+reg		[1:0] ice_export_control_bits;
+reg		[1:0] next_ice_export_control_bits;
 
 // rx registers
 reg		[`ADDR_WIDTH-1:0] next_rx_addr;
@@ -535,6 +540,7 @@ begin
 		tx_pend <= 0;
 		tx_underflow <= 0;
 		ctrl_bit_buf <= 0;
+		ice_export_control_bits <= 2'b00;
 		// Receiver register
 		RX_ADDR <= 0;
 		RX_DATA <= 0;
@@ -575,6 +581,7 @@ begin
 		tx_pend <= next_tx_pend;
 		tx_underflow <= next_tx_underflow;
 		ctrl_bit_buf <= next_ctrl_bit_buf;
+		ice_export_control_bits <= next_ice_export_control_bits;
 		// Interface registers
 		TX_ACK <= next_tx_ack;
 		`ifdef POWER_GATING
@@ -608,6 +615,7 @@ begin
 	next_tx_pend = tx_pend;
 	next_tx_underflow = tx_underflow;
 	next_ctrl_bit_buf = ctrl_bit_buf;
+	next_ice_export_control_bits = ice_export_control_bits;
 
 	// Receiver register
 	next_rx_addr = RX_ADDR;
@@ -849,6 +857,7 @@ begin
 		begin
 			next_bus_state = BUS_CONTROL1;
 			next_ctrl_bit_buf = DIN;
+			next_ice_export_control_bits[0] = DIN;
 
 			case (mode)
 				MODE_TX:
@@ -1020,6 +1029,7 @@ begin
 		BUS_CONTROL1:
 		begin
 			next_bus_state = BUS_BACK_TO_IDLE;
+			next_ice_export_control_bits[1] = DIN;
 			if (req_interrupt)
 			begin
 				if ((mode==MODE_TX)&&(~tx_underflow))

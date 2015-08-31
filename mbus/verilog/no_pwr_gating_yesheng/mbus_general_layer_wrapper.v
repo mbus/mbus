@@ -47,6 +47,7 @@ module mbus_general_layer_wrapper(
 	output  RX_BROADCAST,
 	output	RX_FAIL,
 	output 	RX_PEND, 
+	output	[1:0] ice_export_control_bits,
 	output 	TX_FAIL, 
 	output 	TX_SUCC, 
 	input 	TX_RESP_ACK
@@ -156,6 +157,7 @@ mbus_node node0(
 	.RX_BROADCAST(RX_BROADCAST),
 	.RX_FAIL(RX_FAIL),
 	.RX_PEND(RX_PEND), 
+	.ice_export_control_bits(ice_export_control_bits),
 	.TX_FAIL(TX_FAIL), 
 	.TX_SUCC(TX_SUCC), 
 	.TX_RESP_ACK(TX_RESP_ACK),

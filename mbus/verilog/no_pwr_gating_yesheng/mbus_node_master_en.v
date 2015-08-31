@@ -211,6 +211,7 @@ reg		[1:0] mode, next_mode, mode_neg, mode_temp;
 reg		[log2(NUM_OF_BUS_STATE-1)-1:0] bus_state, next_bus_state, bus_state_neg;
 reg		[log2(`DATA_WIDTH-1)-1:0] bit_position, next_bit_position; 
 reg		req_interrupt, next_req_interrupt;
+reg		req_interrupt_because_error, next_req_interrupt_because_error;
 reg		out_reg_pos, next_out_reg_pos, out_reg_neg;
 `ifdef POWER_GATING
 reg		next_clr_busy;
@@ -523,6 +524,7 @@ begin
 		mode <= MODE_RX;
 		bit_position <= `ADDR_WIDTH - 1'b1;
 		req_interrupt <= 0;
+		req_interrupt_because_error <= 0;
 		out_reg_pos <= 0;
 	`ifdef POWER_GATING
 		CLR_BUSY <= 0;
@@ -562,6 +564,7 @@ begin
 			RX_DATA <= next_rx_data;
 		end
 		req_interrupt <= next_req_interrupt;
+		req_interrupt_because_error <= next_req_interrupt_because_error;
 		out_reg_pos <= next_out_reg_pos;
 	`ifdef POWER_GATING
 		CLR_BUSY <= next_clr_busy;
@@ -593,6 +596,7 @@ begin
 	next_bus_state = bus_state;
 	next_bit_position = bit_position;
 	next_req_interrupt = req_interrupt;
+	next_req_interrupt_because_error = req_interrupt_because_error;
 	next_out_reg_pos = out_reg_pos;
 `ifdef POWER_GATING
 	next_clr_busy = CLR_BUSY;
@@ -779,6 +783,7 @@ begin
 								next_bus_state = BUS_REQ_INTERRUPT;
 								next_tx_underflow = 1;
 								next_req_interrupt = 1;
+								next_req_interrupt_because_error = 1;
 								next_tx_fail = 1;
 							end
 
@@ -803,6 +808,7 @@ begin
 							// RX overflow
 							next_bus_state = BUS_REQ_INTERRUPT;
 							next_req_interrupt = 1;
+							next_req_interrupt_because_error = 1;
 							next_rx_fail = 1;
 						end
 						else
@@ -1034,6 +1040,7 @@ begin
 		`endif
 			next_bus_state = BUS_IDLE;
 			next_req_interrupt = 0;
+			next_req_interrupt_because_error = 0;
 			next_mode = MODE_RX;
 			next_tx_underflow = 0;
 		end
@@ -1257,7 +1264,7 @@ begin
 		begin
 			if (mode_neg==MODE_RX)
 				DOUT = out_reg_neg;
-			else if (req_interrupt)
+			else if (req_interrupt_because_error)
 				DOUT = out_reg_neg;
 		end
 

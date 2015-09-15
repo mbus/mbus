@@ -156,6 +156,7 @@ module mbus_node(
 	output	reg	ASSIGNED_ADDR_INVALIDn,
 
 	input	MASTER_EN,
+	input	mbus_snoop_enabled,
 	input	[19:0] ADDRESS
 );
 
@@ -254,7 +255,8 @@ reg		next_rx_pend;
 wire	addr_bit_extract = ((ADDR  & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 wire	data_bit_extract = ((DATA & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 reg		[1:0] addr_match_temp;
-wire	address_match = (addr_match_temp[1] | addr_match_temp[0]);
+wire	original_address_match = (addr_match_temp[1] | addr_match_temp[0]);
+wire	address_match = original_address_match | mbus_snoop_enabled;
 
 // Broadcast processing
 reg		[`BROADCAST_CMD_WIDTH -1:0] rx_broadcast_command;

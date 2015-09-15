@@ -23,6 +23,7 @@
 module mbus_general_layer_wrapper(
 	input 	CLK_EXT,
 	input	MASTER_EN,
+	input	mbus_snoop_enabled,
 	input	[19:0] ADDRESS,
 	input	[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_IN,
 	output	[`DYNA_WIDTH-1:0] ASSIGNED_ADDR_OUT,
@@ -178,6 +179,7 @@ mbus_node node0(
 	.ASSIGNED_ADDR_WRITE(ASSIGNED_ADDR_WRITE),
 	.ASSIGNED_ADDR_INVALIDn(ASSIGNED_ADDR_INVALIDn),
 	.MASTER_EN(MASTER_EN),
+	.mbus_snoop_enabled(mbus_snoop_enabled),
 	.ADDRESS(ADDRESS)
 );
 

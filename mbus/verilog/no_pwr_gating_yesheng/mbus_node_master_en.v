@@ -257,6 +257,8 @@ wire	data_bit_extract = ((DATA & (1'b1<<bit_position))==0)? 1'b0 : 1'b1;
 reg		[1:0] addr_match_temp;
 wire	original_address_match = (addr_match_temp[1] | addr_match_temp[0]);
 wire	address_match = original_address_match | mbus_snoop_enabled;
+reg	address_matched_only_because_snoop;
+reg	next_address_matched_only_because_snoop;
 
 // Broadcast processing
 reg		[`BROADCAST_CMD_WIDTH -1:0] rx_broadcast_command;
@@ -547,6 +549,7 @@ begin
 		RX_ADDR <= 0;
 		RX_DATA <= 0;
 		rx_data_buf <= 0;
+		address_matched_only_because_snoop <= 0;
 		// Interface registers
 		TX_ACK <= 0;
 		`ifdef POWER_GATING
@@ -570,6 +573,7 @@ begin
 			// Receiver register
 			RX_ADDR <= next_rx_addr;
 			RX_DATA <= next_rx_data;
+			address_matched_only_because_snoop <= next_address_matched_only_because_snoop;
 		end
 		req_interrupt <= next_req_interrupt;
 		req_interrupt_because_error <= next_req_interrupt_because_error;
@@ -624,6 +628,7 @@ begin
 	next_rx_data = RX_DATA;
 	next_rx_fail = RX_FAIL;
 	next_rx_data_buf = rx_data_buf;
+	next_address_matched_only_because_snoop = address_matched_only_because_snoop;
 
 	// Interface registers
 	next_rx_req = RX_REQ;
@@ -762,8 +767,15 @@ begin
 				next_bus_state = BUS_DATA;
 				next_bit_position = `DATA_WIDTH - 1'b1;
 			end
-			if (address_match==0)
+			if (address_match==0) begin
 				next_mode = MODE_FWD;
+			end else begin
+				if (original_address_match != address_match) begin
+					next_address_matched_only_because_snoop = 1;
+				end else begin
+					next_address_matched_only_because_snoop = 0;
+				end
+			end
 		end
 
 		BUS_DATA:
@@ -1274,7 +1286,8 @@ begin
 
 		BUS_CONTROL1:
 		begin
-			if (mode_neg==MODE_RX)
+			// Don't ack if we're rx-ing because we're snooping
+			if ((mode_neg==MODE_RX) && (~address_matched_only_because_snoop))
 				DOUT = out_reg_neg;
 			else if (req_interrupt_because_error)
 				DOUT = out_reg_neg;

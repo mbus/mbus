@@ -28,7 +28,7 @@ of fabricated chips.
    wish to include MBus in your own projects. The `mbus_example` directory is
    the template for creating new releases.
  * `mbus`: The development directory of MBus.
- * `layer_controller`: A higher-level interface that wraps the MBus frontend.
+ * `layer_controller_*`: A higher-level interface that wraps the MBus frontend.
    The layer controller implements the MPQ protocol described in the
    [MBus Specification](http://mbus.io/spec.html) and provides a register/memory
    interface to the rest of the chip.

@@ -35,6 +35,8 @@ of fabricated chips.
    - The layer controller originally had separate implementations for simpler
      peripherals and complex chips (the CPU). As of v3, these are now
      consolidated into a unified design.
+ * `tla`: specification in the temporal logic of actions,
+   [TLA+](https://en.wikipedia.org/wiki/TLA%2B).
 
 
 ------------
@@ -61,5 +63,3 @@ MBus Name and Logo
 Use of the MBus name and logo are subject to the MBus Research End User License Agreement.
 
 The agreement is available at http://mbus.io/static/MBus_EULA_v1.0.pdf
-
-

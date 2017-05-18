@@ -1,0 +1,45 @@
+\newcommand{\figTimingShutdown}{%
+  \centering
+  \footnotesize
+  \begin{tikztimingtable}[timing/wscale=8,timing/slope=.3]
+    %       I SS X000 0II
+    Clock & H HC CCCC CCC\\
+    Data  & C CH HHHL LHH\\
+          & {1D{Interrupt}}{2D{Switch Role}}
+            {2D{Control Bit 0 (EoM=True)}}{2D{Control Bit 1 (ACK=True)}}
+            {2D{Begin Idle}}{1D{Idle}} \\
+  \extracode
+    \begin{pgfonlayer}{background}
+      \begin{scope}[semithick,dashed,semitransparent]
+        \vertlines[color=gray]{0,8,...,\twidth}
+      \end{scope}
+    \end{pgfonlayer}
+
+    \begin{scope}
+      [font=\sc\scriptsize,shift={(-1,2)},anchor=west,align=left]
+      \def\mult{8}
+      \node [rotate=45] at (5*\mult, 0) {Shutdown Decision};
+      \node [rotate=45] at (6*\mult, 0) {Drive ACK\\Assert Shutdown\\Layer Ctl Isolate};
+      \node [rotate=45] at (7*\mult, 0) {Bus Ctl Isolate\\Layer Ctl Power Gate};
+      \node [rotate=45] at (8*\mult, 0) {Bus Ctl Power Gate};
+      \node [rotate=45] at (9*\mult, 0) {Arm Wakeup Detector\\Bus Idle};
+    \end{scope}
+
+    \foreach \n [evaluate=\n as \l using int((\n)/8)] in {0,8,...,\twidth}
+      \draw (\n,-4.5) -- +(0,-.2)
+        node [below,inner sep=2pt] {\scalebox{.75}{\footnotesize\l}};
+  \end{tikztimingtable}
+%
+  \caption{{\em Shutdown Timing---~}%
+    The shutdown command is not confirmed until time~5 when the transmitter
+    indicates a valid End~of~Message signal. At time~6, the bus controller
+    acknowledges shutdown, asserts the {\tt SHTDWN} signal to the sleep
+    controller, and isolates the layer controller. At time~7, the sleep
+    controller isolates the bus controller, and isolating the bus controller
+    by definition power gates the layer controller. At time~8, the sleep
+    controller power gates the bus controller, completing shutdown. At time~9
+    the bus is idle, and the sleep controller is waiting for the next wakeup.
+  }
+  \label{fig:shutdown}
+} % End \figTimingShutdown
+

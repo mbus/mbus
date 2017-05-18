@@ -1,0 +1,150 @@
+\documentclass[twoside]{article}
+\usepackage[layout=letterpaper,margin=1in]{geometry}
+
+\usepackage{bold-extra} % for bf sc
+
+\usepackage{amsmath} % For \text, \underbrace
+\usepackage{amssymb} % For \checkmark
+\usepackage{color}
+\usepackage{comment}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{marginnote}
+\usepackage{multirow}
+\usepackage{nth}
+\usepackage{subcaption}
+\usepackage{soul} % provides \hl{}
+\newcommand{\hlc}[2][yellow]{{\sethlcolor{#1}\hl{#2}}}
+\usepackage{tabu}
+\usepackage{tabularx}
+\usepackage[normalem]{ulem} % provides \uline{}
+\usepackage{varwidth}
+\usepackage{xfrac}   % For \sfrac
+\usepackage{xspace}
+
+\usepackage[all=normal,lists]{savetrees}
+
+\usepackage{rotating}
+\usepackage[endianness=big]{bytefield}
+%\bytefieldsetup{boxformatting={\centering\footnotesize}}
+
+\usepackage{
+  tikz,
+  tikz-timing,
+}
+\usetikzlibrary{positioning}
+
+\usepackage[colorlinks=true,bookmarksopen=true,bookmarksopenlevel=2]{hyperref}
+
+\newcommand{\colorbitbox}[3]{%
+\rlap{\bitbox{#2}{\color{#1}\rule{\width}{\height}}}%
+\bitbox{#2}{#3}}
+
+\newcommand{\prefix}[4]{%
+\colorbitbox{lightgray}{1}{#1}
+\colorbitbox{lightgray}{1}{#2}
+\colorbitbox{lightgray}{1}{#3}
+\colorbitbox{lightgray}{1}{#4}
+}
+
+\newcommand{\fuid}[4]{%
+\bitbox{1}{\tt #1}
+\bitbox{1}{\tt #2}
+\bitbox{1}{\tt #3}
+\bitbox{1}{\tt #4}
+}
+
+\newcommand{\fuaddr}[8]{
+\begin{bytefield}{8}
+  \bitheader{0-7} \\
+  \prefix{#1}{#2}{#3}{#4}
+  \fuid{#5}{#6}{#7}{#8}
+\end{bytefield}
+}
+
+\definecolor{lightblue}{RGB}{0,204,255}
+\definecolor{lightcyan}{rgb}{0.84,1,1}
+\definecolor{lightgreen}{rgb}{0.64,1,0.71}
+\definecolor{lightergreen}{rgb}{0.84,1,0.87}
+\definecolor{lightred}{rgb}{1,0.7,0.71}
+
+\newcommand{\bus}{MBus\xspace}
+\newcommand{\mbuscopy}{MBus~\textcopyright~$2012-2015$~The Regents of the University of Michigan}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+\pagestyle{fancyplain}
+
+\fancyfoot[LO,RE]{\footnotesize \ifnum\thepage=1 ~\else \mbuscopy \fi}
+\fancyfoot[C]{\ifnum\thepage=1 \mbuscopy \fi}
+\fancyfoot[LE,RO]{\ifnum\thepage=1 ~\else \thepage \fi}
+
+%\pagestyle{fancyplain}
+%\fancyhf{}
+%\fancyfoot[C]{\thepage}
+%\fancyhead[C]{\em CONFIDENTIAL DRAFT --- DO NOT CITE OR DISTRIBUTE}
+
+\title{M3 \bus Implementation}
+\author{%
+  {\em $<$mbus-team@umich.edu$>$}\\
+  \\
+  Pat Pannuto $<$ppannuto@umich.edu$>$\\
+  Yoonmyung Lee $<$sori@umich.edu$>$\\
+  Ye-Sheng Kuo $<$samkuo@umich.edu$>$\\
+  ZhiYoong Foo $<$zhiyoong@umich.edu$>$\\
+  Ben Kempke $<$bpkempke@umich.edu$>$\\
+  David Blaauw $<$blaauw@umich.edu$>$\\
+  Prabal Dutta $<$prabal@umich.edu$>$\\
+}
+\date{Revision 0.4 --- July 21, 2015}
+\maketitle
+
+% External Figures
+\input{timing}
+
+\input{intro}
+
+\tableofcontents
+\clearpage
+
+\input{rtl_design}
+\clearpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
+\section{Document Revision History}
+\label{sec:revisions}
+
+\begin{itemize}
+
+\item Revision 0.4 {\footnotesize(r12314)} -- July 21, 2015
+  \subitem Remove dedicated CPU layer controller
+  \subitem Enhance generic layer controller interrupt interface
+  \subitem Move messages and register defintions to MPQ in MBus Specification
+
+\item Revision 0.3 {\footnotesize(r7649)} -- Apr 18, 2013
+\subitem Add functional unit addresses
+\subitem Change addressing to reflect new prefix-style addressing
+\subitem Update power-gating details
+\subitem Add Wire Controller
+\subitem Add Interrupt Controller
+\subitem Add Channel~3 Information
+\subitem Update layer controller information to match actual design
+\subitem Use the word {\em Reserved} in the programmer model
+
+\item Revision 0.2 {\footnotesize(r3194)} -- Mar 4, 2013
+\subitem Add power-gating information
+\subitem Add {\tt RX\_FAIL} signal
+\subitem Solidify Interrupt TODO
+\subitem Add {\tt PRIORITY} signal
+
+\item Revision 0.1 {\footnotesize(r2847)} -- Jan 22, 2013
+\subitem Initial revision
+
+\end{itemize}
+
+
+\end{document}

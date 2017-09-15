@@ -6,4 +6,3 @@ pt:
 
 clean:
 	rm -f *.log *.rpt
-

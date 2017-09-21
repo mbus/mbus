@@ -59,6 +59,7 @@ using a text editor, then find `$LNAME_dir` and `$mbus_dir`. Change the content 
 these variables as follows:
 
 `$LNAME_dir`: Absolute path where the top-level verilog is located.
+
 `$mbus_dir` : Absolute path of `mbus` directory under `$LNAME_dir`.
 
 Also, locate the line "\[INFO\] Select technology..." in the script. You need to add

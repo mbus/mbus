@@ -58,14 +58,15 @@ Before running the script, you need to edit the script itself. Open `createNewLa
 using a text editor, then find `$LNAME_dir` and `$mbus_dir`. Change the content of
 these variables as follows:
 
-`$LNAME_dir`: Absolute path where the top-level verilog is located
-`$mbus_dir` : Absolute path of `mbus` directory under `$LNAME_dir`
+`$LNAME_dir`: Absolute path where the top-level verilog is located.
+`$mbus_dir` : Absolute path of `mbus` directory under `$LNAME_dir`.
 
 Also, locate the line "\[INFO\] Select technology..." in the script. You need to add
 your technology option in this section. For example, if you use TSMC 65nm, then you
 should add the following lines in proper locations:
 
 `print "  7. TSMC 65nm \n"`
+
 `elsif ($tech_id == 7) { $postfix = "tsmc65"; }`
 
 After that, you need to make lname_mbus_member_ctrl.tsmc65.v file. See "Verilog Files"

@@ -1,0 +1,2600 @@
+#!/usr/bin/perl 
+##########################################################################################################################
+# <Description>
+#         genRF generates useful files for M3 Register File.
+#
+#         Currently, this script generates the following files:
+#             - Register File structural verilog file
+#             - Digital input vector file for FineSim simulations
+#             - Verilog Debug File
+#             - PrimeTime TCL script
+#             - EZWAVE TCL script for displaying all the register bus signals
+#             - A Header file for ARM Compiler
+#             - Log file containing detailed Register File information
+#             - Verilog Snippet for top-level verilog
+#             - Automatically modify the top-level verilog if specified to do so
+#
+# <Prerequisites>
+#         Before runnng this script, you need to prepare an configuration file (genRF.conf).
+#         An instruction file (input.inst) is required when you want to generate a Digital Input Vector file (input.vec).
+#
+# <Usage>
+#         ./genRF [-h] [Config_File_Name] [Instruction_File_Name] [-all]
+#
+# <Example>
+#         ./genRF -h                             Display this message ('make info' will do the same)
+#             - OR -
+#          make
+#
+#         ./genRF genRF.conf                     Read-in the configuration file (genRF.conf)
+#             - OR -                             and generate the followings:
+#          make rf                                   - Register File structural verilog (ex. snsv4_rf.v)
+#                                                    - Verilog Debug File (ex. snsv4_rf_debug.v)
+#                                                    - PrimeTime TCL script (ex. snsv4_rf.tcl)
+#                                                    - EZWAVE TCL script to load-up all the registers (ex. EZWAVE.tcl)
+#                                                    - Header file for ARM Compiler (ex. SNSv4.h)
+#                                                    - Verilog Snippet for top-level verilog (ex. Misc.v)
+#                                                    - Log file containing detailed Register File info (ex. RegFile.log)
+#                                                    - Automatically modify the top-level verilog if specified to do so
+#
+#         ./genRF genRF.conf input.inst          Read-in the configuration file (genRF.conf)
+#             - OR -                             and the instruction file (input.inst) and generate the following:
+#          make vec                                  - Digital Input Vector file for FineSim simulations (ex. input.vec)
+#
+#         ./genRF genRF.conf input.inst -all     Read-in the configuration file (genRF.conf)
+#             - OR -                             and the instruction file (input.inst) and generate the following:
+#          make all                                  - Register File structural verilog (ex. snsv4_rf.v)
+#                                                    - Verilog Debug File (ex. snsv4_rf_debug.v)
+#                                                    - PrimeTime TCL script (ex. snsv4_rf.tcl)
+#                                                    - EZWAVE TCL script to load-up all the registers (ex. EZWAVE.tcl)
+#                                                    - Header file for ARM Compiler (ex. SNSv4.h)
+#                                                    - Verilog Snippet for top-level verilog (ex. Misc.v)
+#                                                    - Log file containing detailed Register File info (ex. RegFile.log)
+#                                                    - Automatically modify the top-level verilog if specified to do so
+#                                                    - Digital Input Vector file for FineSim simulations (ex. input.vec)
+#
+#          [NOTE] Output file names and other variables must be specified in the configuration file (genRF.conf).
+#
+#
+# <Update History>
+# 08/21/2017 - Version 1.01
+#              Added 'LC' option to generate the Layer Ctrl RF module
+#              Added default values to several variables and made them optional in the configuration file
+#              Replaced '|' with '||' for the def file in-place editing.
+#
+# 07/24/2017 - Version 1.00
+#              Included in m3_hdk directory
+#              Added in-place editing for compiler directive (*_def.v) file (required for MBus r04p2 and above)
+#                   LNAME_MBUS_RF_SIZE
+#                   LNAME_MBUS_RF_READ_ONLY
+#                   LNAME_MBUS_RF_EMPTY
+#
+# 06/26/2017 - Version 0.99a
+#              Added USE_CUSTOM_CONNECTION and related variables to override the default pin/net connections
+#
+# 06/16/2017 - Version 0.99
+#              Fixed a bug where it does not print out registers down to 0 for the layer controller connection
+#              when Register 0x0 is empty.
+#
+# 05/23/2017 - In the header file generation, 'Not Defined' signals were replaced with bit 0's.
+#
+# 11/17/2015 - Added a PrimeTime TCL script generation.
+#              Added a Verilog Debug output generation.
+#
+# 06/30/2015 - Now it adds an inverter if there is an inverted signal without FLIP_FLOP_OUTPUTB_PIN_NAME provided.
+#
+# 06/28/2015 - Fixed a bug where it inserts a comma in the second-last register when the last register is read-only.
+#              First version number is set to 0.9, and added automatic update-check.
+#
+# 06/22/2015 - Fixed a bug where it incorrectly detects '~' used in comments.
+#
+# 06/20/2015 - Now it automatically adjusts the number of digits in default Hex values.
+#
+# 06/16/2015 - Added 'Automatic Insertion in Top-Level Verilog' function.
+#
+# 06/15/2015 - Fixed a bug in the Verilog Snippet, 
+#              where it does not print out zeros when the first meaningful bit index is not 0.
+#
+# 06/13/2015 - Fixed bugs in the header file
+#
+# 06/07/2015 - Added AMBA bus information in the Log file.
+#            - Commented out Address-related gates if EMPTY REGISTER in Verilog.
+#
+# 06/03/2015 - Removed Level-Converter Isolation gates if it is PRC.
+#              The isolation and level conversion should be handled in a separate circuit.
+#            - Reconfigured the driving strength of AND2, INV, BUFs.
+#
+# 06/02/2015 - Made separate net names for PRC/non-PRC layers in the Verilog Snippet.
+#            - Added 'Wire Declaration' secion in the Verilog Snippet.
+#            - Buf Fixes: Removed empty lines representing empty registers in Verilog,
+#                         Removed commas in invalid register bits printed in Verilog Snippet
+#
+# 05/25/2015 - Added an Inverted Output option in Flip-Flops
+#
+# 05/23/2015 - Added a setting for PRC layer (isolation level converters, AMBA Address, etc)
+#            - Bug Fixes: removed the last comma in the pin declaration, length issue in Hex2Bin, 
+#                         wrong start value when printing Verilog Snippet
+#
+# 04/13/2015 - First Version 
+#
+# ---------------------------
+# Author:       Yejoong Kim
+ $Version     = "1.01";
+ $LastUpdated = "August 21, 2017";
+##########################################################################################################################
+
+$do_init = 1;
+
+# Initialization
+if ($do_init) {
+    $scriptName = "genRF";
+    $originalPath = "/afs/eecs.umich.edu/vlsida/projects/m3_hdk/scripts/genRF/genRF";
+    $maxNumRegs = 256;
+    $maxNumDataBits = 24;
+    $time = getLoggingTime();
+    $usage = ""
+            . " <Description>\n"
+            . "         genRF generates useful files for M3 Register File.\n"
+            . "\n"
+            . "         Currently, this script generates the following files:\n"
+            . "             - Register File structural verilog file\n"
+            . "             - Digital input vector file for FineSim simulations\n"
+            . "             - Verilog Debug File\n"
+            . "             - PrimeTime TCL script\n"
+            . "             - EZWAVE TCL script for displaying all the register bus signals\n"
+            . "             - A Header file for ARM Compiler\n"
+            . "             - Log file containing detailed Register File information\n"
+            . "             - Verilog Snippet for top-level verilog\n"
+            . "             - Automatically modify the top-level verilog if specified to do so\n"
+            . "\n"
+            . " <Prerequisites>\n"
+            . "         Before runnng this script, you need to prepare an configuration file (genRF.conf).\n"
+            . "         An instruction file (input.inst) is required when you want to generate a Digital Input Vector file (input.vec).\n"
+            . "\n"
+            . " <Usage>\n"
+            . "         ./genRF [-h] [Config_File_Name] [Instruction_File_Name] [-all]\n"
+            . "\n"
+            . " <Example>\n"
+            . "         ./genRF -h                             Display this message ('make info' will do the same)\n"
+            . "             - OR -\n"
+            . "          make\n"
+            . "\n"
+            . "         ./genRF genRF.conf                     Read-in the configuration file (genRF.conf)\n"
+            . "             - OR -                             and generate the followings:\n"
+            . "          make rf                                   - Register File structural verilog (ex. snsv4_rf.v)\n"
+            . "                                                    - Verilog Debug File (ex. snsv4_rf_debug.v)\n"
+            . "                                                    - PrimeTime TCL script (ex. snsv4_rf.tcl)\n"
+            . "                                                    - EZWAVE TCL script to load-up all the registers (ex. EZWAVE.tcl)\n"
+            . "                                                    - Header file for ARM Compiler (ex. SNSv4.h)\n"
+            . "                                                    - Verilog Snippet for top-level verilog (ex. Misc.v)\n"
+            . "                                                    - Log file containing detailed Register File info (ex. RegFile.log)\n"
+            . "                                                    - Automatically modify the top-level verilog if specified to do so\n"
+            . "\n"
+            . "         ./genRF genRF.conf input.inst          Read-in the configuration file (genRF.conf)\n"
+            . "             - OR -                             and the instruction file (input.inst) and generate the following:\n"
+            . "          make vec                                  - Digital Input Vector file for FineSim simulations (ex. input.vec)\n"
+            . "\n"
+            . "         ./genRF genRF.conf input.inst -all     Read-in the configuration file (genRF.conf)\n"
+            . "             - OR -                             and the instruction file (input.inst) and generate the following:\n"
+            . "          make all                                  - Register File structural verilog (ex. snsv4_rf.v)\n"
+            . "                                                    - Verilog Debug File (ex. snsv4_rf_debug.v)\n"
+            . "                                                    - PrimeTime TCL script (ex. snsv4_rf.tcl)\n"
+            . "                                                    - EZWAVE TCL script to load-up all the registers (ex. EZWAVE.tcl)\n"
+            . "                                                    - Header file for ARM Compiler (ex. SNSv4.h)\n"
+            . "                                                    - Verilog Snippet for top-level verilog (ex. Misc.v)\n"
+            . "                                                    - Log file containing detailed Register File info (ex. RegFile.log)\n"
+            . "                                                    - Automatically modify the top-level verilog if specified to do so\n"
+            . "                                                    - Digital Input Vector file for FineSim simulations (ex. input.vec)\n"
+            . "\n"
+            . " Author:       Yejoong Kim\n"
+            . " Version:      " . $Version . "\n"
+            . " Last Updated: " . $LastUpdated . ".\n"
+            . "";
+    $errorMsg = sprintf "ERROR: Double-check the options!!\n\n$usage";
+
+    # Check Update
+    $doAutoUpdate = 0;
+
+    if ($doAutoUpdate) {
+        unless (open(ORG, "$originalPath")) {
+            print "WARNING: Cannot locate the original path. Auto-Update aborted. Contact Yejoong Kim (yejoong\@umich.edu)\n"; 
+            print "         You are running $scriptName (Version $Version)\n";
+            $doAutoUpdate = 0;
+        }
+    }
+
+    if ($doAutoUpdate) {
+
+        $versionInfoFound = 0;
+        while ($line = <ORG>) {
+            chop($line);
+            $line =~ s/^\s+//;
+            @line = split(/\s+/, $line);
+            if($line[0] =~ /\$Version/) {
+                $origVersion = $line[2];
+                $origVersion =~ s/[";]//g;
+                $versionInfoFound = 1;
+                last;
+            }
+        }
+
+        if ($versionInfoFound == 0) {
+            print "WARNING: Cannot find version information in original path. Auto-Update aborted. Contact Yejoong Kim (yejoong\@umich.edu)\n";
+            print "         You are running $scriptName (Version $Version)\n";
+            $doAutoUpdate = 0;
+        }
+    }
+
+    if ($doAutoUpdate) {
+        if ($origVersion eq $Version) {
+            print "[UPDATE CHECK] You have the most recent version of $scriptName (Version $Version)\n";
+        }
+        else {
+            system ("cp -f $originalPath .");
+            print "[UPDATE CHECK] Found a New Version $origVersion!!\n";
+            print "               The current version $Version has been automatically updated to $origVersion.\n";
+            print "               Plese restart $scriptName to apply the new version.\n";
+            exit;
+        }
+    }
+
+    # Check Arguments
+    if (($ARGV[0] eq "-h") or ($ARGV[0] eq "-help") or ($ARGV[0] eq "--help")) {print "$usage\n"; exit;}
+    elsif ((scalar(@ARGV) < 1) or (scalar(@ARGV) > 3)) {print "$errorMsg\n"; exit;}
+    elsif (scalar(@ARGV) == 1) { # Config File Only
+        $do_readConfig      = 1;
+        $do_readInst        = 0;
+        $do_writeVerilog    = 1;
+        $do_writeVector     = 0;
+        $do_writeLog        = 1;
+        $do_writeDebug      = 1;
+        $do_writeHeader     = 1;
+        $do_writePT         = 1;
+        $do_writeEZWAVE     = 1;
+        $do_writeMisc       = 1;
+    }
+    elsif (scalar(@ARGV) == 2) { # Instruction File given
+        $instFileName = $ARGV[1]; 
+        $do_readConfig      = 1;
+        $do_readInst        = 1;
+        $do_writeVerilog    = 0;
+        $do_writeVector     = 1;
+        $do_writeLog        = 0;
+        $do_writeDebug      = 0;
+        $do_writeHeader     = 0;
+        $do_writePT         = 0;
+        $do_writeEZWAVE     = 0;
+        $do_writeMisc       = 0;
+    }
+    elsif (scalar(@ARGV) == 3) { # Do All
+        if ($ARGV[2] eq "-all") {
+            $instFileName = $ARGV[1]; 
+            $do_readConfig      = 1;
+            $do_readInst        = 1;
+            $do_writeVerilog    = 1;
+            $do_writeVector     = 1;
+            $do_writeLog        = 1;
+            $do_writeDebug      = 1;
+            $do_writeHeader     = 1;
+            $do_writePT         = 1;
+            $do_writeEZWAVE     = 1;
+            $do_writeMisc       = 1;
+        }
+        else { die "$errorMsg\n"; }
+    }
+    $configFileName = $ARGV[0];
+
+    for($i=0; $i<$maxNumRegs; $i++) {
+        for($j=0; $j<$maxNumDataBits; $j++) {
+            $regValid[$i][$j] = 0;
+        }
+    }
+}
+
+#########################################################################################
+# Read in the Configuration file (genRF.conf)
+#########################################################################################
+
+if ($do_readConfig) {
+    $line_num = 0;
+    $srcIdx = 0;
+    $srcTotalNumBit = 0;
+    $srcROTotalNumBit = 0;
+    $srcLCTotalNumBit = 0;
+    print "INFO: ---- Read-in the Configuration file $configFileName ----\n";
+    open(INC, "$configFileName") || die "ERROR: cannot open the file $configFileName\n";
+    # Default Values
+    $isPRCLayer = 0;
+    $useCustomConnection = 0;
+    $do_autoInsert = 0;
+    $editDef = 0;
+    # Configuration File
+    while ($line=<INC>) {
+        $line_num ++;
+        chop($line);
+        $line =~ s/^\s+//;
+        @line = split(/[=\s]+/, $line);
+    
+        if ($line =~ /^\/\//) {next;}
+        elsif ($line =~ /^\s*$/) {next;}
+
+        ##---- Layer Name Variable
+        elsif ($line[0] =~ /^(LAYER_NAME)$/) { 
+            $layerName = $line[1];
+            # Default Values
+            $topSpiceName         = "X" . $layerName;
+            $verilogModuleName    = (lc $layerName) . "_rf";
+            $verilogInstName      = $layerName . "_0." . (lc $layerName) . "_rf_0";
+            $verilogLcModuleName  = (lc $layerName) . "_layer_ctrl_rf";
+            $verilogLcInstName    = $layerName . "_0." . (lc $layerName) . "_layer_ctrl_rf_0";
+            $outVerilogFile       = "./" . (lc $layerName) . "_rf.v";
+            $outVerilogLcFile     = "./" . (lc $layerName) . "_layer_ctrl_rf.v";
+            $outDebugFile         = "./" . $layerName . "_rf_debug.v";
+            $outHeaderFile        = "./" . $layerName . "_RF.h";
+            $outPtFile            = "./" . (lc $layerName) . "_rf.tcl";
+            $outEzFile            = "./" . "EZWAVE.tcl";
+            $outLogFile           = "./" . "RegFile.log";
+            $outVerilogMiscFile   = "./" . "Misc.v";
+            $FineSimWaveFileName  = "./test.fsim.fsdb";
+            $FineSimWaveFileAlias = "test.fsim";
+            $FineSimDigThreshold  = 0.6;
+            $mbusCinNetName       = lc "PAD_CIN";
+            $mbusDinNetName       = lc "PAD_DIN";
+            $vdd0p6NetName        = lc "VDD_0P6";
+            $vdd1p2NetName        = lc "VDD_1P2";
+            $vddbatNetName        = lc "VDD_3P6";
+            $vdd0p6SourceName     = lc "VVDD_0P6";
+            $vdd1p2SourceName     = lc "VVDD_1P2";
+            $vddbatSourceName     = lc "VVDD_3P6";
+            $windowWidth          = 1637;
+            $windowHeight         = 1001;
+            $windowDivider        = 0.85;
+        }
+
+        ##---- Mandatory Variables
+        elsif ($line[0] =~ /^(SET_FLIP_FLOP_CELL_NAME)$/)               { $setFFCellName        = $line[1];    }
+        elsif ($line[0] =~ /^(RESET_FLIP_FLOP_CELL_NAME)$/)             { $resetFFCellName      = $line[1];    }
+        elsif ($line[0] =~ /^(FLIP_FLOP_CLOCK_PIN_NAME)$/)              { $ffClockPinName       = $line[1];    }
+        elsif ($line[0] =~ /^(FLIP_FLOP_DATA_PIN_NAME)$/)               { $ffDataPinName        = $line[1];    }
+        elsif ($line[0] =~ /^(FLIP_FLOP_OUTPUT_PIN_NAME)$/)             { $ffOutputPinName      = $line[1];    }
+        elsif ($line[0] =~ /^(FLIP_FLOP_SET_PIN_NAME)$/)                { $ffSetPinName         = $line[1];    }
+        elsif ($line[0] =~ /^(FLIP_FLOP_RESET_PIN_NAME)$/)              { $ffResetPinName       = $line[1];    }
+        elsif ($line[0] =~ /^(BUF_CELL_NAME)$/)                         { $bufCellName          = $line[1];    }
+        elsif ($line[0] =~ /^(BUF_INPUT_PIN_NAME)$/)                    { $bufInputPinName      = $line[1];    }
+        elsif ($line[0] =~ /^(BUF_OUTPUT_PIN_NAME)$/)                   { $bufOutputPinName     = $line[1];    }
+        elsif ($line[0] =~ /^(INVERTER_CELL_NAME)$/)                    { $invCellName          = $line[1];    }
+        elsif ($line[0] =~ /^(INVERTER_INPUT_PIN_NAME)$/)               { $invInputPinName      = $line[1];    }
+        elsif ($line[0] =~ /^(INVERTER_OUTPUT_PIN_NAME)$/)              { $invOutputPinName     = $line[1];    }
+        elsif ($line[0] =~ /^(AND2_CELL_NAME)$/)                        { $and2CellName         = $line[1];    }
+        elsif ($line[0] =~ /^(AND2_INPUT1_PIN_NAME)$/)                  { $and2Input1PinName    = $line[1];    }
+        elsif ($line[0] =~ /^(AND2_INPUT2_PIN_NAME)$/)                  { $and2Input2PinName    = $line[1];    }
+        elsif ($line[0] =~ /^(AND2_OUTPUT_PIN_NAME)$/)                  { $and2OutputPinName    = $line[1];    }
+        elsif ($line[0] =~ /^(RESETN_CONNECT_TO)$/)                     { $resetnConnectTo      = $line[1];    }
+        elsif ($line[0] =~ /^(ISOLATE_CONNECT_TO)$/)                    { $isolateConnectTo     = $line[1];    }
+        elsif ($line[0] =~ /^(DATA_IN_CONNECT_TO)$/)                    { $dataInConnectTo      = $line[1];    }
+        elsif ($line[0] =~ /^(ADDR(ESS)?_IN_CONNECT_TO)$/)              { $addrInConnectTo      = $line[1];    }
+        elsif ($line[0] =~ /^(LC_RESETN_CONNECT_TO)$/)                  { $resetnLcConnectTo    = $line[1];    }
+        elsif ($line[0] =~ /^(LC_DATA_IN_CONNECT_TO)$/)                 { $dataInLcConnectTo    = $line[1];    }
+        elsif ($line[0] =~ /^(LC_ADDR_IN_CONNECT_TO)$/)                 { $addrInLcConnectTo    = $line[1];    }
+
+        ##---- Variables with Default Value
+        elsif ($line[0] =~ /^(TOP_LEVEL_SPICE_CELL_NAME)$/)             { if (scalar(@line) >= 2) { $topSpiceName         = $line[1];    } }
+        elsif ($line[0] =~ /^(REG(ISTER)?_FILE_VERILOG_MODULE_NAME)$/)  { if (scalar(@line) >= 2) { $verilogModuleName    = $line[1];    } }
+        elsif ($line[0] =~ /^(REG(ISTER)?_FILE_VERILOG_INST_NAME)$/)    { if (scalar(@line) >= 2) { $verilogInstName      = $line[1];    } }
+        elsif ($line[0] =~ /^(LC_REG_FILE_VERILOG_MODULE_NAME)$/)       { if (scalar(@line) >= 2) { $verilogLcModuleName  = $line[1];    } }
+        elsif ($line[0] =~ /^(LC_REG_FILE_VERILOG_INST_NAME)$/)         { if (scalar(@line) >= 2) { $verilogLcInstName    = $line[1];    } }
+        elsif ($line[0] =~ /^(REG(ISTER)?_FILE_VERILOG_FILE_NAME)$/)    { if (scalar(@line) >= 2) { $outVerilogFile       = $line[1];    } }
+        elsif ($line[0] =~ /^(LC_REG_FILE_VERILOG_FILE_NAME)$/)         { if (scalar(@line) >= 2) { $outVerilogLcFile     = $line[1];    } }
+        elsif ($line[0] =~ /^(DEBUG_FILE_NAME)$/)                       { if (scalar(@line) >= 2) { $outDebugFile         = $line[1];    } }
+        elsif ($line[0] =~ /^(HEADER_FILE_NAME)$/)                      { if (scalar(@line) >= 2) { $outHeaderFile        = $line[1];    } }
+        elsif ($line[0] =~ /^(PT_TCL_FILE_NAME)$/)                      { if (scalar(@line) >= 2) { $outPtFile            = $line[1];    } }
+        elsif ($line[0] =~ /^(EZWAVE_TCL_FILE_NAME)$/)                  { if (scalar(@line) >= 2) { $outEzFile            = $line[1];    } }
+        elsif ($line[0] =~ /^(LOG_FILE_NAME)$/)                         { if (scalar(@line) >= 2) { $outLogFile           = $line[1];    } }
+        elsif ($line[0] =~ /^(VERILOG_MISC)$/)                          { if (scalar(@line) >= 2) { $outVerilogMiscFile   = $line[1];    } }
+
+        ##---- EZWAVE TCL Setting
+        elsif ($line[0] =~ /^(FINESIM_WAVEFORM_FILE_NAME)$/)            { if (scalar(@line) >= 2) { $FineSimWaveFileName  = $line[1];    } }
+        elsif ($line[0] =~ /^(FINESIM_WAVEFORM_FILE_NAME_ALIAS)$/)      { if (scalar(@line) >= 2) { $FineSimWaveFileAlias = $line[1];    } }
+        elsif ($line[0] =~ /^(DIGITAL_SIGNAL_THRESHOLD)$/)              { if (scalar(@line) >= 2) { $FineSimDigThreshold  = $line[1];    } }
+        elsif ($line[0] =~ /^(MBUS_CIN_NET_NAME)$/)                     { if (scalar(@line) >= 2) { $mbusCinNetName       = lc $line[1]; } }
+        elsif ($line[0] =~ /^(MBUS_DIN_NET_NAME)$/)                     { if (scalar(@line) >= 2) { $mbusDinNetName       = lc $line[1]; } }
+        elsif ($line[0] =~ /^(VDD_0P6_NET_NAME)$/)                      { if (scalar(@line) >= 2) { $vdd0p6NetName        = lc $line[1]; } }
+        elsif ($line[0] =~ /^(VDD_1P2_NET_NAME)$/)                      { if (scalar(@line) >= 2) { $vdd1p2NetName        = lc $line[1]; } }
+        elsif ($line[0] =~ /^(VDD_BAT_NET_NAME)$/)                      { if (scalar(@line) >= 2) { $vddbatNetName        = lc $line[1]; } }
+        elsif ($line[0] =~ /^(VDD_0P6_SOURCE_NAME)$/)                   { if (scalar(@line) >= 2) { $vdd0p6SourceName     = lc $line[1]; } }
+        elsif ($line[0] =~ /^(VDD_1P2_SOURCE_NAME)$/)                   { if (scalar(@line) >= 2) { $vdd1p2SourceName     = lc $line[1]; } }
+        elsif ($line[0] =~ /^(VDD_BAT_SOURCE_NAME)$/)                   { if (scalar(@line) >= 2) { $vddbatSourceName     = lc $line[1]; } }
+        elsif ($line[0] =~ /^(WINDOW_WIDTH)$/)                          { if (scalar(@line) >= 2) { $windowWidth          = $line[1];    } }
+        elsif ($line[0] =~ /^(WINDOW_HEIGHT)$/)                         { if (scalar(@line) >= 2) { $windowHeight         = $line[1];    } }
+        elsif ($line[0] =~ /^(WINDOW_DIVIDER)$/)                        { if (scalar(@line) >= 2) { $windowDivider        = $line[1];    } }
+
+        ##---- Other Variables
+        elsif ($line[0] =~ /^(TOP_LEVEL_VERILOG_FILE)$/) { 
+            $outTopLevelVerilogFile = $line[1];
+            if    ($outTopLevelVerilogFile eq "") { $do_autoInsert = 0;}
+            elsif ($do_writeMisc)                 { $do_autoInsert = 1;}
+            else                                  { $do_autoInsert = 0;}
+        }
+        elsif ($line[0] =~ /^(TOP_DEF_VERILOG_FILE)$/) { 
+            $outTopDefVerilogFile = $line[1];
+            if    ($outTopDefVerilogFile eq "") { $editDef = 0;}
+            else                                { $editDef = 1;}
+        }
+        elsif ($line[0] =~ /^(FLIP_FLOP_OUTPUTB_PIN_NAME)$/) { 
+            $ffOutputBPinName = $line[1];
+            if    ($ffOutputBPinName eq "") { $useFFOutputBPin = 0;}
+            else                            { $useFFOutputBPin = 1;}
+        }
+        elsif ($line[0] =~ /^(THIS_IS_PRC_LAYER)$/) { 
+            $isPRCLayer = $line[1];
+            if    ($isPRCLayer =~ /^YES$/i) { $isPRCLayer = 1;}
+            elsif ($isPRCLayer =~ /^NO$/i) { $isPRCLayer = 0;}
+            else { die "ERROR: Syntax Error (Invalid value, Line $line_num in $configFileName)\n"; }
+        }
+        elsif ($line[0] =~ /^(FLIP_FLOP_ACTIVE_LOW_SET)$/) { 
+            $ffActiveLowSet = $line[1];       
+            if    ($ffActiveLowSet =~ /^YES$/i) { $ffActiveLowSet = 1;}
+            elsif ($ffActiveLowSet =~ /^NO$/i) { $ffActiveLowSet = 0;}
+            else { die "ERROR: Syntax Error (Invalid value, Line $line_num in $configFileName)\n"; }
+        }
+        elsif ($line[0] =~ /^(FLIP_FLOP_ACTIVE_LOW_RESET)$/) {
+            $ffActiveLowReset = $line[1];       
+            if    ($ffActiveLowReset =~ /^YES$/i) { $ffActiveLowReset = 1;}
+            elsif ($ffActiveLowReset =~ /^NO$/i) { $ffActiveLowReset = 0;}
+            else { die "ERROR: Syntax Error (Invalid value, Line $line_num in $configFileName)\n"; }
+        }
+        elsif ($line[0] =~ /^(USE_CUSTOM_CONNECTION)$/) { 
+            $useCustomConnection = $line[1];
+            if    ($useCustomConnection =~ /^YES$/i) { $useCustomConnection = 1;}
+            elsif ($useCustomConnection =~ /^NO$/i) { $useCustomConnection = 0;}
+            else { die "ERROR: Syntax Error (Invalid value, Line $line_num in $configFileName)\n"; }
+        }
+
+        ##---- Register File Data
+        elsif ($line[0] =~ /^0x/) {
+    
+            # Store Line Number ($srcRegLineNum)
+            $srcRegLineNum[$srcIdx] = $line_num;
+
+            # Parse any Comment
+            $tempLine = $line;
+            if ($tempLine =~ /"/) {
+                if ($tempLine =~ /"(.*)"/) { $tempLine = $1; $line =~ s/".*"//;}
+                else { die "ERROR: Syntax Error (Unmatched \", Line $line_num in $configFileName)\n"; }
+            }
+            else { $tempLine = "";}
+            $srcRegComment[$srcIdx] = $tempLine;
+
+            # Parse Use of Inverted Signal
+            $tempLine = $line;
+            if ($tempLine =~ /~/) {
+                if ($tempLine =~ /~(.*)~/) { 
+                    $tempLine = $1;
+                    if ($useFFOutputBPin == 0) { 
+                        print "INFO: FLIP_FLOP_OUTPUTB_PIN_NAME is not set. $invCellName will be used for an inverted output (Line $line_num in $configFileName)\n"; 
+                    }
+                    $srcRegDoInvName[$srcIdx] = 1;
+                }
+                else { die "ERROR: Syntax Error (Unmatched ~, Line $line_num in $configFileName)\n"; }
+            }
+            else { $tempLine = ""; $srcRegDoInvName[$srcIdx] = 0; }
+            $srcRegInvName[$srcIdx] = $tempLine;
+
+            # Parse Data Bit Indices
+            $tempLine = $line;
+            $tempLine =~ s/\[\s+/[/g;
+            $tempLine =~ s/\s+\]/]/g;
+            $tempLine =~ s/\s*:\s*/:/g;
+            @srcReg = split(/\s+/, $tempLine);
+    
+            # Store Register ID ($srcRegIdHex, $srcRegIdDec)
+            $srcRegIdHex[$srcIdx] = $srcReg[0];
+            $srcRegIdHex[$srcIdx] =~ s/^0x//;
+            $srcRegIdDec[$srcIdx] = Hex2Dec($srcRegIdHex[$srcIdx]);
+    
+            # Store Bit Indices ($srcRegMultiBit, $srcRegMSBIdx, $srcRegLSBIdx, $srcRegBitLength)
+            $srcReg[1] =~ s/\s+//g;
+            @src1 = split(/[\[:\]]+/, $srcReg[1]);
+            if    (scalar(@src1) == 2) {$srcRegMultiBit[$srcIdx] = 0; $srcRegMSBIdx[$srcIdx]=$src1[1]; $srcRegLSBIdx[$srcIdx]=$src1[1]; $srcRegBitLength[$srcIdx]=1;}
+            elsif (scalar(@src1) == 3) {$srcRegMultiBit[$srcIdx] = 1; $srcRegMSBIdx[$srcIdx]=$src1[1]; $srcRegLSBIdx[$srcIdx]=$src1[2]; $srcRegBitLength[$srcIdx]=$src1[1]-$src1[2]+1;}
+            else                {die "ERROR: Syntax Error (Line $line_num in $configFileName)\n";}
+    
+            # Store Register BitLength and Default Value ($srcRegDefaultValHex, $srcRegDefaultValBin, $srcRegDefaultValDec, $srcRegMaxValDec)
+            $srcRegDefaultVal[$srcIdx] = $srcReg[2];
+            @src2 = split(/'h/, $srcReg[2]);
+            $srcRegBitLength2[$srcIdx] = $src2[0];
+            $srcRegDefaultValHex[$srcIdx] = $src2[1];
+            $srcRegDefaultValBin[$srcIdx] = Hex2Bin($srcRegDefaultValHex[$srcIdx], $srcRegBitLength[$srcIdx]);
+            $srcRegDefaultValDec[$srcIdx] = Hex2Dec($srcRegDefaultValHex[$srcIdx]);
+            $srcRegMaxValDec[$srcIdx] = (2**$srcRegBitLength[$srcIdx]) - 1;
+    
+            # Store Register Property ($srcRegProperty)
+            $srcRegProperty[$srcIdx] = $srcReg[3];
+    
+            # Store Register Name ($srcRegName)
+            $srcRegName[$srcIdx] = $srcReg[4];
+    
+            # Error Check 1
+            if ($srcRegMSBIdx[$srcIdx] > ($maxNumDataBits - 1)) {
+                die "ERROR: Bit-Index Out-of-Range (RegName=$srcRegName[$srcIdx], Line $line_num in $configFileName)\n"; }
+            if ($srcRegLSBIdx[$srcIdx] < 0) {
+                die "ERROR: Bit-Index Out-of-Range (RegName=$srcRegName[$srcIdx], Line $line_num in $configFileName)\n"; }
+            if ($srcRegBitLength[$srcIdx] != $srcRegBitLength2[$srcIdx]) {
+                die "ERROR: Bit-width mismatch in $srcReg[1] and $srcRegDefaultVal[$srcIdx] (RegName=$srcRegName[$srcIdx], Line $line_num in $configFileName)\n"; }
+            if ($srcRegDefaultValDec[$srcIdx] > $srcRegMaxValDec[$srcIdx]) {
+                die "ERROR: Out-of-Range (#Bits=$srcRegBitLength[$srcIdx], Default=0x$srcRegDefaultValHex[$srcIdx], RegName=$srcRegName[$srcIdx], Line $line_num in $configFileName)\n"; }
+            if ( not (($srcRegProperty[$srcIdx] eq "W/R") or ($srcRegProperty[$srcIdx] eq "R") or ($srcRegProperty[$srcIdx] eq "LC"))) {
+                die "ERROR: Register Property must be either W/R, R, or LC (RegName=$srcRegName[$srcIdx], Line $line_num in $configFileName)\n"; }
+
+            # Set the proper number of digits for default Hex values
+            $srcRegDefaultValHex[$srcIdx] = Dec2Hex($srcRegDefaultValDec[$srcIdx], int($srcRegBitLength[$srcIdx]/4) + int(($srcRegBitLength[$srcIdx]%4) > 0));
+
+            # Summarize all the variables
+            $tempRegLineNum         = $srcRegLineNum[$srcIdx];
+            $tempRegIdHex           = $srcRegIdHex[$srcIdx];
+            $tempRegIdDec           = $srcRegIdDec[$srcIdx];
+            $tempRegMultiBit        = $srcRegMultiBit[$srcIdx];
+            $tempRegMSBIdx          = $srcRegMSBIdx[$srcIdx];
+            $tempRegLSBIdx          = $srcRegLSBIdx[$srcIdx];
+            $tempRegBitLength       = $srcRegBitLength[$srcIdx];
+            $tempRegDefaultValHex   = $srcRegDefaultValHex[$srcIdx];
+            $tempRegDefaultValBin   = $srcRegDefaultValBin[$srcIdx];
+            $tempRegDefaultValDec   = $srcRegDefaultValDec[$srcIdx];
+            $tempRegMaxValDec       = $srcRegMaxValDec[$srcIdx];
+            $tempRegProperty        = $srcRegProperty[$srcIdx];
+            $tempRegName            = $srcRegName[$srcIdx];
+            $tempRegComment         = $srcRegComment[$srcIdx];
+            $tempRegDoInvName       = $srcRegDoInvName[$srcIdx];
+            $tempRegInvName         = $srcRegInvName[$srcIdx];
+    
+            # Store reg*[][], Check any duplicate definitions.
+            for ($j=$tempRegLSBIdx; $j<($tempRegMSBIdx+1); $j++) {
+                
+                if ($regValid[$tempRegIdDec][$j] == 0) {
+    
+                    $regLineNum[$tempRegIdDec][$j]       = $tempRegLineNum;
+                    $regMultiBit[$tempRegIdDec][$j]      = $tempRegMultiBit;
+                    $regMSBIdx[$tempRegIdDec][$j]        = $tempRegMSBIdx;
+                    $regLSBIdx[$tempRegIdDec][$j]        = $tempRegLSBIdx;
+                    $regBitLength[$tempRegIdDec][$j]     = $tempRegBitLength;
+                    $regDefaultValHex[$tempRegIdDec][$j] = $tempRegDefaultValHex;
+                    $regDefaultValBin[$tempRegIdDec][$j] = $tempRegDefaultValBin;
+                    $regDefaultValDec[$tempRegIdDec][$j] = $tempRegDefaultValDec;
+                    $regMaxValDec[$tempRegIdDec][$j]     = $tempRegMaxValDec;
+                    $regProperty[$tempRegIdDec][$j]      = ($tempRegProperty eq "W/R") ? "W/R" : (($tempRegProperty eq "R") ? " R " : (($tempRegProperty eq "LC") ? "LC " : ""));
+                    $regValid[$tempRegIdDec][$j]         = ($tempRegProperty eq "W/R") ? 1 : (($tempRegProperty eq "R") ? 2 : (($tempRegProperty eq "LC") ? 3 : 0));
+                    $regName[$tempRegIdDec][$j]          = $tempRegName;
+                    $regSubIdx[$tempRegIdDec][$j]        = $j-$tempRegLSBIdx;
+                    $regDefaultBit[$tempRegIdDec][$j]    = substr ($regDefaultValBin[$tempRegIdDec][$j], $tempRegBitLength - $regSubIdx[$tempRegIdDec][$j] - 1, 1);
+                    $regComment[$tempRegIdDec][$j]       = $tempRegComment;
+                    $regDoInvName[$tempRegIdDec][$j]     = $tempRegDoInvName;
+                    $regInvName[$tempRegIdDec][$j]       = $tempRegInvName;
+                }
+                else { die "ERROR: Duplicate Register Bit at ADDR=0x$tempRegIdHex, DATA=$j (Line $line_num in $configFileName)\n"; }
+            }
+    
+            $srcTotalNumBit = $srcTotalNumBit + $srcRegBitLength[$srcIdx];
+            if($tempRegProperty eq "R" ) { $srcROTotalNumBit = $srcROTotalNumBit + $srcRegBitLength[$srcIdx]; }
+            if($tempRegProperty eq "LC") { $srcLCTotalNumBit = $srcLCTotalNumBit + $srcRegBitLength[$srcIdx]; }
+            $srcIdx ++;
+        }
+    }
+
+    # Determine $regLastAddr, $regFirstAddr, $regLastDataBitIdx[$addr], $regFirstDataBitIdx[$addr], $regNotEmpty[$addr], 
+    # $regValBin[$addr], $regValHex[$addr], $regValBin4[$addr], $regCurrValBin[$addr], $regAllReadOrLc[$addr], $regAllReadOnly[$addr], $regAllLcOnly[$addr]
+    # $regHasLcBit[$addr]
+    # Also update $maxNumDataBits if not all 24-bit space is used.
+    $maxDataBitIdx = -1;
+    for ($i=$maxNumRegs-1; $i>-1; $i--) {
+        $validDataBitFound = 0;
+        for ($j=$maxNumDataBits-1; $j>-1; $j--) {
+            if($regValid[$i][$j] > 0) {
+                $regLastDataBitIdx[$i] = $j; 
+                $validDataBitFound = 1; 
+                if ($regLastDataBitIdx[$i] > $maxDataBitIdx) { $maxDataBitIdx = $regLastDataBitIdx[$i]; }
+                last;
+            }
+        }
+        $regNotEmpty[$i] = $validDataBitFound;
+        if ($regNotEmpty[$i]) {
+            for ($j=0; $j<$maxNumDataBits; $j++) {
+                if($regValid[$i][$j] > 0) {$regFirstDataBitIdx[$i] = $j; last;}
+            }
+        }
+    }
+
+    $maxNumDataBits = $maxDataBitIdx + 1;
+    
+    $regLastAddr = -1;
+    for ($i=$maxNumRegs-1; $i>-1; $i--) {
+        if ($regNotEmpty[$i]) { $regLastAddr = $i; last; }
+    }
+    if ($regLastAddr == -1) {die "ERROR: Cannot find any valid register in $configFileName\n";}
+
+    $regFirstAddr = -1;
+    for ($i=0; $i<($regLastAddr+1); $i++) {
+        if ($regNotEmpty[$i]) { $regFirstAddr = $i; last; }
+    }
+
+    for ($i=$maxNumRegs-1; $i>-1; $i--) {
+        if($regNotEmpty[$i]) {
+            $regValBin[$i] = "";
+            for ($j=$maxNumDataBits-1; $j>-1; $j--) {
+                if ($regValid[$i][$j] == 1) { $regValBin[$i] = $regValBin[$i] . $regDefaultBit[$i][$j]; }
+                else                        { $regValBin[$i] = $regValBin[$i] . "0"; }
+            }
+        }
+        $regCurrValBin[$i] = $regValBin[$i];
+        $regValHex[$i] = Bin2Hex($regValBin[$i]);
+        $regValBin4[$i] = FormatBin($regValBin[$i]);
+    }
+
+    for ($i=$maxNumRegs-1; $i>-1; $i--) {
+        $regAllReadOrLc[$i] = 0;
+        $allReadOrLc = 1;
+        if($regNotEmpty[$i]) {
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                if ($regValid[$i][$j] == 1) {$allReadOrLc=0; last;}
+            }
+            $regAllReadOrLc[$i] = $allReadOrLc;
+        }
+    }
+
+    for ($i=$maxNumRegs-1; $i>-1; $i--) {
+        $regAllReadOnly[$i] = 0;
+        $allReadOnly = 1;
+        if($regNotEmpty[$i]) {
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                if ($regValid[$i][$j] == 1) {$allReadOnly=0; last;}
+                if ($regValid[$i][$j] == 3) {$allReadOnly=0; last;}
+            }
+            $regAllReadOnly[$i] = $allReadOnly;
+        }
+    }
+
+    for ($i=$maxNumRegs-1; $i>-1; $i--) {
+        $regAllLcOnly[$i] = 0;
+        $allLcOnly = 1;
+        if($regNotEmpty[$i]) {
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                if ($regValid[$i][$j] == 1) {$allLcOnly=0; last;}
+                if ($regValid[$i][$j] == 2) {$allLcOnly=0; last;}
+            }
+            $regAllLcOnly[$i] = $allLcOnly;
+        }
+    }
+
+    for ($i=$maxNumRegs-1; $i>-1; $i--) {
+        $regHasLcBit[$i] = 0;
+        $hasLcBit = 0;
+        if($regNotEmpty[$i]) {
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                if ($regValid[$i][$j] == 3) {$hasLcBit=1; last;}
+            }
+            $regHasLcBit[$i] = $hasLcBit;
+        }
+    }
+
+    # $printComma[$i][$j]
+    $lastNROfound = 0; # Last Non-Read-Only Register Found?
+    for ($i=$maxNumRegs-1; $i>-1; $i--) {
+        if ($regNotEmpty[$i]) {
+            for ($j=0; $j<$regLastDataBitIdx[$i]+1; $j++) {
+                if ($lastNROfound == 0) {
+                    if ($regValid[$i][$j] == 2) { # Read-Only
+                        for ($k=$j; $k<$j+$regBitLength[$i][$j]; $k++) { $printComma[$i][$k] = 0; }
+                        $j=$j+$regBitLength[$i][$j]-1;
+                    }
+                    elsif ($regValid[$i][$j] == 3) { # Layer-Ctrl
+                        for ($k=$j; $k<$j+$regBitLength[$i][$j]; $k++) { $printComma[$i][$k] = 0; }
+                        $j=$j+$regBitLength[$i][$j]-1;
+                    }
+                    elsif ($regValid[$i][$j] == 1) { # Write/Read
+                        for ($k=$j; $k<$j+$regBitLength[$i][$j]; $k++) { $printComma[$i][$k] = 0; }
+                        $j=$j+$regBitLength[$i][$j]-1;
+                        $lastNROfound = 1;
+                    }
+                }
+                else { # lastNROfound = 1
+                    if ($regValid[$i][$j] > 0) {
+                        for ($k=$j; $k<$j+$regBitLength[$i][$j]; $k++) { $printComma[$i][$k] = 1; }
+                        $j=$j+$regBitLength[$i][$j]-1;
+                    }
+                }
+            }
+        }
+    }
+
+    # $printLcComma[$i][$j]
+    $lastLcfound = 0; # Last LC Found?
+    for ($i=$maxNumRegs-1; $i>-1; $i--) {
+        if ($regNotEmpty[$i]) {
+            for ($j=0; $j<$regLastDataBitIdx[$i]+1; $j++) {
+                if ($lastLcfound == 0) {
+                    if ($regValid[$i][$j] == 3) { # Layer-Ctrl
+                        for ($k=$j; $k<$j+$regBitLength[$i][$j]; $k++) { $printLcComma[$i][$k] = 0; }
+                        $j=$j+$regBitLength[$i][$j]-1;
+                        $lastLcfound = 1;
+                    }
+                }
+                else { # lastLcfound = 1
+                    if ($regValid[$i][$j] > 0) {
+                        for ($k=$j; $k<$j+$regBitLength[$i][$j]; $k++) { $printLcComma[$i][$k] = 1; }
+                        $j=$j+$regBitLength[$i][$j]-1;
+                    }
+                }
+            }
+        }
+    }
+    
+    
+    # Print some statistics
+    print "INFO:      Found $srcIdx Signal Names (Total $srcTotalNumBit Bits, $srcROTotalNumBit READ-ONLY Bits, $srcLCTotalNumBit LAYER_CTRL Bits) in $configFileName\n";
+    if ($do_writeVerilog and ($srcLCTotalNumBit > 0)) { $do_writeVerilogLc = 1; } else { $do_writeVerilogLc = 0; }
+    close(INC);
+}
+
+#########################################################################################
+# Read in the Instruction file for Spice Vector Input File Generation
+#########################################################################################
+
+if ($do_readInst) {
+    $line_num = 0;
+    $instIdx = 0;
+    print "INFO: ---- Read-in the Instruction file $instFileName ----\n";
+    open(INI, "$instFileName") || die "ERROR: cannot open the file $instFileName\n";
+    while ($line=<INI>) {
+        $line_num ++;
+        chop($line);
+        $line =~ s/^\s+//;
+        @line = split(/[=\s]+/, $line);
+    
+        if ($line =~ /^\/\//) {next;}
+        elsif ($line =~ /^\s*$/) {next;}
+        elsif ($line[0] =~ /^(FINESIM_DIGITAL_VECTOR_FILE_NAME)$/) { $outVecFile = $line[1];           }
+        elsif ($line[0] =~ /^(SIGNAL_VOLTAGE)$/)                   { $VDD1P2Value = $line[1];          }
+        elsif ($line[0] =~ /^(TIME_UNIT)$/)                        { $timeUnit = $line[1];             }
+        elsif (($line[0] =~ /^[0-9]/) or ($line =~ /^\+/)) {
+            $instLine[$instIdx] = $line;
+            $instLineNumber[$instIdx] = $line_num;
+            $instIdx ++;
+        }
+    }
+    
+    # Print some statistics
+    $instTotalNum = $instIdx;
+    print "INFO:      Found $instTotalNum Instructions in $instFileName\n";
+    close(INI);
+}
+
+#########################################################################################
+# Write Verilog File (MBus Register File)
+#########################################################################################
+
+if ($do_writeVerilog) {
+    print "INFO: ---- Write MBus Register File Verilog $outVerilogFile ----\n";
+    open(OVER, ">$outVerilogFile")   || die "ERROR: cannot open the file $outVerilogFile\n";
+    
+    # Write Comment Section
+    print OVER "//*******************************************************************************************\n";
+    print OVER "// Description:    Netlist for $layerName\'s MBus Register File\n";
+    print OVER "//     Generated by $scriptName (Version $Version) $time\n";
+    print OVER "//*******************************************************************************************\n";
+    print OVER "\n";
+    if ($isPRCLayer) {
+        print OVER "//*******************************************************************************************\n";
+        print OVER "// MEMORY MAP\n";
+        print OVER "//*******************************************************************************************\n";
+        print OVER "// MBUS ADDR     || Register Name       [AMBA ADDR ]      || Reset Value || Type || Comments \n";
+        print OVER "//*******************************************************************************************\n";
+    }
+    else {
+        print OVER "//*******************************************************************************************\n";
+        print OVER "// MEMORY MAP\n";
+        print OVER "//*******************************************************************************************\n";
+        print OVER "// MBUS ADDR     || Register Name                         || Reset Value || Type || Comments \n";
+        print OVER "//*******************************************************************************************\n";
+    }
+
+    for ($i=0; $i<($regLastAddr + 1); $i++) {
+        if ($isPRCLayer) {
+            printf OVER "// 8'h%s         || REGISTER 0x%s (%3d) [0xA%7s]      ||             ||      ||           \n", Dec2Hex($i, 2), Dec2Hex($i, 2), $i, Dec2Hex(4*$i, 7);
+            printf OVER "//-------------------------------------------------------------------------------------------\n";
+        }
+        else {
+            printf OVER "// 8'h%s         || REGISTER 0x%s (%3d)                   ||             ||      ||           \n", Dec2Hex($i, 2), Dec2Hex($i, 2), $i;
+            printf OVER "//-------------------------------------------------------------------------------------------\n";
+        }
+
+
+        if ($regNotEmpty[$i]) {
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                if ($regValid[$i][$j] > 0) {
+                    if ($regMultiBit[$i][$j] == 1) {
+                        printf OVER "// 8'h%s [%2d:%2d] || %-37s || %2d'h%-6s  ||  %3s || %s\n", Dec2Hex($i, 2), $regMSBIdx[$i][$j], $regLSBIdx[$i][$j], $regName[$i][$j], $regBitLength[$i][$j], $regDefaultValHex[$i][$j], $regProperty[$i][$j], $regComment[$i][$j];
+                        $j=$j-$regBitLength[$i][$j]+1;
+                    }
+                    else {
+                        printf OVER "// 8'h%s [%5d] || %-37s || %2d'h%-6s  ||  %3s || %s\n", Dec2Hex($i, 2), $regMSBIdx[$i][$j], $regName[$i][$j], $regBitLength[$i][$j], $regDefaultValHex[$i][$j], $regProperty[$i][$j], $regComment[$i][$j];
+                    }
+                }
+            }
+        }
+        else { printf OVER "//               !!--- EMPTY REGISTER ---!!               ||             ||      ||\n"; }
+
+        printf OVER "//*******************************************************************************************\n";
+    }
+    print OVER "\n";
+
+    # Write Module Definition
+    printf OVER "module $verilogModuleName (\n";
+    printf OVER "   //Input\n";
+    printf OVER "    input         RESETn,\n";
+    printf OVER "    input         ISOLATE,\n";
+    printf OVER "    input [%3d:0] ADDR_IN,\n", $regLastAddr;
+    printf OVER "    input [%3d:0] DATA_IN,\n", $maxNumDataBits-1;
+    printf OVER "   //Output\n";
+    for ($i=0; $i<($regLastAddr + 1); $i++) {
+        if ($regNotEmpty[$i]) {
+            printf OVER "    //Register 0x%s (%3d)\n", Dec2Hex($i, 2), $i;
+
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                if ($regValid[$i][$j] > 0) {
+                    printf OVER "    ";
+                    if ($regMultiBit[$i][$j] == 1) {
+                        if ($regProperty[$i][$j] =~ /^(( R )|(LC ))$/) { printf OVER "//";}
+                        printf OVER "output [%2d:0] %s", $regBitLength[$i][$j]-1, $regName[$i][$j];
+                        if ($regDoInvName[$i][$j] or $printComma[$i][$j]) {printf OVER ",";}
+                        if ($regProperty[$i][$j] eq " R ") { printf OVER " // READ-ONLY";}
+                        if ($regProperty[$i][$j] eq "LC ") { printf OVER " // LAYER-CTRL";}
+                        printf OVER "\n";
+                        if ($regDoInvName[$i][$j]) { # If this has an inverted signal
+                            printf OVER "    ";
+                            if ($regProperty[$i][$j] =~ /^(( R )|(LC ))$/) { printf OVER "//";}
+                            printf OVER "output [%2d:0] %s", $regBitLength[$i][$j]-1, $regInvName[$i][$j];
+                            if ($printComma[$i][$j]){printf OVER ",";}
+                            printf OVER " // Inverted Signal of %s", $regName[$i][$j];
+                            if ($regProperty[$i][$j] eq " R ") { printf OVER " // READ-ONLY";}
+                            if ($regProperty[$i][$j] eq "LC ") { printf OVER " // LAYER-CTRL";}
+                            printf OVER "\n";
+                        }
+                        $j=$j-$regBitLength[$i][$j]+1;
+                    }
+                    else {
+                        if ($regProperty[$i][$j] =~ /^(( R )|(LC ))$/) { printf OVER "//";}
+                        printf OVER "output        %s", $regName[$i][$j];
+                        if ($regDoInvName[$i][$j] or $printComma[$i][$j]) {printf OVER ",";}
+                        if ($regProperty[$i][$j] eq " R ") { printf OVER " // READ-ONLY";}
+                        if ($regProperty[$i][$j] eq "LC ") { printf OVER " // LAYER-CTRL";}
+                        printf OVER "\n";
+                        if ($regDoInvName[$i][$j]) { # If this has an inverted signal
+                            printf OVER "    ";
+                            if ($regProperty[$i][$j] =~ /^(( R )|(LC ))$/) { printf OVER "//";}
+                            printf OVER "output        %s", $regInvName[$i][$j];
+                            if ($printComma[$i][$j]){printf OVER ",";}
+                            printf OVER " // Inverted Signal of %s", $regName[$i][$j];
+                            if ($regProperty[$i][$j] eq " R ") { printf OVER " // READ-ONLY";}
+                            if ($regProperty[$i][$j] eq "LC ") { printf OVER " // LAYER-CTRL";}
+                            printf OVER "\n";
+                        }
+
+                    }
+                }
+            }
+        }
+    }
+    printf OVER "   );\n";
+    printf OVER "\n";
+
+    $isolateBarNetName = "isolate_n";
+    $addrIsoNetName = "addr_in_iso";
+    $dataIsoNetName = "data_in_iso";
+    $addrIsoBufNetName = "addr_in_iso_buf";
+    $dataIsoBufNetName = "data_in_iso_buf";
+
+    printf OVER "   //Internal Wires\n";
+    printf OVER "    wire         $isolateBarNetName;\n";
+    printf OVER "    wire [%3d:0] $addrIsoNetName;\n", $regLastAddr;
+    printf OVER "    wire [%3d:0] $addrIsoBufNetName;\n", $regLastAddr;
+    printf OVER "    wire [%3d:0] $dataIsoNetName;\n", $maxNumDataBits-1;
+    printf OVER "    wire [%3d:0] $dataIsoBufNetName;\n", $maxNumDataBits-1;
+
+    if (($ffActiveLowSet == 0) or ($ffActiveLowReset == 0)) {
+        printf OVER "    wire         reset;\n";
+        printf OVER "\n";
+        printf OVER "   //****************************************************\n";
+        printf OVER "   // RESET                                              \n";
+        printf OVER "   //****************************************************\n";
+        printf OVER "    $invCellName RESET_INV_0 (.$invInputPinName(RESETn), .$invOutputPinName(reset));\n";
+        printf OVER "\n";
+    }
+    else {
+        printf OVER "\n";
+    }
+
+    printf OVER "   //****************************************************\n";
+    printf OVER "   // ISOLATE                                            \n";
+    printf OVER "   //****************************************************\n";
+
+    # Inverter for generating $isolateBarNetName
+    printf OVER "    $invCellName ISOLATE_INV_0 (.$invInputPinName(ISOLATE), .$invOutputPinName($isolateBarNetName));\n";
+    printf OVER "\n";
+
+    # AND GATES for ADDR
+    for ($i=$regLastAddr; $i>-1; $i--) {
+        printf OVER "    ";
+        if (($regNotEmpty[$i] == 0) or $regAllReadOrLc[$i]) { printf OVER "//";}
+        printf OVER "$and2CellName ADDR_IN_AND_%03d (.$and2Input1PinName($isolateBarNetName), .$and2Input2PinName(ADDR_IN[%3d]), .$and2OutputPinName($addrIsoNetName\[%3d]));\n", $i, $i, $i;
+    }
+    printf OVER "\n";
+
+    # AND GATES for DATA
+    for ($i=$maxNumDataBits-1; $i>-1; $i--) {
+        printf OVER "    ";
+        printf OVER "$and2CellName DATA_IN_AND_%02d (.$and2Input1PinName($isolateBarNetName), .$and2Input2PinName(DATA_IN[%2d]), .$and2OutputPinName($dataIsoNetName\[%2d]));\n", $i, $i, $i;
+    }
+    printf OVER "\n";
+
+    # BUFFERS for ADDR
+    for ($i=$regLastAddr; $i>-1; $i--) {
+        printf OVER "    ";
+        if (($regNotEmpty[$i] == 0) or $regAllReadOrLc[$i]) { printf OVER "//";}
+        printf OVER "$bufCellName BUF_ADDR_IN_%03d (.$bufInputPinName($addrIsoNetName\[%3d]), .$bufOutputPinName($addrIsoBufNetName\[%3d]));\n", $i, $i, $i;
+    }
+    printf OVER "\n";
+
+    # BUFFERS for DATA
+    for ($i=$maxNumDataBits-1; $i>-1; $i--) {
+        printf OVER "    ";
+        printf OVER "$bufCellName BUF_DATA_IN_%02d (.$bufInputPinName($dataIsoNetName\[%2d]), .$bufOutputPinName($dataIsoBufNetName\[%2d]));\n", $i, $i, $i;
+    }
+    printf OVER "\n";
+
+    # FLIP-FLOPS
+    for ($i=0; $i<($regLastAddr + 1); $i++) {
+        if ($regNotEmpty[$i]) {
+
+            $invNameExists = 0;
+
+            printf OVER "   //****************************************************\n";
+            printf OVER "   // REGISTER 0x%s (%3d)\n", Dec2Hex($i, 2), $i;
+            printf OVER "   //****************************************************\n";
+
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                if ($regValid[$i][$j] > 0) {
+                    if ($regSubIdx[$i][$j] == ($regBitLength[$i][$j] - 1)) {
+                        printf OVER "    //%s (%d'h%s)\n", $regName[$i][$j], $regBitLength[$i][$j], $regDefaultValHex[$i][$j];
+                    }
+
+                    if($regDefaultBit[$i][$j] eq '1') {
+                        $ffCellName = $setFFCellName;
+                        $ffDefaultPinName = $ffSetPinName;
+                        if ($ffActiveLowSet) {$ffDefaultNetName = "RESETn";}
+                        else {$ffDefaultNetName = "reset";}
+                    }
+                    else {
+                        $ffCellName = $resetFFCellName;
+                        $ffDefaultPinName = $ffResetPinName;
+                        if ($ffActiveLowReset) {$ffDefaultNetName = "RESETn";}
+                        else {$ffDefaultNetName = "reset";}
+                    }
+
+                    printf OVER "    ";
+                    if ($regProperty[$i][$j] =~ /^(( R )|(LC ))$/) { printf OVER "//";}
+
+
+                    if ($regMultiBit[$i][$j]) {
+                        printf OVER "%s %s_%d (.%s($addrIsoBufNetName\[%d]), .%s($dataIsoBufNetName\[%d]), .%s(%s), .%s(%s[%d])",
+                            $ffCellName, $regName[$i][$j], $regSubIdx[$i][$j], $ffClockPinName, $i, $ffDataPinName, $j, 
+                            $ffDefaultPinName, $ffDefaultNetName, $ffOutputPinName, $regName[$i][$j], $regSubIdx[$i][$j];
+                        if ($useFFOutputBPin) { 
+                            if($regDoInvName[$i][$j]) {
+                                printf OVER ", .%s(%s[%d]));\n", $ffOutputBPinName, $regInvName[$i][$j], $regSubIdx[$i][$j]; 
+                                $invNameExists = 1;
+                            }
+                            else {
+                                printf OVER ", .%s());\n", $ffOutputBPinName; 
+                            }
+                        }
+                        else { 
+                            printf OVER ");\n"; 
+                            if($regDoInvName[$i][$j]) { $invNameExists = 1;}
+                        }
+                    }
+                    else {
+                        printf OVER "%s %s_%d (.%s($addrIsoBufNetName\[%d]), .%s($dataIsoBufNetName\[%d]), .%s(%s), .%s(%s)", 
+                            $ffCellName, $regName[$i][$j], $regSubIdx[$i][$j], $ffClockPinName, $i, $ffDataPinName, $j, 
+                            $ffDefaultPinName, $ffDefaultNetName, $ffOutputPinName, $regName[$i][$j];
+                        if ($useFFOutputBPin) { 
+                            if($regDoInvName[$i][$j]) {
+                                printf OVER ", .%s(%s));\n", $ffOutputBPinName, $regInvName[$i][$j];
+                                $invNameExists = 1;
+                            }
+                            else {
+                                printf OVER ", .%s());\n", $ffOutputBPinName; 
+                            }
+                        }
+                        else { 
+                            printf OVER ");\n"; 
+                            if($regDoInvName[$i][$j]) { $invNameExists = 1;}
+                        }
+                    }
+                }
+            }
+
+            if (($invNameExists == 1) and ($useFFOutputBPin == 0)) {
+                printf OVER "\n";
+                printf OVER "    // Inverted Signals\n";
+    
+                for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                    if (($regValid[$i][$j] > 0) and ($regDoInvName[$i][$j])){
+    
+                        printf OVER "    ";
+                        if ($regProperty[$i][$j] =~ /^(( R )|(LC ))$/) { printf OVER "//";}
+    
+                        if ($regMultiBit[$i][$j]) {
+                            printf OVER "%s %s_%d (.%s(%s[%d]), .%s(%s[%d]));\n",
+                                $invCellName, $regInvName[$i][$j], $regSubIdx[$i][$j],
+                                $invInputPinName, $regName[$i][$j], $regSubIdx[$i][$j],
+                                $invOutputPinName, $regInvName[$i][$j], $regSubIdx[$i][$j];
+                        }
+                        else {
+                            printf OVER "%s %s_%d (.%s(%s), .%s(%s));\n",
+                                $invCellName, $regInvName[$i][$j], $regSubIdx[$i][$j],
+                                $invInputPinName, $regName[$i][$j], $invOutputPinName, $regInvName[$i][$j];
+                        }
+                    }
+                }
+            }
+        }
+        else {
+
+            printf OVER "   //****************************************************\n";
+            printf OVER "   // REGISTER 0x%s (%3d) - Empty Register\n", Dec2Hex($i, 2), $i;
+            printf OVER "   //****************************************************\n";
+
+        }
+        printf OVER "\n";
+    }
+
+    printf OVER "endmodule // $verilogModuleName\n";
+
+    close (OVER);
+}
+
+#########################################################################################
+# Write Verilog File (Layer Controller Register File)
+#########################################################################################
+
+if ($do_writeVerilogLc) {
+    print "INFO: ---- Write Layer Ctrl Register File Verilog $outVerilogLcFile ----\n";
+    open(OVER, ">$outVerilogLcFile")   || die "ERROR: cannot open the file $outVerilogLcFile\n";
+
+    # Write Comment Section
+    print OVER "//*******************************************************************************************\n";
+    print OVER "// Description:    Netlist for $layerName\'s Layer Controller Register File\n";
+    print OVER "//     Generated by $scriptName (Version $Version) $time\n";
+    print OVER "//\n";
+    print OVER "// [NOTE] This is a subset of the entire Register File. See Log file or MBus Register File\n";
+    print OVER "//         Verilog module definition for the complete list of the Register File\n";
+    print OVER "//*******************************************************************************************\n";
+    print OVER "\n";
+    if ($isPRCLayer) {
+        print OVER "//*******************************************************************************************\n";
+        print OVER "// MEMORY MAP\n";
+        print OVER "//*******************************************************************************************\n";
+        print OVER "// MBUS ADDR     || Register Name       [AMBA ADDR ]      || Reset Value || Type || Comments \n";
+        print OVER "//*******************************************************************************************\n";
+    }
+    else {
+        print OVER "//*******************************************************************************************\n";
+        print OVER "// MEMORY MAP\n";
+        print OVER "//*******************************************************************************************\n";
+        print OVER "// MBUS ADDR     || Register Name                         || Reset Value || Type || Comments \n";
+        print OVER "//*******************************************************************************************\n";
+    }
+
+    for ($i=0; $i<($regLastAddr + 1); $i++) {
+        if ($regHasLcBit[$i]) {
+            if ($isPRCLayer) {
+                printf OVER "// 8'h%s         || REGISTER 0x%s (%3d) [0xA%7s]      ||             ||      ||           \n", Dec2Hex($i, 2), Dec2Hex($i, 2), $i, Dec2Hex(4*$i, 7);
+                printf OVER "//-------------------------------------------------------------------------------------------\n";
+            }
+            else {
+                printf OVER "// 8'h%s         || REGISTER 0x%s (%3d)                   ||             ||      ||           \n", Dec2Hex($i, 2), Dec2Hex($i, 2), $i;
+                printf OVER "//-------------------------------------------------------------------------------------------\n";
+            }
+
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                if ($regValid[$i][$j] == 3) {
+                    if ($regMultiBit[$i][$j] == 1) {
+                        printf OVER "// 8'h%s [%2d:%2d] || %-37s || %2d'h%-6s  ||  %3s || %s\n", Dec2Hex($i, 2), $regMSBIdx[$i][$j], $regLSBIdx[$i][$j], $regName[$i][$j], $regBitLength[$i][$j], $regDefaultValHex[$i][$j], $regProperty[$i][$j], $regComment[$i][$j];
+                        $j=$j-$regBitLength[$i][$j]+1;
+                    }
+                    else {
+                        printf OVER "// 8'h%s [%5d] || %-37s || %2d'h%-6s  ||  %3s || %s\n", Dec2Hex($i, 2), $regMSBIdx[$i][$j], $regName[$i][$j], $regBitLength[$i][$j], $regDefaultValHex[$i][$j], $regProperty[$i][$j], $regComment[$i][$j];
+                    }
+                }
+            }
+
+            printf OVER "//*******************************************************************************************\n";
+        }
+    }
+    print OVER "\n";
+
+    # Write Module Definition
+    printf OVER "module $verilogLcModuleName (\n";
+    printf OVER "   //Input\n";
+    printf OVER "    input         RESETn,\n";
+    printf OVER "    input [%3d:0] ADDR_IN,\n", $regLastAddr;
+    printf OVER "    input [%3d:0] DATA_IN,\n", $maxNumDataBits-1;
+    printf OVER "   //Output\n";
+    for ($i=0; $i<($regLastAddr + 1); $i++) {
+        if ($regHasLcBit[$i]) {
+            printf OVER "    //Register 0x%s (%3d)\n", Dec2Hex($i, 2), $i;
+
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                if ($regValid[$i][$j] == 3) {
+                    printf OVER "    ";
+                    if ($regMultiBit[$i][$j] == 1) {
+                        printf OVER "output reg [%2d:0] %s", $regBitLength[$i][$j]-1, $regName[$i][$j];
+                        if ($regDoInvName[$i][$j] or $printLcComma[$i][$j]) {printf OVER ",";}
+                        printf OVER "\n";
+                        if ($regDoInvName[$i][$j]) { # If this has an inverted signal
+                            printf OVER "    ";
+                            printf OVER "output     [%2d:0] %s", $regBitLength[$i][$j]-1, $regInvName[$i][$j];
+                            if ($printLcComma[$i][$j]){printf OVER ",";}
+                            printf OVER " // Inverted Signal of %s", $regName[$i][$j];
+                            printf OVER "\n";
+                        }
+                        $j=$j-$regBitLength[$i][$j]+1;
+                    }
+                    else {
+                        printf OVER "output reg        %s", $regName[$i][$j];
+                        if ($regDoInvName[$i][$j] or $printLcComma[$i][$j]) {printf OVER ",";}
+                        printf OVER "\n";
+                        if ($regDoInvName[$i][$j]) { # If this has an inverted signal
+                            printf OVER "    ";
+                            printf OVER "output            %s", $regInvName[$i][$j];
+                            if ($printLcComma[$i][$j]){printf OVER ",";}
+                            printf OVER " // Inverted Signal of %s", $regName[$i][$j];
+                            printf OVER "\n";
+                        }
+
+                    }
+                }
+            }
+        }
+    }
+    printf OVER "   );\n";
+    printf OVER "\n";
+
+    # FLIP-FLOPS
+    for ($i=0; $i<($regLastAddr + 1); $i++) {
+        if ($regHasLcBit[$i]) {
+
+            printf OVER "   //****************************************************\n";
+            printf OVER "   // REGISTER 0x%s (%3d)\n", Dec2Hex($i, 2), $i;
+            printf OVER "   //****************************************************\n";
+
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                if ($regValid[$i][$j] == 3) {
+                    if ($regSubIdx[$i][$j] == ($regBitLength[$i][$j] - 1)) {
+                        printf OVER "    //%s (%d'h%s)\n", $regName[$i][$j], $regBitLength[$i][$j], $regDefaultValHex[$i][$j];
+                    }
+
+                    printf OVER "    always @ (posedge ADDR_IN[%d] or negedge RESETn) begin\n", $i;
+                    printf OVER "        if (~RESETn) %s <= `SD %d'h%s;\n", $regName[$i][$j], $regBitLength[$i][$j], $regDefaultValHex[$i][$j];
+                    printf OVER "        else         %s <= `SD DATA_IN[%d:%d];\n", $regName[$i][$j], $regMSBIdx[$i][$j], $regLSBIdx[$i][$j];
+                    printf OVER "    end\n";
+                    printf OVER "\n";
+
+                    if ($regDoInvName[$i][$j]) {
+                        printf OVER "    assign %s = ~%s;", $regInvName[$i][$j], $regName[$i][$j];
+                        printf OVER "\n";
+                    }
+
+                    $j=$j-$regBitLength[$i][$j]+1;
+                }
+
+            }
+
+        }
+    }
+
+    printf OVER "endmodule // $verilogLcModuleName\n";
+
+    close (OVER);
+}
+
+#########################################################################################
+# Generate Spice Vector Input File Generation
+#########################################################################################
+
+if ($do_writeVector) {
+    print "INFO: ---- Write Input Vector File $outVecFile ----\n";
+    open(OVEC, ">$outVecFile")    || die "ERROR: cannot open the file $outVecFile\n";
+    
+    print OVEC ";; Generated by $scriptName (Version $Version) $time\n";
+    print OVEC "\nradix 1 1 44444444 44444444\nvname C2MB_REQ C2MB_ACK C2MB_ADDR[[31:0]] C2MB_DATA[[31:0]]\nio    i i iiiiiiii iiiiiiii\n\ntunit $timeUnit\n\nvih $VDD1P2Value\nvil 0\n";
+    print OVEC "\n";
+    print OVEC "; Power on\n";
+    print OVEC "0    0 0 00000000 00000000\n";
+    print OVEC "\n";
+    print OVEC ";; -----------------------------------------------\n";
+    print OVEC ";; Begin user-defined messages\n";
+    print OVEC ";; -----------------------------------------------\n";
+    print OVEC "\n";
+    
+    $currentTime = 0;
+    $msgId = 0;
+    $i = 0;
+    $enum_val = 0;
+
+    while ($i < $instTotalNum) {
+        $msgId++;
+        @printLine = ();
+    
+        @inst = split(/\s+/, $instLine[$i]);
+    
+        $offset = $inst[0];
+        $instRegName = $inst[1];
+        $instValue = $inst[2];
+    
+        $currentTime = $currentTime + $offset;
+    
+        if ($instRegName =~ /^$scriptName\_/) {
+    
+            if ($instRegName =~ /ENUM/) {
+                $enum_val = $instValue;
+                if ((Hex2Dec($enum_val)>14) or (Hex2Dec($enum_val)<1)) {
+                    die "ERROR: Invalid Enumeration (Line $instLineNumber[$i] in $configFileName)\n";
+                }
+                $printLine[0] = ";; MESSAGE #" . $msgId;
+                $printLine[1] = ";; SEND ENUMERATION MESSAGE (ENUM = $enum_val)";
+                $printLine[2] = ";; -----------------------------------------------";
+                $printLine[3] = $currentTime      . "    0 0 00000000 2" . $enum_val . "000000";
+                $printLine[4] = $currentTime + 10 . "    1 0 00000000 2" . $enum_val . "000000";
+                $printLine[5] = $currentTime + 80 . "    0 0 00000000 00000000";
+                $printLine[6] = "";
+            }
+            elsif ($instRegName =~ /ACK/) {
+                $printLine[0] = ";; MESSAGE #" . $msgId;
+                $printLine[1] = ";; ACKNOWLEDGEMENT";
+                $printLine[2] = ";; -----------------------------------------------";
+                $printLine[3] = $currentTime      . "    0 1 00000000 00000000";
+                $printLine[4] = $currentTime + 50 . "    0 0 00000000 00000000";
+                $printLine[5] = "";
+            }
+            elsif ($instRegName =~ /SLEEP/) {
+                $printLine[0] = ";; MESSAGE #" . $msgId;
+                $printLine[1] = ";; SEND SLEEP MESSAGE";
+                $printLine[2] = ";; -----------------------------------------------";
+                $printLine[3] = $currentTime      . "    0 0 00000001 00000000";
+                $printLine[4] = $currentTime + 10 . "    1 0 00000001 00000000";
+                $printLine[5] = $currentTime + 80 . "    0 0 00000000 00000000";
+                $printLine[6] = "";
+            }
+            elsif ($instRegName =~ /WAKE/) {
+                $printLine[0] = ";; MESSAGE #" . $msgId;
+                $printLine[1] = ";; SEND WAKE-UP MESSAGE";
+                $printLine[2] = ";; -----------------------------------------------";
+                $printLine[3] = $currentTime      . "    0 0 00000001 10000000";
+                $printLine[4] = $currentTime + 10 . "    1 0 00000001 10000000";
+                $printLine[5] = $currentTime + 80 . "    0 0 00000000 00000000";
+                $printLine[6] = "";
+            }
+            elsif ($instRegName =~ /QUERY/) {
+                $printLine[0] = ";; MESSAGE #" . $msgId;
+                $printLine[1] = ";; SEND QUERY MESSAGE";
+                $printLine[2] = ";; -----------------------------------------------";
+                $printLine[3] = $currentTime      . "    0 0 00000000 00000000";
+                $printLine[4] = $currentTime + 10 . "    1 0 00000000 00000000";
+                $printLine[5] = $currentTime + 80 . "    0 0 00000000 00000000";
+                $printLine[6] = "";
+            }
+            elsif ($instRegName =~ /INVAL/) {
+                $short_prefix = $instValue;
+                if ((Hex2Dec($short_prefix)>14) or (Hex2Dec($short_prefix)<1)) {
+                    die "ERROR: Invalid Short_Prefix (Line $instLineNumber[$i] in $configFileName)\n";
+                }
+                $printLine[0] = ";; MESSAGE #" . $msgId;
+                $printLine[1] = ";; SEND INVALIDATE-PREFIX MESSAGE (SHORT_PREFIX = $short_prefix)";
+                $printLine[2] = ";; -----------------------------------------------";
+                $printLine[3] = $currentTime      . "    0 0 00000000 3" . $short_prefix . "000000";
+                $printLine[4] = $currentTime + 10 . "    1 0 00000000 3" . $short_prefix . "000000";
+                $printLine[5] = $currentTime + 80 . "    0 0 00000000 00000000";
+                $printLine[6] = "";
+            }
+            $i++;
+        }
+        else {
+            $numRegWrite = 1;
+    
+            if (($i < ($instTotalNum - 1)) and ($instLine[$i+1] =~ /^\+/)) {
+    
+                for ($j=$i+1; $j<$instTotalNum; $j++) {
+                    if ( $instLine[$j] =~ /^\+/) { $numRegWrite ++;}
+                    else {last;}
+                }
+    
+                for($j=0; $j<$numRegWrite; $j++) {
+                    @inst = split(/\s+/, $instLine[$i+$j]);
+                    $instRegName[$j] = $inst[1];
+                    $instRegValHex[$j] = $inst[2];
+                }
+    
+            }
+            else {
+                $instRegName[0] = $inst[1];
+                $instRegValHex[0] = $inst[2];
+            }
+    
+            # Error Check and Determine $instRegAddr
+            $instRegAddrAlreadySet = 0;
+            $instRegAddr = -1;
+            for ($j=0; $j<$numRegWrite; $j++) {
+                $found = 0;
+                for ($k=0; $k<($regLastAddr+1); $k++) {
+                    if ($found != 1) {
+                        for ($l=0; $l<($regLastDataBitIdx[$k]+1); $l++) {
+                            if ($instRegName[$j] eq $regName[$k][$l]) {
+                                if (($instRegAddr != $k) and ($instRegAddrAlreadySet == 1)) { 
+                                    die "ERROR: You cannot change multiple registers at the same time (Line $instLineNumber[$i] in $configFileName)\n"; 
+                                }
+                                elsif ($regValid[$k][$l] == 2) {
+                                    die "ERROR: You cannot write into READ-ONLY registers ($instRegName[$j], Line $instLineNumber[$i] in $configFileName)\n"; 
+                                }
+                                else { 
+                                    $instRegAddr = $k; 
+
+                                    if (Hex2Dec($instRegValHex[$j]) > $regMaxValDec[$k][$l]) {
+                                        die "ERROR: Out-of-Range (#Bits=$regBitLength[$k][$l], Default=0x$instRegValHex[$j], RegName=$instRegName[$j], Line $instLineNumber[$i+$j] in $configFileName)\n"; 
+                                    }
+                                
+                                    $instRegAddrAlreadySet = 1; 
+                                    $found = 1; 
+                                    last;
+                                }
+                            }
+                            elsif (($k == $regLastAddr) and ($l == $regLastDataBitIdx[$k])) {
+                                die "ERROR: Cannot locate the Register Name $instRegName[$j] (Line $instLineNumber[$i] in $configFileName)\n";
+                            }
+                        }
+                    }
+                }
+            }
+
+            # Get the previous register value
+            $regPrevValBin = $regCurrValBin[$instRegAddr];
+            $regNextValBin = $regPrevValBin;
+    
+            for ($j=0; $j<$numRegWrite; $j++) {
+                # Determine the Start Bit Index inside the register as well as the Bit Length
+                for ($k=0; $k<$regLastDataBitIdx[$instRegAddr]+1; $k++) {
+                    if ($instRegName[$j] eq $regName[$instRegAddr][$k]) { 
+                        $instMSBIdx[$j] = $regMSBIdx[$instRegAddr][$k]; 
+                        $instLSBIdx[$j] = $regLSBIdx[$instRegAddr][$k]; 
+                        $instBitLength[$j] = $regBitLength[$instRegAddr][$k]; 
+                        last;}
+                }
+                
+                # Make the new register bit pattern
+                $nextBin = Hex2Bin($instRegValHex[$j], $instBitLength[$j]);
+                $startIdx = 23 - $instLSBIdx[$j] - $instBitLength[$j] + 1;
+                $endIdx = 23 - $instLSBIdx[$j];
+                
+                if (($startIdx == 0) and ($endIdx == 23)) {
+                    $prevBin = $regNextValBin;
+                    $regNextValBin = $nextBin;
+                }
+                elsif ($startIdx == 0) {
+                    $remaining = substr ($regNextValBin, $instBitLength[$j], 24 - $instBitLength[$j]);
+                    $prevBin = substr ($regNextValBin, 0, $instBitLength[$j]);
+                    $regNextValBin = $nextBin . $remaining;
+                }
+                elsif ($endIdx == 23) {
+                    $remaining = substr ($regNextValBin, 0, 24 - $instBitLength[$j]);
+                    $prevBin = substr ($regNextValBin, 24 - $instBitLength[$j], $instBitLength[$j]);
+                    $regNextValBin = $remaining . $nextBin;
+                }
+                else {
+                    $remaining1 = substr ($regNextValBin, 0, $startIdx);
+                    $remaining2 = substr ($regNextValBin, $endIdx+1, 24 - $startIdx - $instBitLength[$j]);
+                    $prevBin = substr ($regNextValBin, $startIdx, $instBitLength[$j]);
+                    $regNextValBin = $remaining1 . $nextBin . $remaining2;
+                }
+    
+                $instNextValBin[$j] = $nextBin;
+                $instPrevValBin[$j] = $prevBin;
+    
+                $instNextValHex[$j] = Bin2Hex($instNextValBin[$j]);
+                $instPrevValHex[$j] = Bin2Hex($instPrevValBin[$j]);
+            }
+    
+            # Write the Result
+            $instRegAddrHex = Dec2Hex($instRegAddr, 2);
+            $regPrevValHex = Bin2Hex($regPrevValBin);
+            $regNextValHex = Bin2Hex($regNextValBin);
+            $regPrevValBin4 = FormatBin($regPrevValBin);
+            $regNextValBin4 = FormatBin($regNextValBin);
+    
+            $printLine[0] = ";; MESSAGE #" . $msgId;
+            $printLine[1] = ";; REGISTER 0x" . $instRegAddrHex;
+            for ($j=0; $j<$numRegWrite; $j++) {
+                if ($instBitLength[$j] > 1) {
+                    $printLine[2+$j] = ";;       [" . $instMSBIdx[$j] . ":" . $instLSBIdx[$j] . "] " . $instRegName[$j] . ": " . $instBitLength[$j] . "'h" . $instPrevValHex[$j] . " -> " . $instBitLength[$j] . "'h" . $instNextValHex[$j];
+                }
+                else {
+                    $printLine[2+$j] = ";;       [" . $instLSBIdx[$j] . "] " . $instRegName[$j] . ": " . $instBitLength[$j] . "'h" . $instPrevValHex[$j] . " -> " . $instBitLength[$j] . "'h" . $instNextValHex[$j];
+                }
+            }
+            $printLine[2+$numRegWrite] = ";; Prev Reg Val: 0x" . $regPrevValHex . " (0b_" . $regPrevValBin4 . ")";
+            $printLine[3+$numRegWrite] = ";; Next Reg Val: 0x" . $regNextValHex . " (0b_" . $regNextValBin4 . ")";
+            $printLine[4+$numRegWrite] = ";; -----------------------------------------------";
+            $printLine[5+$numRegWrite] = $currentTime      . "    0 0 000000" . $enum_val . "0 " . $instRegAddrHex . $regNextValHex;
+            $printLine[6+$numRegWrite] = $currentTime + 10 . "    1 0 000000" . $enum_val . "0 " . $instRegAddrHex . $regNextValHex;
+            $printLine[7+$numRegWrite] = $currentTime + 80 . "    0 0 00000000 00000000";
+            $printLine[8+$numRegWrite] = "";
+    
+            $regCurrValBin[$instRegAddr] = $regNextValBin;
+    
+            $i = $i + $numRegWrite;
+        }
+    
+        for($j=0; $j<scalar(@printLine); $j++) {print OVEC "$printLine[$j]\n";}
+    }
+    
+    close(OVEC);
+}
+
+#########################################################################################
+# Generate the Log File
+#########################################################################################
+
+if ($do_writeLog) {
+    print "INFO: ---- Write Log File $outLogFile ----\n";
+    open(OLOG, ">$outLogFile")    || die "ERROR: cannot open the file $outLogFile\n";
+    
+    print OLOG "############################################################\n";
+    print OLOG "# REGISTER FILE INFORMATION\n";
+    print OLOG "#      Generated by $scriptName (Version $Version) $time\n";
+    print OLOG "############################################################\n";
+    print OLOG "\n";
+    if ($isPRCLayer) {
+        print OLOG "  ADDRESS    AMBA_ADDR   RANGE      DEFAULT_VALUE\n";
+        print OLOG " -----------------------------------------------\n";
+    }
+    else {
+        print OLOG "  ADDRESS    RANGE      DEFAULT_VALUE\n";
+        print OLOG " -----------------------------------------------\n";
+    }
+    
+    for ($i=0; $i<$regLastAddr+1; $i++) {
+        $regIdHex = Dec2Hex($i, 2);
+        $regIdDec = $i;
+        if ($regNotEmpty[$i]) {
+            if ($isPRCLayer) { printf OLOG " 0x%2s(%3d)  0xA%7s  [%2d:0]   ", $regIdHex, $regIdDec, Dec2Hex(4*$i, 7), $regLastDataBitIdx[$i];}
+            else             { printf OLOG " 0x%2s(%3d)  [%2d:0]   ", $regIdHex, $regIdDec, $regLastDataBitIdx[$i];}
+
+    
+            $numROBits = 0;
+            @ROBitIdx = ();
+            for($j=0; $j<$regLastDataBitIdx[$i]+1; $j++) {
+                if ($regValid[$i][$j] == 2) { 
+                    $ROBitIdx[$numROBits] = $j;
+                    $numROBits ++;
+                }
+            }
+    
+            $numLcBits = 0;
+            @LcBitIdx = ();
+            for($j=0; $j<$regLastDataBitIdx[$i]+1; $j++) {
+                if ($regValid[$i][$j] == 3) { 
+                    $LcBitIdx[$numLcBits] = $j;
+                    $numLcBits ++;
+                }
+            }
+    
+            if ($regAllReadOnly[$i]) {
+                print OLOG "# --- READ-ONLY --- #\n";
+            }
+            elsif ($regAllLcOnly[$i]) {
+                print OLOG "# --- LAYER-CTRL ONLY --- #\n";
+            }
+            elsif ($regAllReadOrLc[$i]) {
+                print OLOG "# --- READ & LAYER-CTRL ONLY --- #\n";
+            }
+            elsif (($numROBits != 0) or ($numLcBits != 0)) {
+                print OLOG "0x$regValHex[$i] (0b_$regValBin4[$i]) ";
+
+                if ($numROBits != 0) {
+                    print OLOG "(READ-ONLY BIT INDEX: ";
+                    for($j=0; $j<$numROBits; $j++) { 
+                        print OLOG "$ROBitIdx[$j]";
+                        if ($j != ($numROBits - 1)) { print OLOG ", ";}
+                        else {print OLOG ") ";}
+                    }
+                }
+
+                if ($numLcBits != 0) {
+                    print OLOG "(LAYER-CTRL BIT INDEX: ";
+                    for($j=0; $j<$numLcBits; $j++) { 
+                        print OLOG "$LcBitIdx[$j]";
+                        if ($j != ($numLcBits - 1)) { print OLOG ", ";}
+                        else {print OLOG ") ";}
+                    }
+                }
+                printf OLOG "\n";
+            }
+            else {
+                print OLOG "0x$regValHex[$i] (0b_$regValBin4[$i])\n";
+            }
+        }
+        else {
+            if ($isPRCLayer) { printf OLOG " 0x%2s(%3d)  0xA%7s           # --- EMPTY --- #\n", $regIdHex, $regIdDec, Dec2Hex(4*$i, 7);}
+            else             { printf OLOG " 0x%2s(%3d)           # --- EMPTY --- #\n", $regIdHex, $regIdDec; }
+        }
+    }
+    print OLOG "\n";
+    print OLOG "\n";
+    
+    for ($i=0; $i<$regLastAddr+1; $i++) {
+        $regIdHex = Dec2Hex($i, 2);
+        $regIdDec = $i;
+        print OLOG "### REGISTER 0x$regIdHex ($regIdDec)";
+        if ($isPRCLayer) { printf OLOG " [0xA%7s]", Dec2Hex(4*$i, 7);}
+        print OLOG ":\n";
+        if ($regNotEmpty[$i]) {
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                if ($regValid[$i][$j] == 0) {
+                    printf OLOG "    [%2d]    #NOT-DEFINED\n", $j;
+                }
+                else {
+                    if ($regMultiBit[$i][$j] == 1) {
+                        printf OLOG "    [%2d:%2d]  %2d'h%-6s  %3s  %s", $regMSBIdx[$i][$j], $regLSBIdx[$i][$j], $regBitLength[$i][$j], $regDefaultValHex[$i][$j], $regProperty[$i][$j], $regName[$i][$j];
+                        if ($regDoInvName[$i][$j]) {printf OLOG " (INVERTED: $regInvName[$i][$j])";}
+                        if ($regComment[$i][$j] eq "") {printf OLOG "\n";}
+                        else                           {printf OLOG "\t#$regComment[$i][$j]\n";}
+                        $j=$j-$regBitLength[$i][$j]+1;
+                    }
+                    else {
+                        printf OLOG "    [%2d]     %2d'h%-6s  %3s  %s", $regLSBIdx[$i][$j], $regBitLength[$i][$j], $regDefaultBit[$i][$j], $regProperty[$i][$j], $regName[$i][$j];
+                        if ($regDoInvName[$i][$j]) {printf OLOG " (INVERTED: $regInvName[$i][$j])";}
+                        if ($regComment[$i][$j] eq "") {printf OLOG "\n";}
+                        else                           {printf OLOG "\t#$regComment[$i][$j]\n";}
+                    }
+                }
+            }
+        }
+        else {
+            printf OLOG "    # --- EMPTY --- #\n";
+        }
+        print OLOG "\n";
+    }
+    close(OLOG);
+}
+
+#########################################################################################
+# Generate the Debug File for Verilog Testbench
+#########################################################################################
+
+if ($do_writeDebug) {
+    print "INFO: ---- Write Verilog Debug File $outDebugFile ----\n";
+    open(ODBG, ">$outDebugFile") || die "ERROR: cannot open the file $outDebugFile\n";
+    
+    print ODBG "//************************************************************\n";
+    print ODBG "// Desciption: $layerName Register File Verilog Debug File\n";
+    print ODBG "//      Generated by $scriptName (Version $Version) $time\n";
+    print ODBG "//************************************************************\n";
+    print ODBG "\n";
+
+    for ($i=0; $i<$regLastAddr+1; $i++) {
+        if ($regNotEmpty[$i]) {
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                if ($regValid[$i][$j] == 1) {
+
+                    printf ODBG "always @(%s.%s) begin if (%s.RESETn) begin `TEST_LD; \$write(\"\%%c[0;33m\", 27); \$display (\"\\n*** Time \%%0dns: [INFO] REG VALUE CHANGED: %s = 0x\%%0h (\%%0d)\", \$time, %s.%s, %s.%s); \$write(\"\%%c[0m\", 27); end end\n",
+                        $verilogInstName, $regName[$i][$j], $verilogInstName, $regName[$i][$j], $verilogInstName, $regName[$i][$j], $verilogInstName, $regName[$i][$j];
+
+                    if ($regMultiBit[$i][$j] == 1) { $j=$j-$regBitLength[$i][$j]+1; }
+                }
+            }
+        }
+    }
+
+    if ($do_writeVerilogLc) {
+        for ($i=0; $i<$regLastAddr+1; $i++) {
+            if ($regNotEmpty[$i]) {
+                for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                    if ($regValid[$i][$j] == 3) {
+
+                        printf ODBG "always @(%s.%s) begin if (%s.RESETn) begin `TEST_LD; \$write(\"\%%c[0;33m\", 27); \$display (\"\\n*** Time \%%0dns: [INFO] REG VALUE CHANGED: %s = 0x\%%0h (\%%0d)\", \$time, %s.%s, %s.%s); \$write(\"\%%c[0m\", 27); end end\n",
+                            $verilogLcInstName, $regName[$i][$j], $verilogLcInstName, $regName[$i][$j], $verilogLcInstName, $regName[$i][$j], $verilogLcInstName, $regName[$i][$j];
+
+                        if ($regMultiBit[$i][$j] == 1) { $j=$j-$regBitLength[$i][$j]+1; }
+                    }
+                }
+            }
+        }
+    }
+
+    close(ODBG);
+}
+
+#########################################################################################
+# Generate the Header File
+#########################################################################################
+
+if ($do_writeHeader) {
+    print "INFO: ---- Write Header File $outHeaderFile ----\n";
+    open(OHEA, ">$outHeaderFile") || die "ERROR: cannot open the file $outHeaderFile\n";
+    
+    print OHEA "//************************************************************\n";
+    print OHEA "// Desciption: $layerName Register File Header File\n";
+    print OHEA "//      Generated by $scriptName (Version $Version) $time\n";
+    print OHEA "//************************************************************\n";
+    print OHEA "\n";
+
+    $headerName = (uc $layerName) . "_RF_H";
+
+    printf OHEA "#ifndef %s\n", $headerName;
+    printf OHEA "#define %s\n", $headerName;
+    printf OHEA "\n";
+
+    $layer_name = lc $layerName;
+    
+    for ($i=0; $i<$regLastAddr+1; $i++) {
+        $regIdHex = Dec2Hex($i, 2);
+        print OHEA "// Register 0x$regIdHex";
+        if ($isPRCLayer) { printf OHEA " [AMBA:0xA%7s]", Dec2Hex(4*$i, 7); }
+        print OHEA "\n";
+
+        if (!$regNotEmpty[$i]) {
+            printf OHEA "// -- EMPTY --\n";
+        }
+        elsif ($regAllReadOnly[$i]) {
+            printf OHEA "// -- READ-ONLY --\n";
+        }
+        else {
+            print OHEA "typedef union $layer_name\_r$regIdHex\{\n";
+            print OHEA "  struct\{\n";
+            for ($j=0; $j<$regLastDataBitIdx[$i]+1; $j++) {
+
+                if    ($regValid[$i][$j] == 0) { print OHEA "    ";}
+                elsif ($regValid[$i][$j] == 1) { print OHEA "    ";}
+                elsif ($regValid[$i][$j] == 2) { print OHEA "    // ";}
+                elsif ($regValid[$i][$j] == 3) { print OHEA "    ";}
+    
+                if ($regValid[$i][$j] == 0) { 
+                    $temp_name = "NOT_DEFINED_" . $i . "_" . $j;
+                    printf OHEA "unsigned $temp_name\t\t: 1;";
+                    $temp_bit_length = 1;
+                }
+                else {
+                    printf OHEA "unsigned $regName[$i][$j]\t\t: $regBitLength[$i][$j];";
+                    $temp_bit_length = $regBitLength[$i][$j];
+                }
+
+                if    ($regValid[$i][$j] == 0) { print OHEA "\n";}
+                elsif ($regValid[$i][$j] == 1) { print OHEA "\n";}
+                elsif ($regValid[$i][$j] == 2) { print OHEA " // READ-ONLY\n";}
+                elsif ($regValid[$i][$j] == 3) { print OHEA "\n";}
+    
+                $j=$j+$temp_bit_length-1;
+            }
+
+            print OHEA "  \};\n";
+            print OHEA "  uint32_t as_int;\n";
+            print OHEA "\} $layer_name\_r$regIdHex\_t;\n";
+            print OHEA "#define $layerName\_R$regIdHex\_DEFAULT \{\{";
+            
+            $firstValid = 1;
+            for ($j=0; $j<$regLastDataBitIdx[$i]+1; $j++) {
+                if ($firstValid != 1) {print OHEA ", ";}
+                $firstValid = 0;
+                if (($regValid[$i][$j] != 1) and ($regValid[$i][$j] != 3)) { 
+                    print OHEA "0x0"; 
+                    $temp_bit_length = 1;
+                }
+                else { 
+                    print OHEA "0x$regDefaultValHex[$i][$j]"; 
+                    $temp_bit_length = $regBitLength[$i][$j];
+                }
+
+                if ($regMultiBit[$i][$j] == 1) { $j=$j+$temp_bit_length-1;}
+            }
+            print OHEA "\}\}\n";
+            print OHEA "_Static_assert(sizeof($layer_name\_r$regIdHex\_t) == 4, \"Punned Structure Size\");\n";
+
+        }
+        print OHEA "\n";
+    }
+
+### NOTE: "Declare Struct" below causes "multiple definition errors" during compile.
+###       Need to check later.
+#    printf OHEA "// Declare Structs\n";
+#   for ($i=0; $i<$regLastAddr+1; $i++) {
+#       $regIdHex = Dec2Hex($i, 2);
+#
+#       if (!$regNotEmpty[$i] or $regAllReadOnly[$i]) { print OHEA "//"; }
+#
+#       print OHEA "volatile $layer_name\_r$regIdHex\_t $layer_name\_r$regIdHex = $layerName\_R$regIdHex\_DEFAULT;";
+#
+#       if (!$regNotEmpty[$i]) {
+#           printf OHEA " // EMPTY REGISTER\n";
+#        }
+#       elsif ($regAllReadOnly[$i]) {
+#           printf OHEA " // READ-ONLY REGISTER\n";
+#       }
+#        else {printf OHEA "\n";}
+#    }
+#    printf OHEA "\n";
+
+    printf OHEA "#endif // %s", $headerName;
+    close(OHEA);
+}
+
+#########################################################################################
+# Generate the PrimeTime Tcl File for QTM Generation
+#########################################################################################
+
+if ($do_writePT) {
+    print "INFO: ---- Write PrimeTime TCL File $outPtFile ----\n";
+    open(OPTT, ">$outPtFile")     || die "ERROR: cannot open the file $outPtFile\n";
+
+    print OPTT "set top_level $verilogModuleName\n";
+    print OPTT "\n";
+    print OPTT "create_qtm_model \$top_level\n";
+    print OPTT "\n";
+
+    ##-- Input Ports
+    print OPTT "create_qtm_port { ";
+    print OPTT "RESETn ISOLATE ADDR_IN[$regLastAddr:0] DATA_IN[$maxDataBitIdx:0] ";
+    print OPTT "} -type input\n";
+
+    ##-- Output Ports
+    print OPTT "create_qtm_port { ";
+    for ($i=0; $i<$regLastAddr+1; $i++) {
+        if ($regNotEmpty[$i]) {
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                if ($regValid[$i][$j] == 1) {
+                    if ($regMultiBit[$i][$j] == 1) {
+                        printf OPTT "%s[%d:0] ", $regName[$i][$j], $regBitLength[$i][$j]-1;
+                        if ($regDoInvName[$i][$j]) { printf OPTT "%s[%d:0] ", $regInvName[$i][$j], $regBitLength[$i][$j]-1;}
+                        $j=$j-$regBitLength[$i][$j]+1;
+                    }
+                    else {
+                        printf OPTT "%s ", $regName[$i][$j];
+                        if ($regDoInvName[$i][$j]) { printf OPTT "%s ", $regInvName[$i][$j];}
+                    }
+                }
+            }
+        }
+    }
+    print OPTT "} -type output\n";
+
+    #-- Load
+    print OPTT "\n";
+    print OPTT "set_qtm_port_load [get_qtm_ports  { ";
+    print OPTT "RESETn ISOLATE ADDR_IN[$regLastAddr:0] DATA_IN[$maxDataBitIdx:0] ";
+    print OPTT "} ] -value 0.001\n";
+
+    print OPTT "\n";
+    print OPTT "save_qtm_model -output \$top_level -format {lib db} -library_cell\n";
+    print OPTT "\n";
+
+    print OPTT "exit\n";
+    
+    close(OPTT);
+}
+
+#########################################################################################
+# Generate the EZWAVE Tcl File
+#########################################################################################
+
+if ($do_writeEZWAVE) {
+    print "INFO: ---- Write EZWAVE TCL File $outEzFile ----\n";
+    open(OEZW, ">$outEzFile")     || die "ERROR: cannot open the file $outEzFile\n";
+    
+    print OEZW "############################################################\n";
+    print OEZW "## EZwave - Saved Window File                               \n";
+    print OEZW "## Generated by $scriptName (Version $Version) $time        \n";
+    print OEZW "##                                                          \n";
+    print OEZW "############################################################\n";
+    print OEZW "\n";
+    print OEZW "onerror {resume}\n";
+    print OEZW "\n";
+    print OEZW "# ===== Open required Database =====\n";
+    print OEZW "dataset open $FineSimWaveFileName $FineSimWaveFileAlias\n";
+    print OEZW "\n";
+    
+    ## RF Expressions
+    print OEZW "# ====== Create the expressions =====\n";
+    print OEZW "\n";
+    
+    $topName = lc $topSpiceName;
+    
+    for ($i=0; $i<$regLastAddr+1; $i++) {
+        $regIdHex = Dec2Hex($i, 2);
+    
+        print OEZW "### ------ REGISTER 0x$regIdHex ------\n";
+    
+        if ($regNotEmpty[$i]) {
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                if ($regValid[$i][$j] > 0) {
+                    $sigName = lc $regName[$i][$j];
+                    $sigBus = $regMultiBit[$i][$j];
+                    $sigSubId = $regSubIdx[$i][$j];
+        
+                    $waveDigName[$j] = "Dig_v_" . $topName . "_" . $sigName . "_";
+                    if ($sigBus == 1) { $waveDigName[$j] = $waveDigName[$j] . $sigSubId . "_"; }
+        
+                    $waveSigName[$j] = $FineSimWaveFileAlias . "/" . $topName . "." . $sigName;
+                    if ($sigBus == 1) { $waveSigName[$j] = $waveSigName[$j] . "[" . $sigSubId . "]"; }
+        
+                    $printThis = "wfc {" . $waveDigName[$j] . "=atod(wf(\"" . $waveSigName[$j] . "\", \" -show TRAN.v \")," . $FineSimDigThreshold . ")}";
+        
+                    print OEZW "$printThis\n";
+                }
+            }
+        
+        
+            $printThis = "wave createbus R" . $regIdHex;
+    
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                if ($regValid[$i][$j] > 0) {
+                    $addThis = " -show cal.v -separator / -signals calc/" . $waveDigName[$j];
+                    $printThis = $printThis . $addThis;
+                }
+            }
+        
+            print OEZW "$printThis\n";
+        }
+        else {
+            print OEZW "###### -- EMPTY REGISTER --\n";
+        }
+
+        print OEZW "\n";
+    }
+    
+    ## Display the Signals
+    print OEZW "# ===== Open the window =====\n";
+    print OEZW "wave addwindow -x 0  -y 0 -width $windowWidth  -height $windowHeight -divider $windowDivider\n";
+    print OEZW "\n";
+    
+    print OEZW "# ===== Create row #1 (MBUS CIN) =====\n";
+    print OEZW "add wave  -show TRAN.v -color -16711936 -separator . -terminals  $topName.$mbusCinNetName\n";
+    print OEZW "\n";
+    
+    print OEZW "# ===== Create row #2 (MBUS DIN) =====\n";
+    print OEZW "add wave  -show TRAN.v -color -256 -separator . -terminals  $topName.$mbusDinNetName\n";
+    print OEZW "\n";
+    
+    print OEZW "# ===== Create row #3 (VDD VOLTAGES) =====\n";
+    print OEZW "add wave -overlay      -show TRAN.v -color -16744193 -terminals  $vdd0p6NetName -show TRAN.v -color -32768 -terminals  $vdd1p2NetName -show TRAN.v -color -65281 -terminals  $vddbatNetName\n";
+    print OEZW "\n";
+    
+    print OEZW "# ===== Create row #4 (VDD CURRENTS) =====\n";
+    print OEZW "add wave -overlay     -i  -color -16711681 -terminals  $vddbatSourceName -i  -color -2968436 -terminals  $vdd0p6SourceName -i  -color -3650716 -terminals  $vdd1p2SourceName\n";
+    print OEZW "\n";
+    
+    $rowNumOffset = 5;
+    
+    for ($i=0; $i<$regLastAddr+1; $i++) {
+        $regIdHex = Dec2Hex($i, 2);
+    
+        $rowNum = $rowNumOffset + $i;
+    
+        if ($regNotEmpty[$i]) { 
+            print OEZW "# ===== Create row #$rowNum =====\n";
+            print OEZW "add wave  -show none.v -hex  -signals  R0x$regIdHex\n"; 
+        }
+        else { 
+            print OEZW "### REGISTER 0x$regIdHex IS EMPTY.\n"; 
+            $rowNumOffset --;
+        }
+    
+        print OEZW "\n";
+    }
+    
+    print OEZW "# ====== Create the cursors, markers and measurements =====\n";
+    
+    close(OEZW);
+}
+
+#########################################################################################
+# Generate the Misc Verilog File Containing Useful Snippets
+#########################################################################################
+
+if ($do_writeMisc) {
+    print "INFO: ---- Write Misc Verilog $outVerilogMiscFile ----\n";
+    open(OVMI, ">$outVerilogMiscFile")     || die "ERROR: cannot open the file $outVerilogMiscFile\n";
+    
+    print OVMI "//##########################################################\n";
+    print OVMI "// Verilog Snippet File                                     \n";
+    print OVMI "// Generated by $scriptName (Version $Version) $time        \n";
+    print OVMI "//                                                          \n";
+    print OVMI "//##########################################################\n";
+    print OVMI "\n";
+    print OVMI "\n";
+
+    if ($useCustomConnection) {
+        $RESETn_NetName     = $resetnConnectTo;
+        $ISOLATE_NetName    = $isolateConnectTo;
+        $ADDR_IN_NetName    = $addrInConnectTo;
+        $DATA_IN_NetName    = $dataInConnectTo;
+        $LC_RESETn_NetName  = $resetnLcConnectTo;
+        $LC_ADDR_IN_NetName = $addrInLcConnectTo;
+        $LC_DATA_IN_NetName = $dataInLcConnectTo;
+    }
+    else {
+        if ($isPRCLayer) {
+            $RESETn_NetName     = "resetn";
+            $ISOLATE_NetName    = "lc_isolate";
+            $ADDR_IN_NetName    = "arb2rf_addr";
+            $DATA_IN_NetName    = "arb2rf_data";
+            $LC_RESETn_NetName  = "lc_reset_b";
+            $LC_ADDR_IN_NetName = "arb2rf_addr";
+            $LC_DATA_IN_NetName = "arb2rf_data";
+        } else {
+            $RESETn_NetName     = "resetn";
+            $ISOLATE_NetName    = "lc_isolate";
+            $ADDR_IN_NetName    = "lc2rf_addr_in";
+            $DATA_IN_NetName    = "lc2rf_data_in";
+            $LC_RESETn_NetName  = "lc_reset_b";
+            $LC_ADDR_IN_NetName = "lc2rf_addr_in";
+            $LC_DATA_IN_NetName = "lc2rf_data_in";
+        }
+    }
+
+    # Wire Declaration
+    print OVMI "//##########################################################\n";
+    print OVMI "// Use below for Internal Wire Declaration in Top Verilog   \n";
+    print OVMI "//##########################################################\n";
+    print OVMI "\n";
+    
+    $OVMI_printWire = "";
+
+    if ($do_writeVerilogLc) { printf OVMI "    //MBus & Layer Ctrl Register Files\n"; }
+    else                    { printf OVMI "    //MBus Register File\n"; }
+    printf OVMI "    wire        %s;\n", $RESETn_NetName;
+    printf OVMI "    wire        %s;\n", $ISOLATE_NetName;
+
+    $OVMI_printWire = $OVMI_printWire . sprintf("    wire [%d:0] %s;\n", $regLastAddr, $ADDR_IN_NetName);
+    $OVMI_printWire = $OVMI_printWire . sprintf("    wire [23:0] %s;\n", $DATA_IN_NetName);
+
+    for ($i=0; $i<($regLastAddr + 1); $i++) {
+        if ($regNotEmpty[$i]) {
+            $OVMI_printWire = $OVMI_printWire . sprintf("    //Register 0x%s (%3d)\n", Dec2Hex($i, 2), $i);
+
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+                if ($regValid[$i][$j] > 0) {
+                    $OVMI_printWire = $OVMI_printWire . sprintf("    ");
+                    if ($regMultiBit[$i][$j] == 1) {
+                        $OVMI_printWire = $OVMI_printWire . sprintf("wire [%2d:0] %s;\n", $regBitLength[$i][$j]-1, lc $regName[$i][$j]);
+                        if ($regDoInvName[$i][$j]) { # If this has an inverted signal
+                            $OVMI_printWire = $OVMI_printWire . sprintf("    ");
+                            $OVMI_printWire = $OVMI_printWire . sprintf("wire [%2d:0] %s; // Inverted Signal of %s\n", $regBitLength[$i][$j]-1, lc $regInvName[$i][$j], lc $regName[$i][$j]);
+                        }
+                        $j=$j-$regBitLength[$i][$j]+1;
+                    }
+                    else {
+                        $OVMI_printWire = $OVMI_printWire . sprintf("wire        %s;\n", lc $regName[$i][$j]);
+                        if ($regDoInvName[$i][$j]) { # If this has an inverted signal
+                            $OVMI_printWire = $OVMI_printWire . sprintf("    ");
+                            $OVMI_printWire = $OVMI_printWire . sprintf("wire        %s; // Inverted Signal of %s\n", lc $regInvName[$i][$j], lc $regName[$i][$j]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    printf OVMI "$OVMI_printWire";
+
+    printf OVMI "\n";
+    printf OVMI "\n";
+
+    # MBus Register File Instantiation
+    print OVMI "//##########################################################\n";
+    print OVMI "// Use below for Register File Instantiation in Top Verilog \n";
+    print OVMI "//##########################################################\n";
+    print OVMI "\n";
+
+    $OVMI_printRF = "";
+
+    print OVMI "    //******************************\n";
+    print OVMI "    // MBus Register File\n";
+    print OVMI "    //******************************\n";
+
+    $temp_inst_name = $verilogInstName;
+    $temp_inst_name =~ s/^.*\.//;
+
+    $OVMI_printRF = $OVMI_printRF . sprintf("    $verilogModuleName $temp_inst_name\n");
+    $OVMI_printRF = $OVMI_printRF . sprintf("       (\n");
+    $OVMI_printRF = $OVMI_printRF . sprintf("        //Power\n");
+    $OVMI_printRF = $OVMI_printRF . sprintf("        //.VDD\t(VDD_1P2),\n");
+    $OVMI_printRF = $OVMI_printRF . sprintf("        //.VSS\t(VSS),\n");
+    $OVMI_printRF = $OVMI_printRF . sprintf("        //Input\n");
+    $OVMI_printRF = $OVMI_printRF . sprintf("        .RESETn\t($RESETn_NetName),\n");
+    $OVMI_printRF = $OVMI_printRF . sprintf("        .ISOLATE\t($ISOLATE_NetName),\n");
+    $OVMI_printRF = $OVMI_printRF . sprintf("        .ADDR_IN\t($ADDR_IN_NetName),\n");
+    $OVMI_printRF = $OVMI_printRF . sprintf("        .DATA_IN\t($DATA_IN_NetName),\n");
+    $OVMI_printRF = $OVMI_printRF . sprintf("        //Output\n");
+
+    for ($i=$regFirstAddr; $i<($regLastAddr+1); $i++) {
+        $regIdHex = Dec2Hex($i, 2);
+    
+        $OVMI_printRF = $OVMI_printRF . sprintf("        //Register 0x$regIdHex ($i)\n");
+
+        if ($regNotEmpty[$i]) {
+            for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+
+                if ($regValid[$i][$j] > 0) {
+
+                    # Spaces in front
+                    $OVMI_printRF = $OVMI_printRF . sprintf("        ");
+
+                    # Read-Only or Layer-Ctrl
+                    if (($regValid[$i][$j] == 2) or ($regValid[$i][$j] == 3)) {$OVMI_printRF = $OVMI_printRF . sprintf("//");}
+
+                    # Actual Register Name
+                    $OVMI_printRF = $OVMI_printRF . sprintf(".%s\t(%s)", $regName[$i][$j], lc $regName[$i][$j]);
+
+                    # Print comma
+                    if ($printComma[$i][$j] or $regDoInvName[$i][$j]) { $OVMI_printRF = $OVMI_printRF . sprintf(",");}
+
+                    # If there is an inverted version
+                    if ($regDoInvName[$i][$j]) { 
+                        $OVMI_printRF = $OVMI_printRF . sprintf("\n        .%s\t(%s)", $regInvName[$i][$j], lc $regInvName[$i][$j]);
+                        if ($printComma[$i][$j]) { $OVMI_printRF = $OVMI_printRF . sprintf(",");}
+                    }
+
+                    # Next Line
+                    $OVMI_printRF = $OVMI_printRF . sprintf("\n");
+
+                    # Update bit index
+                    $j=$j-$regBitLength[$i][$j]+1;
+
+                }
+            }
+        }
+        else {
+            $OVMI_printRF = $OVMI_printRF . sprintf("        //--- Empty Register\n");
+        }
+    }
+    $OVMI_printRF = $OVMI_printRF . sprintf("       );\n");
+
+
+    # Layer Controller Register File Instantiation
+    if ($do_writeVerilogLc) {
+        print OVMI "\n";
+        print OVMI "    //******************************\n";
+        print OVMI "    // Layer Ctrl Register File\n";
+        print OVMI "    //******************************\n";
+
+        $OVMI_printRF = $OVMI_printRF . "\n";
+
+        $temp_inst_name = $verilogLcInstName;
+        $temp_inst_name =~ s/^.*\.//;
+
+        $OVMI_printRF = $OVMI_printRF . sprintf("    $verilogLcModuleName $temp_inst_name\n");
+        $OVMI_printRF = $OVMI_printRF . sprintf("       (\n");
+        $OVMI_printRF = $OVMI_printRF . sprintf("        //Power\n");
+        $OVMI_printRF = $OVMI_printRF . sprintf("        //.VDD\t(VDD_*_LC),\n");
+        $OVMI_printRF = $OVMI_printRF . sprintf("        //.VSS\t(VSS),\n");
+        $OVMI_printRF = $OVMI_printRF . sprintf("        //Input\n");
+        $OVMI_printRF = $OVMI_printRF . sprintf("        .RESETn\t($LC_RESETn_NetName),\n");
+        $OVMI_printRF = $OVMI_printRF . sprintf("        .ADDR_IN\t($LC_ADDR_IN_NetName),\n");
+        $OVMI_printRF = $OVMI_printRF . sprintf("        .DATA_IN\t($LC_DATA_IN_NetName),\n");
+        $OVMI_printRF = $OVMI_printRF . sprintf("        //Output\n");
+
+        for ($i=$regFirstAddr; $i<($regLastAddr+1); $i++) {
+            if ($regHasLcBit[$i]) {
+                $regIdHex = Dec2Hex($i, 2);
+        
+                $OVMI_printRF = $OVMI_printRF . sprintf("        //Register 0x$regIdHex ($i)\n");
+
+                for ($j=$regLastDataBitIdx[$i]; $j>-1; $j--) {
+
+                    if ($regValid[$i][$j] == 3) {
+
+                        # Spaces in front
+                        $OVMI_printRF = $OVMI_printRF . sprintf("        ");
+
+                        # Actual Register Name
+                        $OVMI_printRF = $OVMI_printRF . sprintf(".%s\t(%s)", $regName[$i][$j], lc $regName[$i][$j]);
+
+                        # Print comma
+                        if ($printLcComma[$i][$j] or $regDoInvName[$i][$j]) { $OVMI_printRF = $OVMI_printRF . sprintf(",");}
+
+                        # If there is an inverted version
+                        if ($regDoInvName[$i][$j]) { 
+                            $OVMI_printRF = $OVMI_printRF . sprintf("\n        .%s\t(%s)", $regInvName[$i][$j], lc $regInvName[$i][$j]);
+                            if ($printLcComma[$i][$j]) { $OVMI_printRF = $OVMI_printRF . sprintf(",");}
+                        }
+
+                        # Next Line
+                        $OVMI_printRF = $OVMI_printRF . sprintf("\n");
+
+                        # Update bit index
+                        $j=$j-$regBitLength[$i][$j]+1;
+
+                    }
+                }
+            }
+        }
+        $OVMI_printRF = $OVMI_printRF . sprintf("       );\n");
+    }
+
+    printf OVMI "$OVMI_printRF";
+
+    print OVMI "\n";
+    print OVMI "\n";
+
+    # Layer Controller
+    print OVMI "//##########################################################\n";
+    print OVMI "// Use below for Layer Controller REG_RD_DATA connection    \n";
+    print OVMI "//##########################################################\n";
+    print OVMI "\n";
+    print OVMI "    // Interface with Registers\n";
+    print OVMI "    .REG_RD_DATA(\n";
+
+    $OVMI_printConn = "";
+
+    $OVMI_printConn = $OVMI_printConn . sprintf("                 {\n");
+
+    # Force regFirstAddr=0; force displaying down to Reg0x00. Otherwise there may be port-width mismatch with layer ctrl.
+    $regFirstAddr_orig = $regFirstAddr;
+    $regFirstAddr = 0;
+
+    for ($i=$regLastAddr; $i>($regFirstAddr-1); $i--) {
+        $regIdHex = Dec2Hex($i, 2);
+    
+        $OVMI_printConn = $OVMI_printConn . sprintf("                  //Register 0x$regIdHex ($i)\n");
+
+        if ($regNotEmpty[$i]) {
+            $numZeroBits = 0;
+            for ($j=$maxNumDataBits-1; $j>-1; $j--) {
+                if ($regValid[$i][$j] > 0) {
+                    if ($numZeroBits > 0) {
+                        $OVMI_printConn = $OVMI_printConn . sprintf("                  %d'h0", $numZeroBits);
+                        $numZeroBits = 0;
+                        if (($i != $regFirstAddr) or ($j != 0)) { $OVMI_printConn = $OVMI_printConn . sprintf(",");}
+                        $OVMI_printConn = $OVMI_printConn . sprintf("\n");
+                    }
+
+                    $tempName = lc $regName[$i][$j];
+                    $OVMI_printConn = $OVMI_printConn . sprintf("                  %s", $tempName);
+
+                    $j=$j-$regBitLength[$i][$j]+1;
+                }
+                else { $numZeroBits ++; }
+
+                if ($numZeroBits == 0) {
+                    if (($i != $regFirstAddr) or ($j != 0)) { $OVMI_printConn = $OVMI_printConn . sprintf(",");}
+                    $OVMI_printConn = $OVMI_printConn . sprintf("\n");
+                }
+            }
+
+            if ($numZeroBits > 0) { # Just in case the first bit index is not 0
+                $OVMI_printConn = $OVMI_printConn . sprintf("                  %d'h0", $numZeroBits);
+                $numZeroBits = 0;
+                if (($i != $regFirstAddr) or ($j != 0)) { $OVMI_printConn = $OVMI_printConn . sprintf(",");}
+                $OVMI_printConn = $OVMI_printConn . sprintf("\n");
+            }
+        }
+        else {
+            $OVMI_printConn = $OVMI_printConn . sprintf("                  %d'h0", $maxNumDataBits);
+            if ($i != $regFirstAddr) { $OVMI_printConn = $OVMI_printConn . sprintf(",");}
+            $OVMI_printConn = $OVMI_printConn . sprintf("\n");
+        }
+    }
+
+    $OVMI_printConn = $OVMI_printConn . sprintf("                 }\n");
+
+    printf OVMI "$OVMI_printConn";
+
+    print OVMI "                ),\n";
+
+    # Recover regFirstAddr
+    $regFirstAddr = $regFirstAddr_orig;
+
+    close (OVMI);
+}
+
+#########################################################################################
+# Do Verilog In-Place Editing in the Specified Top-Level Verilog
+#########################################################################################
+
+if ($do_autoInsert) {
+    print "INFO: ---- Start Modifying Top-Level Verilog ----\n";
+
+    $genRF_tempFile  = "genRF_temp_top_verilog.v";
+    $genRF_backupFile= "genRF_top_level.v.bak";
+    $genRF_beginWire = "//---- genRF Beginning of Wire Declaration ----//";
+    $genRF_endWire   = "//---- genRF End of Wire Declaration ----//";
+    $genRF_beginConn = "//---- genRF Beginning of RF_DATA ----//";
+    $genRF_endConn   = "//---- genRF End of RF_DATA ----//";
+    $genRF_beginRF   = "//---- genRF Beginning of Register File ----//";
+    $genRF_endRF     = "//---- genRF End of Register File ----//";
+    $printWire = $OVMI_printWire;
+    $printConn = $OVMI_printConn;
+    $printRF   = $OVMI_printRF;
+
+    system ("cp $outTopLevelVerilogFile $genRF_tempFile")==0 or die "ERROR: cannot open the file $outTopLevelVerilogFile\n";
+    system ("cp $outTopLevelVerilogFile $genRF_backupFile")==0 or die "ERROR: cannot create a back-up file in this directory.\n";
+    open(OAII, "$genRF_tempFile")     || die "ERROR: cannot create a write-able file in this directory.\n";
+    open(OAIO, ">$outTopLevelVerilogFile")     || die "ERROR: cannot modify the file $outTopLevelVerilogFile.\n";
+    print "INFO: ---- Just in case, a back-up file $genRF_backupFile has been created ----\n";
+
+    $line_num = 0;
+    $printWire_deleteFromHere = 0;
+    $printConn_deleteFromHere = 0;
+    $printRF_deleteFromHere = 0;
+
+    while ($line = <OAII>) {
+        $line_num ++;
+        chop($line);
+        $line_orig = $line;
+        $line =~ s/^\s+//;
+
+        if    ($printWire_deleteFromHere == 1) {
+            if ($line =~ /^$genRF_endWire/) { printf OAIO "$line_orig\n"; $printWire_deleteFromHere = 0;}
+            else {next;}
+        }
+        elsif ($printConn_deleteFromHere == 1) {
+            if ($line =~ /^$genRF_endConn/) { printf OAIO "$line_orig\n"; $printConn_deleteFromHere = 0;}
+            else {next;}
+        }
+        elsif ($printRF_deleteFromHere == 1) {
+            if ($line =~ /^$genRF_endRF/) { printf OAIO "$line_orig\n"; $printRF_deleteFromHere = 0;}
+            else {next;}
+        }
+        # Insert Wire Declaration
+        elsif (($printWire_deleteFromHere == 0) and ($line =~ /^$genRF_beginWire/)) {
+            printf OAIO "$line_orig\n";
+            printf OAIO "$printWire";
+            $printWire_deleteFromHere = 1;
+        }
+        # Insert RF Port Connection
+        elsif (($printConn_deleteFromHere == 0) and ($line =~ /^$genRF_beginConn/)) {
+            printf OAIO "$line_orig\n";
+            printf OAIO "$printConn";
+            $printConn_deleteFromHere = 1;
+        }
+        # Insert RF Instance
+        elsif (($printRF_deleteFromHere == 0) and ($line =~ /^$genRF_beginRF/)) {
+            printf OAIO "$line_orig\n";
+            printf OAIO "$printRF";
+            $printRF_deleteFromHere = 1;
+        }
+        # Print all other lines
+        else {
+            printf OAIO "$line_orig\n";
+        }
+    }
+
+    close(OAII);
+    close(OAIO);
+    system ("rm -f $genRF_tempFile");
+}
+
+#########################################################################################
+# Do Verilog In-Place Editing in the Specified Top-Level Def File
+#########################################################################################
+
+if ($editDef) {
+    print "INFO: ---- Start Modifying Compiler Directives ----\n";
+
+    $genRF_tempFile  = "genRF_temp_top_def_verilog.v";
+    $genRF_backupFile= "genRF_top_def.v.bak";
+    $genRF_beginDef  = "//---- genRF Beginning of Compiler Directives ----//";
+    $genRF_endDef    = "//---- genRF End of Compiler Directives ----//";
+    $printDefSize     = "`define $layerName\_MBUS_RF_SIZE      ";
+    $printDefReadOnly = "`define $layerName\_MBUS_RF_READ_ONLY ";
+    $printDefEmpty    = "`define $layerName\_MBUS_RF_EMPTY     ";
+    @arrayDefReadOnly = ();
+    @arrayDefEmpty    = ();
+
+    #-- Generate what to print ($printDef)
+    for ($i=$regFirstAddr; $i<($regLastAddr+1); $i++) {
+        # Empty Register
+        if (!$regNotEmpty[$i]) {
+            push @arrayDefEmpty, $i;
+        }
+        # Read-Only Register
+        elsif ($regAllReadOnly[$i]) {
+            push @arrayDefReadOnly, $i;
+        }
+    }
+
+    $printDefSize = $printDefSize . ($regLastAddr+1);
+
+    if (scalar(@arrayDefReadOnly)==0) {
+        $printDefReadOnly = $printDefReadOnly . "1'b0";
+    }
+    else {
+        $printDefReadOnly = $printDefReadOnly . "(";
+        for ($i=0; $i<scalar(@arrayDefReadOnly); $i++) {
+            $printDefReadOnly = $printDefReadOnly . "(i==$arrayDefReadOnly[$i])";
+            if ($i<(scalar(@arrayDefReadOnly)-1)) { $printDefReadOnly = $printDefReadOnly . "||"; }
+        }
+        $printDefReadOnly = $printDefReadOnly . ")";
+    }
+
+    if (scalar(@arrayDefEmpty)==0) {
+        $printDefEmpty = $printDefEmpty . "1'b0";
+    }
+    else {
+        $printDefEmpty = $printDefEmpty . "(";
+        for ($i=0; $i<scalar(@arrayDefEmpty); $i++) {
+            $printDefEmpty = $printDefEmpty . "(i==$arrayDefEmpty[$i])";
+            if ($i<(scalar(@arrayDefEmpty)-1)) { $printDefEmpty = $printDefEmpty . "||"; }
+        }
+        $printDefEmpty = $printDefEmpty . ")";
+    }
+
+    system ("cp $outTopDefVerilogFile $genRF_tempFile")==0 or die "ERROR: cannot open the file $outTopDefVerilogFile\n";
+    system ("cp $outTopDefVerilogFile $genRF_backupFile")==0 or die "ERROR: cannot create a back-up file in this directory.\n";
+    open(OAII, "$genRF_tempFile")     || die "ERROR: cannot create a write-able file in this directory.\n";
+    open(OAIO, ">$outTopDefVerilogFile")     || die "ERROR: cannot modify the file $outTopDefVerilogFile.\n";
+    print "INFO: ---- Just in case, a back-up file $genRF_backupFile has been created ----\n";
+
+    $line_num = 0;
+    $printDef_deleteFromHere = 0;
+
+    while ($line = <OAII>) {
+        $line_num ++;
+        chop($line);
+        $line_orig = $line;
+        $line =~ s/^\s+//;
+
+        if    ($printDef_deleteFromHere == 1) {
+            if ($line =~ /^$genRF_endDef/) { printf OAIO "$line_orig\n"; $printDef_deleteFromHere = 0;}
+            else {next;}
+        }
+        # Insert Def Declaration
+        elsif (($printDef_deleteFromHere == 0) and ($line =~ /^$genRF_beginDef/)) {
+            printf OAIO "$line_orig\n";
+            printf OAIO "$printDefSize\n";
+            printf OAIO "$printDefReadOnly\n";
+            printf OAIO "$printDefEmpty\n";
+            $printDef_deleteFromHere = 1;
+        }
+        # Print all other lines
+        else {
+            printf OAIO "$line_orig\n";
+        }
+    }
+
+    close(OAII);
+    close(OAIO);
+    system ("rm -f $genRF_tempFile");
+}
+
+print "INFO: ---- DONE!! ----\n";
+
+#########################################################################################
+# SUB-ROUTINES
+#########################################################################################
+
+sub getLoggingTime {
+
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)=localtime(time);
+    my $nice_timestamp = sprintf ( "%02d/%02d/%04d %02d:%02d:%02d",$mon+1,$mday,$year+1900,$hour,$min,$sec);
+    return $nice_timestamp;
+}
+
+sub min {
+    my $min = 9e99;
+    my $idx_i;
+    for($idx_i=0; $idx_i<scalar(@_); $idx_i++){
+        if ($_[$idx_i] < $min) {$min = $_[$idx_i];}
+    }
+    return $min;
+}
+
+sub max {
+    my $max = -9e99;
+    my $idx_i;
+    for($idx_i=0; $idx_i<scalar(@_); $idx_i++){
+        if ($_[$idx_i] > $max) {$max = $_[$idx_i];}
+    }
+    return $max;
+}
+
+sub Dec2Hex {
+    my $numDec = $_[0];
+    my $length = $_[1];
+    my $idx_i;
+    my $mod;
+    my $hex;
+    my $hexLength;
+    my $numHex = "";
+
+    while ($numDec > 0) {
+        $mod = $numDec % 16;
+
+        if    ($mod == 0) { $hex = "0";}
+        elsif ($mod == 1) { $hex = "1";}
+        elsif ($mod == 2) { $hex = "2";}
+        elsif ($mod == 3) { $hex = "3";}
+        elsif ($mod == 4) { $hex = "4";}
+        elsif ($mod == 5) { $hex = "5";}
+        elsif ($mod == 6) { $hex = "6";}
+        elsif ($mod == 7) { $hex = "7";}
+        elsif ($mod == 8) { $hex = "8";}
+        elsif ($mod == 9) { $hex = "9";}
+        elsif ($mod == 10) { $hex = "A";}
+        elsif ($mod == 11) { $hex = "B";}
+        elsif ($mod == 12) { $hex = "C";}
+        elsif ($mod == 13) { $hex = "D";}
+        elsif ($mod == 14) { $hex = "E";}
+        elsif ($mod == 15) { $hex = "F";}
+
+        $numHex = $hex . $numHex;
+        $numDec = int($numDec / 16);
+    }
+
+    $hexLength = length($numHex);
+
+    if ($hexLength > $length) { $numHex = substr ($numHex, $hexLength - $length, $length);}
+    else {
+        for ($idx_i=0; $idx_i<($length - $hexLength); $idx_i++) { $numHex = "0" . $numHex;}
+    }
+
+    return $numHex;
+}
+
+
+sub Hex2Dec {
+    my $numHex = $_[0];
+    my $length = length($numHex);
+    my @digit_rev = split(//, $numHex);
+    my @digit;
+    my $idx_i;
+    my $numDig = 0;
+
+    for ($idx_i=0; $idx_i<$length; $idx_i++) { $digit[$idx_i] = $digit_rev[$length-1-$idx_i]; }
+
+    for ($idx_i=0; $idx_i<$length; $idx_i++) { 
+        if    ($digit[$idx_i] =~ /a/i) {$digit[$idx_i] = 10;}
+        elsif ($digit[$idx_i] =~ /b/i) {$digit[$idx_i] = 11;}
+        elsif ($digit[$idx_i] =~ /c/i) {$digit[$idx_i] = 12;}
+        elsif ($digit[$idx_i] =~ /d/i) {$digit[$idx_i] = 13;}
+        elsif ($digit[$idx_i] =~ /e/i) {$digit[$idx_i] = 14;}
+        elsif ($digit[$idx_i] =~ /f/i) {$digit[$idx_i] = 15;}
+        elsif ($digit[$idx_i] =~ /x/i) {$digit[$idx_i] = 0;}
+
+        $numDig = $numDig + ($digit[$idx_i] * (16**$idx_i));
+    }
+    
+    return $numDig;
+}
+
+sub Bin2Hex {
+    my $numBin = $_[0];
+    my $length = length($numBin);
+    my $idx_i;
+    my $mod4;
+    my $numHex = "";
+    my $newHex;
+    my $bit4;
+
+    # Replace 'x' or 'X' with 0.
+    $numBin =~ s/x/0/ig;
+
+    # Make sure that the length is a multiple of 4
+    $mod4 = $length % 4;
+
+    if ($mod4 != 0) {
+        for ($idx_i=0; $idx_i<(4-$mod4); $idx_i++) { $numBin = "0" . $numBin; }
+    }
+
+    # Get the new length
+    $length = length($numBin);
+
+    # Conversion
+    for ($idx_i=0; $idx_i<$length; $idx_i=$idx_i+4) {
+        $bit4 = substr ($numBin, $idx_i, 4);
+
+        if    ($bit4 eq "0000") {$newHex = "0";}
+        elsif ($bit4 eq "0001") {$newHex = "1";}
+        elsif ($bit4 eq "0010") {$newHex = "2";}
+        elsif ($bit4 eq "0011") {$newHex = "3";}
+        elsif ($bit4 eq "0100") {$newHex = "4";}
+        elsif ($bit4 eq "0101") {$newHex = "5";}
+        elsif ($bit4 eq "0110") {$newHex = "6";}
+        elsif ($bit4 eq "0111") {$newHex = "7";}
+        elsif ($bit4 eq "1000") {$newHex = "8";}
+        elsif ($bit4 eq "1001") {$newHex = "9";}
+        elsif ($bit4 eq "1010") {$newHex = "A";}
+        elsif ($bit4 eq "1011") {$newHex = "B";}
+        elsif ($bit4 eq "1100") {$newHex = "C";}
+        elsif ($bit4 eq "1101") {$newHex = "D";}
+        elsif ($bit4 eq "1110") {$newHex = "E";}
+        elsif ($bit4 eq "1111") {$newHex = "F";}
+
+        $numHex = $numHex . $newHex;
+    }
+
+    return $numHex;
+}
+
+sub Hex2Bin {
+    my $numHex = $_[0];
+    my $bitLength = $_[1];
+    my $idx_i;
+    my $hexLength = length($numHex);
+    my $bitUnabridged = "";
+    my $hex;
+    my $bitPattern;
+    my $wholeLength;
+    my $startIdx;
+    my $bit;
+
+    for ($idx_i=0; $idx_i<$hexLength; $idx_i++) {
+        $hex = substr ($numHex, $idx_i, 1);
+
+        if    ($hex =~ /0/) {$bitPattern = "0000";}
+        elsif ($hex =~ /1/) {$bitPattern = "0001";}
+        elsif ($hex =~ /2/) {$bitPattern = "0010";}
+        elsif ($hex =~ /3/) {$bitPattern = "0011";}
+        elsif ($hex =~ /4/) {$bitPattern = "0100";}
+        elsif ($hex =~ /5/) {$bitPattern = "0101";}
+        elsif ($hex =~ /6/) {$bitPattern = "0110";}
+        elsif ($hex =~ /7/) {$bitPattern = "0111";}
+        elsif ($hex =~ /8/) {$bitPattern = "1000";}
+        elsif ($hex =~ /9/) {$bitPattern = "1001";}
+        elsif ($hex =~ /a/i) {$bitPattern = "1010";}
+        elsif ($hex =~ /b/i) {$bitPattern = "1011";}
+        elsif ($hex =~ /c/i) {$bitPattern = "1100";}
+        elsif ($hex =~ /d/i) {$bitPattern = "1101";}
+        elsif ($hex =~ /e/i) {$bitPattern = "1110";}
+        elsif ($hex =~ /f/i) {$bitPattern = "1111";}
+        elsif ($hex =~ /x/i) {$bitPattern = "0000";}
+
+        $bitUnabridged = $bitUnabridged . $bitPattern;
+    }
+
+    $wholeLength = length($bitUnabridged);
+    if ($wholeLength > $bitLength) {
+        $startIdx = $wholeLength - $bitLength;
+        $bit = substr ($bitUnabridged, $startIdx, $bitLength);
+    } elsif ($wholeLength < $bitLength) {
+        $numZeros = $bitLength - $wholeLength;
+        for ($idx_i=0; $idx_i<$numZeros; $idx_i++) {
+            $bitUnabridged = "0" . $bitUnabridged;
+        }
+        $bit = $bitUnabridged;
+    } else { $bit = $bitUnabridged;}
+
+    return $bit;
+}
+
+sub FormatBin {
+    my $numBin = $_[0];
+    my $length = length($numBin);
+    my $mod4;
+    my $idx_i;
+    my $newBin = "";
+
+    # Make sure that the length is a multiple of 4
+    $mod4 = $length % 4;
+
+    if ($mod4 != 0) {
+        for ($idx_i=0; $idx_i<$mod4; $idx_i++) { $numBin = "0" . $numBin; }
+    }
+
+    # Get the new length
+    $length = length($numBin);
+
+    for ($idx_i=0; $idx_i<$length; $idx_i=$idx_i+4) {
+        $newBin = $newBin . substr ($numBin, $idx_i, 4) . "_";
+    }
+
+    chop($newBin);
+    return $newBin;
+}

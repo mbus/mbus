@@ -1,0 +1,202 @@
+#!/usr/bin/perl 
+##########################################################################################################################
+# <Description>
+#                 Automatically created MBus files in a specified netlist directory
+#
+# <Prerequisites>
+#                 None
+#
+# <Usage>
+#                 ./createNewLayer [-master] [LAYER_NAME]
+#              
+#                      LAYER_NAME must be all capital letters, except the version notification 'v'
+#                          PRCv14  --> Acceptable
+#                          FLSv13L --> Acceptable
+#                          flsv13L --> NOT Acceptable ('fls' is not a capital-letter word)
+#                          PRCV14  --> NOT Acceptable (version notification 'v' must be a small-case letter)
+#              
+# <Example>
+#                 ./createNewLayer FLSv4L
+#                 ./createNewLayer -master PRCv20
+#
+# <Update History>
+#  06/06/2016 - First Commit 
+#  07/11/2017 - Added support for TowerJazz 65nm
+#  07/24/2017 - Made compatible with the new directory structure, m3_hdk
+#
+# ---------------------------
+# Author:       Yejoong Kim
+# Last Updated: July 24, 2017.
+##########################################################################################################################
+
+$scriptName = "createNewLayer";
+
+if ($#ARGV < 0) {
+    print "\n";
+    print "[ERROR] Missing Layer Name... Please check usage below:\n";
+    print "\n";
+    print "[Usage]    ./$scriptName [-master] [LAYER_NAME]\n";
+    print "\n";
+    print "           LAYER_NAME must be all capital letters, except the version notification 'v'\n";
+    print "               PRCv14  --> Acceptable\n";
+    print "               FLSv13L --> Acceptable\n";
+    print "               flsv13L --> NOT Acceptable ('fls' is not a capital-letter word)\n";
+    print "               PRCV14  --> NOT Acceptable (version notification 'v' must be a small-case letter)\n";
+    print "\n";
+    print "[Example]  ./$scriptName FLSv3L\n";
+    print "           ./$scriptName -master PRCv20\n";
+    print "\n";
+    print "[Author]  Yejoong Kim (yejoong\@umich.edu)\n";
+    print "          July 11, 2017\n";
+    print "\n";
+    exit;
+}
+
+# Check user name (Commented out for GitHub version)
+#@users_allowed = ("yejoong");
+#$username = getpwuid($<);
+#$userperm = 0;
+#foreach $uid (@users_allowed) {
+#    if ($username eq $uid) {$userperm = 1;}
+#}
+#if ($userperm == 0) {
+#    print "[ERROR] You do NOT have a permission to run this script. Please contact Yejoong Kim (yejoong\@umich.edu)\n";
+#    exit;
+#}
+
+# New Layer Name
+if ($ARGV[0] eq "-master") {
+    $is_master = 1;
+    $LNAME = $ARGV[1];
+}
+else {
+    $is_master = 0;
+    $LNAME = $ARGV[0];
+}
+$lname = lc $LNAME;
+
+## Parse Layer Type
+@temp = split (/v/, $LNAME);
+$LTYPE = $temp[0];
+
+## Directories
+$LNAME_dir = "/afs/eecs.umich.edu/vlsida/projects/m3_hdk/layer/$LTYPE/$LNAME/verilog";
+$mbus_dir  = "/afs/eecs.umich.edu/vlsida/projects/m3_hdk/layer/$LTYPE/$LNAME/verilog/mbus";
+
+## Check whether the directories exists
+$LNAME_dir_exist = -e $LNAME_dir;
+$mbus_dir_exist = -e $mbus_dir;
+
+if ($LNAME_dir_exist != 1) { 
+    print "\n";
+    print "[ERROR] Following directory does not exist. Please create one and try again.\n";
+    print "        $LNAME_dir\n";
+    print "\n";
+    exit;
+}
+
+## Choose technology option
+print "[INFO] Select technology ... \n";
+print "   1. TSMC 180nm \n";
+print "   2. TSMC 180nm (PMU) \n";
+print "   3. TSMC 90nm \n";
+print "   4. TSMC 40nm LP \n";
+print "   5. TowerJazz 65nm CIS \n";
+print "   6. IBM 130nm \n";
+print " Choose one from above: ";
+chomp ($tech_id = <STDIN>);
+
+if    ($tech_id == 1) { $postfix = "tsmc180"; }
+elsif ($tech_id == 2) { $postfix = "tsmc180.pmu"; }
+elsif ($tech_id == 3) { $postfix = "tsmc90"; }
+elsif ($tech_id == 4) { $postfix = "N/A"; }
+elsif ($tech_id == 5) { $postfix = "tps65"; }
+elsif ($tech_id == 6) { $postfix = "N/A"; }
+else {
+    print "[ERROR] Not availalbe. You may have typed a wrong number.\n";
+    exit;
+}
+
+## Master is only available in TSMC 180
+if ($is_master and ($tech_id != 1)) {
+    print "[INFO] Currently, Master layer is only available in TSMC 180. If you need an urgent help, please contact Yejoong Kim (yejoong\@umich.edu)\n";
+    exit;
+}
+
+## For those not yet implemented..
+if ($postfix eq "N/A") {
+    print "[INFO] Not available yet. If you need it immediately, please contact Yejoong Kim (yejoong\@umich.edu)\n";
+    exit;
+}
+
+## Make a backup or Newly create MBus directory
+if ($mbus_dir_exist) {
+    print "[INFO] Making a backup directory: $mbus_dir\_bak\n";
+    system "cd $LNAME_dir && cp -rf mbus mbus_bak";
+}
+else {
+    print "[INFO] Creating MBus directory...\n";
+    system "cd $LNAME_dir && mkdir mbus";
+}
+
+## Copy MBus directory
+print "[INFO] Copying files into $mbus_dir\n";
+if ($is_master) { 
+    system "cp -rfL ../master/include                           $mbus_dir/."; 
+    system "cp -fL  ../master/ReleaseNote                       $mbus_dir/."; 
+    system "cp -fL  ../master/lname_mbus_master_node.v          $mbus_dir/."; 
+    system "cp -fL  ../master/lname_mbus_master_node_ctrl.v     $mbus_dir/."; 
+    system "cp -fL  ../master/lname_mbus_swapper.v              $mbus_dir/."; 
+    system "cp -fL  ../master/lname_mbus_node.v                 $mbus_dir/."; 
+    system "cp -fL  ../master/lname_mbus_isolation.v            $mbus_dir/lname_mbus_isolation.bh.v"; 
+    system "cp -fL  ../master/lname_mbus_master_ctrl.$postfix.v $mbus_dir/lname_mbus_master_ctrl.v"; 
+    system "cp -fL  ../master/lname_layer_ctrl.v                $mbus_dir/."; 
+    system "cp -fL  ../master/LNAME_def.v                       $mbus_dir/LNAME_def.sample.v"; 
+}
+else { 
+    system "cp -rfL ../member/include                           $mbus_dir/."; 
+    system "cp -fL  ../member/ReleaseNote                       $mbus_dir/."; 
+    system "cp -fL  ../member/lname_mbus_swapper.v              $mbus_dir/."; 
+    system "cp -fL  ../member/lname_mbus_node.v                 $mbus_dir/."; 
+    system "cp -fL  ../member/lname_mbus_isolation.v            $mbus_dir/lname_mbus_isolation.bh.v"; 
+    system "cp -fL  ../member/lname_mbus_member_ctrl.$postfix.v $mbus_dir/lname_mbus_member_ctrl.v"; 
+    system "cp -fL  ../member/lname_layer_ctrl.v                $mbus_dir/."; 
+    system "cp -fL  ../member/LNAME_def.v                       $mbus_dir/LNAME_def.sample.v"; 
+}
+
+## Change file names
+print "[INFO] Changing file names...\n";
+system "cd $mbus_dir && rename LNAME $LNAME *";
+system "cd $mbus_dir && rename lname $lname * include/*";
+
+## Replace layer names
+print "[INFO] Replacing layer names in files...\n";
+system "cd $mbus_dir && perl -pi -e 's/LNAME/$LNAME/g' *.v";
+system "cd $mbus_dir && perl -pi -e 's/lname/$lname/g' *.v";
+
+## Set file names..
+$temp_file0 = $LNAME . "_def.sample.v";
+$temp_file1 = $LNAME . "_def.v";
+$temp_file2 = $lname . "_mbus_isolation.bh.v";
+$temp_file3 = $lname . "_mbus_isolation.v";
+
+## Move LNAME_def.sample.v
+system "cd $mbus_dir && mv -f $temp_file0 ../.";
+
+## Display Message
+print "[INFO] Done.\n";
+print "\n";
+print "\n";
+print "[!!---IMPORTANT---!!]\n";
+print "\n";
+print "     1. In $LNAME_dir:\n";
+print "        If you want to use $temp_file0, you MUST rename $temp_file0 to $temp_file1\n";
+print "\n";
+print "     2. In $mbus_dir:\n";
+print "        $temp_file2 is provided for reference purpose only, and you can delete it.\n";
+print "        However, you MUST build a separate structural verilog that is functionally identical to\n";
+print "        $temp_file2, and then name it $temp_file3\n";
+print "        You can add more signals in $temp_file3, if you need.\n";
+print "\n";
+print "     3. For MBus Register File, check out 'genRF (m3_genRF)' script located in 'script' directory.\n";
+print "\n";

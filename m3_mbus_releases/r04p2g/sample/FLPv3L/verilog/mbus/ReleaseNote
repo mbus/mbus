@@ -1,0 +1,119 @@
+#-----------------------------------------------------------------------------------#
+#  CubeWorks, Inc.                                                                  #
+#                                                                                   #
+#  MBus Verilog Implementation Release 04p2 (Jul 11, 2017)                          #
+#                                                                                   #
+#  Contributors:                                                                    #
+#      Yejoong Kim   (yejoong@cubeworks.us)                                         #
+#      Zhiyoong Foo  (zhiyoong@cubeworks.us)                                        #
+#      Gyouho Kim    (gyouho@cubeworks.us)                                          #
+#      Pat Pannuto   (pat@cubeworks.us)                                             #
+#      Ye-sheng Kuo  (samkuo@umich.edu)                                             #
+#      Yoonmyung Lee (sori@umich.edu)                                               #
+#                                                                                   #
+#  This release is managed and updated by Yejoong Kim (yejoong@cubeworks.us)        #
+#-----------------------------------------------------------------------------------#
+
+o Release 04p2 (Jul 11, 2017) - Y. Kim
+
+    - Made compatible with the new directory structure, m3_hdk.
+
+    - Added a compiler directive "__MBUS_DEF__" in include/lname_mbus_def.v 
+        to prevent redundant 'define' warnings
+
+    - Added compiler directives LNAME_MBUS_RF_READ_ONLY and LNAME_MBUS_RF_EMPTY in LNAME_def.v
+        and also added UNPACK_RF_0 and UNPACK_RF_1 'for' loops in lname_layer_ctrl_v.
+        This is to remove any unnecessary flip-flops during the layer ctrl synthesis.
+        LNAME_MBUS_RF_READ_ONLY and LNAME_MBUS_RF_EMPTY must be automatically updated
+        using m3_genRF script to prevent human error.
+
+    - Replaced LNAME_LAYERCTRL_RF_DEPTH with LNAME_MBUS_RF_SIZE in LNAME_def.v,
+        and this needs to be updated automatically using m3_genRF script.
+
+    - Added REG_WR_TRANS output in lname_layer_ctrl.v which become 1 while REG_WR_DATA is valid
+        to support MBus Register File Mux in VIMv1
+
+    - Fixed a bug where next_soft_reset_req is used outside LNAME_LAYERCTRL_ARB_SUPPORT 
+        in lname_layer_ctrl.v
+
+    - Added lname_mbus_member_ctrl.tps65.v to support VIMv1 in TowerJazz 65nm CIS process
+
+    - Added lname_mbus_member_ctrl.tsmc90.v to support FLPv3L/FLPv3S in TSMC90 process
+
+o Release 04p1 (Apr 27, 2017) - Y. Kim
+
+    - Soft Reset support in lname_layer_ctrl
+
+    - MBUS_BUSY isolation moved into lname_mbus_master_ctrl and lname_mbus_member_ctrl
+        Now both SLEEP_REQ* and MBUS_BUSY isolation happening in lname_mbus_master_ctrl and lname_mbus_member_ctrl,
+        rather than in lname_mbus_isolation.v
+
+    - Explicit isolation of SLEEP_REQ
+        Added more explcit isolation of SLEEP_REQ (in lname_mbus_member_ctrl.*.v)
+
+    - PMU DIN glitch filtering (in lname_mbus_member_ctrl.tsmc180.pmu.v)
+
+    - Added FORCE_IDLE_WHEN_DONE mode in lname_mbus_master_node_ctrl
+        If enabled, mbus_master_node_ctrl always goes back to BUS_IDLE at the end of MBus message,
+        rather than going to one of BUS_WAIT_START and BUS_IDLE depending on its DIN input.
+        This is to prevent any possible timing issue between the master node's MBus clock
+        and the member node's layer controller clock.
+
+o Release 04 (Dec 16, 2016) - Y. Kim
+
+    - CIN glitch fix
+        Removed CLR_BUSY and added MBUS_BUSY (in lname_mbus_node.v)
+        Changed logic which masks wakeup_req (in lname_mbus_master_ctrl.v and lname_mbus_member_ctrl.v)
+
+    - lname_mbus_master_node_ctrl.v
+        Added MBus Flag capability (MSG_INTERRUPTED)
+
+o Release 03 (May 21, 2016) - Y. Kim
+
+    - Entirely re-organized file structure
+        lname_mbus_master_ctrl.v         -> lname_mbus_master_node_ctrl.v
+        lname_mbus_master_ctrl_wrapper.v -> lname_mbus_master_node.v
+
+        lname_mbus_master_sleep_ctrl.v and
+        lname_mbus_master_wire_ctrl.v  and
+        lname_mbus_int_ctrl.v          -> Combined into lname_mbus_master_ctrl.v
+
+        lname_mbus_member_sleep_ctrl.v and
+        lname_mbus_member_wire_ctrl.v  and
+        lname_mbus_int_ctrl.v          -> Combined into lname_mbus_member_ctrl.v
+
+    - lname_mbus_int_ctrl.v (in lname_mbus_master_ctrl.v and lname_mbus_member_ctrl.v)
+        Removed redundant logic
+        Fixed the previously wrong implementation of mbus_busy_b (mbus_busyn)
+        Fixed potential hold time issue in ext_int_dout and EXTERNAL_INT
+
+    - lname_mbus_master_node.v (previously lname_mbus_master_ctrl_wrapper.v)
+        Removed 'Always Ack Broadcast' feature (Need to double-check in PRC/PRE simulation)
+
+    - Added 'createNewLayer' in the release.
+
+    - Updated and combined MBus, MBus & Layer_Ctrl testbenches
+        /afs/eecs.umich.edu/vlsida/projects/mm3_node/verilog/mbus/r03
+
+-------------------------------------------------------------------------------------
+
+o Release 02 (May 11, 2016) - Y. Kim
+
+    - lname_layer_ctrl.v: Implemented 'Stream Alert Disable' feature
+                          as specified in MBus Specification
+
+-------------------------------------------------------------------------------------
+
+o Release 01 (Jan 06, 2016) - P. Pannuto
+
+    - lname_mbus_node.v:  Fixed wrong CTRL0 data bit
+
+-------------------------------------------------------------------------------------
+
+o Release 00 (Nov 10, 2015) - Y. Kim, Y. Kuo
+
+    - Re-organized files for actual M3 layer implementations
+
+#-----------------------------------------------------------------------------------#
+#  End of Release Note                                                              #
+#-----------------------------------------------------------------------------------#
